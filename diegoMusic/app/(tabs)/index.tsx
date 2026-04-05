@@ -1,3 +1,4 @@
+import MightLike from "@/components/MightLike";
 import RecentPlayed from "@/components/RecentPlayed";
 import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
@@ -61,6 +62,7 @@ export default function HomeScreen() {
           {selectedTag === "Music" && (
             <View style={styles.recentPlayedWrapper}>
               <RecentPlayed />
+              <MightLike />
             </View>
           )}
 
@@ -135,6 +137,7 @@ const styles = StyleSheet.create({
   },
   recentPlayedWrapper: {
     width: "100%",
+    gap: 20,
   },
   podcastsPlaceholder: {
     width: "100%",
