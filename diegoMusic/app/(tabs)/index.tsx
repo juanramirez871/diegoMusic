@@ -57,7 +57,17 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.welcomeText}>Welcome to {selectedTag}</Text>
+          {selectedTag === "Music" && (
+            <View>
+              <Text>Music</Text>
+            </View>
+          )}
+
+          {selectedTag === "Podcasts" && (
+            <View>
+              <Text>Podcasts</Text>
+            </View>
+          )}
         </View>
       </View>
     </SafeAreaView>
