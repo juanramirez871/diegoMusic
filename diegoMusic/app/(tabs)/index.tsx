@@ -1,3 +1,4 @@
+import RecentPlayed from "@/components/RecentPlayed";
 import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -58,14 +59,14 @@ export default function HomeScreen() {
 
         <View style={styles.content}>
           {selectedTag === "Music" && (
-            <View>
-              <Text>Music</Text>
+            <View style={styles.recentPlayedWrapper}>
+              <RecentPlayed />
             </View>
           )}
 
           {selectedTag === "Podcasts" && (
-            <View>
-              <Text>Podcasts</Text>
+            <View style={styles.podcastsPlaceholder}>
+              <Text style={styles.welcomeText}>Podcasts</Text>
             </View>
           )}
         </View>
@@ -131,6 +132,12 @@ const styles = StyleSheet.create({
   },
   content: {
     marginTop: 20,
+  },
+  recentPlayedWrapper: {
+    width: "100%",
+  },
+  podcastsPlaceholder: {
+    width: "100%",
     alignItems: "center",
   },
   welcomeText: {
@@ -139,3 +146,4 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 });
+
