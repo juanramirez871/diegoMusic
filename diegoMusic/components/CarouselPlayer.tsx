@@ -1,11 +1,10 @@
 import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
 
-export default function MightLike() {
+export default function CarouselPlayer() {
   const songs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Music you might like</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -38,13 +37,6 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     marginTop: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 16,
-    color: "#fff",
-    paddingHorizontal: 4,
   },
   scrollContent: {
     gap: 16,

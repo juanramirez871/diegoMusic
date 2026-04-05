@@ -1,7 +1,8 @@
-import MightLike from "@/components/MightLike";
+import CarouselPlayer from "@/components/CarouselPlayer";
+import MusicArtist from "@/components/MusicArtist";
 import RecentPlayed from "@/components/RecentPlayed";
 import React, { useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
@@ -9,70 +10,87 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.avatarCircle}>
-            <Image
-              source={require("@/assets/images/avatar.jpg")}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}
+      >
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.avatarCircle}>
+              <Image
+                source={require("@/assets/images/avatar.jpg")}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            </View>
+
+            <View style={styles.tagsContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.tag,
+                  selectedTag === "Music" && styles.selectedTag,
+                ]}
+                onPress={() => setSelectedTag("Music")}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.tagText,
+                    selectedTag === "Music" && styles.selectedTagText,
+                  ]}
+                >
+                  Music
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tag,
+                  selectedTag === "Podcasts" && styles.selectedTag,
+                ]}
+                onPress={() => setSelectedTag("Podcasts")}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.tagText,
+                    selectedTag === "Podcasts" && styles.selectedTagText,
+                  ]}
+                >
+                  Podcasts
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={styles.tagsContainer}>
-            <TouchableOpacity
-              style={[
-                styles.tag,
-                selectedTag === "Music" && styles.selectedTag,
-              ]}
-              onPress={() => setSelectedTag("Music")}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.tagText,
-                  selectedTag === "Music" && styles.selectedTagText,
-                ]}
-              >
-                Music
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.content}>
+            {selectedTag === "Music" && (
+              <View style={styles.recentPlayedWrapper}>
+                <View>
+                  <RecentPlayed />
+                </View>
+                
+                <View>
+                  <Text style={styles.title}>Music you might like</Text>
+                  <CarouselPlayer />
+                </View>
 
-            <TouchableOpacity
-              style={[
-                styles.tag,
-                selectedTag === "Podcasts" && styles.selectedTag,
-              ]}
-              onPress={() => setSelectedTag("Podcasts")}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.tagText,
-                  selectedTag === "Podcasts" && styles.selectedTagText,
-                ]}
-              >
-                Podcasts
-              </Text>
-            </TouchableOpacity>
+                <View style={styles.musicArtistContainer}>
+                  <MusicArtist />
+                  <MusicArtist />
+                  <MusicArtist />
+                </View>
+              </View>
+            )}
+
+            {selectedTag === "Podcasts" && (
+              <View style={styles.podcastsPlaceholder}>
+                <Text style={styles.welcomeText}>Podcasts</Text>
+              </View>
+            )}
           </View>
         </View>
-
-        <View style={styles.content}>
-          {selectedTag === "Music" && (
-            <View style={styles.recentPlayedWrapper}>
-              <RecentPlayed />
-              <MightLike />
-            </View>
-          )}
-
-          {selectedTag === "Podcasts" && (
-            <View style={styles.podcastsPlaceholder}>
-              <Text style={styles.welcomeText}>Podcasts</Text>
-            </View>
-          )}
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -82,9 +100,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#252424ff",
   },
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    paddingBottom: 24,
   },
   header: {
     flexDirection: "row",
@@ -148,5 +170,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 5,
+    color: "#fff",
+    paddingHorizontal: 4,
+  },
+  musicArtistContainer: {
+    flexDirection: "column",
+    width: "100%",
+    gap: 12,
+  },
 });
-
