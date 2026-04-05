@@ -1,3 +1,4 @@
+import Artists from "@/components/Artists";
 import CarouselPlayer from "@/components/CarouselPlayer";
 import MusicArtist from "@/components/MusicArtist";
 import RecentPlayed from "@/components/RecentPlayed";
@@ -79,6 +80,15 @@ export default function HomeScreen() {
                   <MusicArtist />
                   <MusicArtist />
                   <MusicArtist />
+                </View>
+
+                <View>
+                  <Artists />
+                </View>
+
+                <View>
+                  <Text style={styles.title}>Your most played music</Text>
+                  <CarouselPlayer />
                 </View>
               </View>
             )}
