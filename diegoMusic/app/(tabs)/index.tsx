@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FavoritePodcasts from "@/components/FavoritePodcasts";
+import Podcasts from "@/components/Podcasts";
 
 export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState("Music");
@@ -95,8 +96,14 @@ export default function HomeScreen() {
             )}
 
             {selectedTag === "Podcasts" && (
-              <View style={styles.podcastsPlaceholder}>
-                <FavoritePodcasts />
+              <View style={styles.podcastsWrapper}>
+                <View>
+                  <FavoritePodcasts />
+                </View>
+                
+                <View>
+                  <Podcasts />
+                </View>
               </View>
             )}
           </View>
@@ -172,9 +179,9 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 20,
   },
-  podcastsPlaceholder: {
+  podcastsWrapper: {
     width: "100%",
-    alignItems: "center",
+    gap: 20,
   },
   welcomeText: {
     fontSize: 22,
