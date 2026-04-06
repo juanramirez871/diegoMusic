@@ -164,7 +164,10 @@ export default function FavoriteScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         style={styles.scrollView}
-        contentContainerStyle={{ paddingTop: insets.top + 200 }}
+        contentContainerStyle={{ 
+          paddingTop: insets.top + 200,
+          paddingBottom: 100, // Espacio extra para que el contenido no quede debajo de la barra glass
+        }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.songContainer}>

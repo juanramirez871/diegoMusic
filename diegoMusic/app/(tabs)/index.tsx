@@ -120,6 +120,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
+    paddingBottom: 100, // Espacio extra para que el contenido no quede debajo de la barra glass
   },
   container: {
     paddingHorizontal: 16,
@@ -182,11 +183,6 @@ const styles = StyleSheet.create({
   podcastsWrapper: {
     width: "100%",
     gap: 20,
-  },
-  welcomeText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#FFFFFF",
   },
   title: {
     fontSize: 22,

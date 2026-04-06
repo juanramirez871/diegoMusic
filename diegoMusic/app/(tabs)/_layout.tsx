@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { BlurView } from 'expo-blur';
+import { StyleSheet, Platform } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { HapticTab } from '@/components/HapticTab';
 
@@ -9,13 +11,24 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#888888',
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: '#252424ff',
-          borderTopColor: '#333',
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          paddingTop: 5,
+          elevation: 0,
+          height: Platform.OS === 'ios' ? 65 : 55,
         },
+        tabBarBackground: () => (
+          <BlurView
+            intensity={80}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
+        ),
       }}>
       <Tabs.Screen
         name="index"
