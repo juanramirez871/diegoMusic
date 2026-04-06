@@ -9,7 +9,7 @@ import {
   Animated,
   ScrollView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 interface SearchOverlayProps {
@@ -18,8 +18,8 @@ interface SearchOverlayProps {
   fadeAnim: Animated.Value;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  recentSearches: string[];
-  setRecentSearches: (searches: string[]) => void;
+  recentSearches: { id: number; text: string }[];
+  setRecentSearches: (searches: { id: number; text: string }[]) => void;
 }
 
 export const SearchOverlay: React.FC<SearchOverlayProps> = ({
@@ -31,15 +31,18 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   recentSearches,
   setRecentSearches,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={isVisible}
       transparent={true}
       animationType="none"
+      statusBarTranslucent={true}
       onRequestClose={onClose}
     >
       <Animated.View style={[styles.modalContainer, { opacity: fadeAnim }]}>
-        <SafeAreaView style={styles.modalSafeArea} edges={['top', 'left', 'right']}>
+        <View style={{ backgroundColor: "#282828", paddingTop: insets.top }}>
           <View style={styles.modalHeader}>
             <View style={styles.activeSearchWrapper}>
               <TextInput
@@ -56,34 +59,34 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          <View style={styles.searchContent}>
-            {recentSearches.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateTitle}>Play what you love</Text>
-                <Text style={styles.emptyStateSub}>Search for artists, songs, podcasts, and more.</Text>
+        <View style={styles.searchContent}>
+          {recentSearches.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>Play what you love</Text>
+              <Text style={styles.emptyStateSub}>Search for artists, songs, podcasts, and more.</Text>
+            </View>
+          ) : (
+            <View style={styles.recentSearchesContainer}>
+              <View style={styles.recentSearchesHeader}>
+                <Text style={styles.recentSearchesTitle}>Recent searches</Text>
+                <TouchableOpacity onPress={() => setRecentSearches([])}>
+                  <Text style={styles.clearRecentText}>Clear all</Text>
+                </TouchableOpacity>
               </View>
-            ) : (
-              <View style={styles.recentSearchesContainer}>
-                <View style={styles.recentSearchesHeader}>
-                  <Text style={styles.recentSearchesTitle}>Recent searches</Text>
-                  <TouchableOpacity onPress={() => setRecentSearches([])}>
-                    <Text style={styles.clearRecentText}>Clear all</Text>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {recentSearches.map((item, index) => (
+                  <TouchableOpacity key={item.id} style={styles.recentSearchItem}>
+                    <Ionicons name="time-outline" size={20} color="#b3b3b3" style={styles.recentSearchIcon} />
+                    <Text style={styles.recentSearchText}>{item.text}</Text>
+                    <Ionicons name="close" size={18} color="#b3b3b3" />
                   </TouchableOpacity>
-                </View>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {recentSearches.map((item, index) => (
-                    <TouchableOpacity key={index} style={styles.recentSearchItem}>
-                      <Ionicons name="time-outline" size={20} color="#b3b3b3" style={styles.recentSearchIcon} />
-                      <Text style={styles.recentSearchText}>{item}</Text>
-                      <Ionicons name="close" size={18} color="#b3b3b3" />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
       </Animated.View>
     </Modal>
   );
@@ -93,9 +96,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: "#121212",
-  },
-  modalSafeArea: {
-    flex: 1,
   },
   modalHeader: {
     flexDirection: "row",

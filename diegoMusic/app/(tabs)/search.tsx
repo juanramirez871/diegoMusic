@@ -20,9 +20,22 @@ export default function TabTwoScreen() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [recentSearches, setRecentSearches] = useState<{id: number, text: string}[]>([
+    {
+      id: 1,
+      text: "Enamorado tuyo"
+    },
+    {
+      id: 2,
+      text: "El fantasma de la opera"
+    },
+    {
+      id: 3,
+      text: "Esto es amor"
+    }
+  ]);
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const handleOpenSearch = () => {
     setIsSearching(true);
     Animated.timing(fadeAnim, {
