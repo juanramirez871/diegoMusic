@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import Song from "./Song";
 
 interface SearchOverlayProps {
   isVisible: boolean;
@@ -62,7 +63,17 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         </View>
 
         <View style={styles.searchContent}>
-          {recentSearches.length === 0 ? (
+          {searchQuery.length > 3 ? (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.resultsContainer}>
+              
+              {
+                [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((item, index) => (
+                  <Song key={item} />
+                ))
+              }
+              
+            </ScrollView>
+          ) : recentSearches.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateTitle}>Play what you love</Text>
               <Text style={styles.emptyStateSub}>Search for artists, songs, podcasts, and more.</Text>
@@ -129,10 +140,14 @@ const styles = StyleSheet.create({
   },
   searchContent: {
     flex: 1,
-    paddingHorizontal: 16,
+  },
+  resultsContainer: {
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   emptyState: {
     flex: 1,
+    paddingHorizontal: 16,
     justifyContent: "center",
     alignItems: "center",
     paddingBottom: 100,
@@ -150,6 +165,7 @@ const styles = StyleSheet.create({
   },
   recentSearchesContainer: {
     paddingTop: 20,
+    paddingHorizontal: 16,
     flex: 1,
   },
   recentSearchesHeader: {
