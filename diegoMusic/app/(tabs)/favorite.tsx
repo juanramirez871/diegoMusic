@@ -4,14 +4,18 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import Song from "@/components/Song";
 
 export default function FavoriteScreen() {
+
   const insets = useSafeAreaInsets();
+  const songs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   return (
     <View style={styles.container}>
@@ -45,11 +49,19 @@ export default function FavoriteScreen() {
             <Text style={styles.count}>281 songs</Text>
           </View>
         </View>
+        <View style={styles.containerIcons}>
+          <Ionicons name="shuffle" size={35} color="#fff" />
+          <Ionicons name="play-circle" size={55} color="#fff" />
+        </View>
       </LinearGradient>
-      <View style={styles.containerIcons}>
-        <Ionicons name="shuffle" size={45} color="#fff" />
-        <Ionicons name="play-circle" size={45} color="#fff" />
-      </View>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.songContainer}>
+          {songs.map((_, index) => (
+            <Song key={index} />
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -122,6 +134,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 20,
     paddingHorizontal: 20,
-    transform: [{ translateY: -30 }],
+    marginBottom: 10,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  songContainer: {
+    gap: 5,
+    paddingBottom: 20,
   },
 });
