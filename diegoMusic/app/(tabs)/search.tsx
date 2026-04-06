@@ -9,7 +9,19 @@ export default function TabTwoScreen() {
         contentContainerStyle={styles.scrollContainer}
       >
         <View style={styles.container}>
-          <Text style={styles.text}>Welcome to Search</Text>
+          <View>
+            <Image
+              source={require("@/assets/images/avatar.jpg")}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+              }}
+            />
+          </View>
+          <View>
+            <Text style={styles.text}>Search</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -26,12 +38,16 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   container: {
-    flex: 1,
-    justifyContent: "center",
+    flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 24,
   },
   text: {
-    fontSize: 20,
+    fontSize: 25,
+    color: "#fff",
     fontWeight: "bold",
   },
 });
