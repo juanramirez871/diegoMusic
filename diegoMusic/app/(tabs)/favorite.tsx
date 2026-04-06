@@ -166,7 +166,7 @@ export default function FavoriteScreen() {
         style={styles.scrollView}
         contentContainerStyle={{ 
           paddingTop: insets.top + 200,
-          paddingBottom: 100,
+          paddingBottom: 120,
         }}
         showsVerticalScrollIndicator={false}
       >
