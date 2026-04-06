@@ -1,21 +1,48 @@
+import { useState, useRef } from "react";
 import {
   Text,
   StyleSheet,
   View,
   ScrollView,
   Image,
-  TextInput,
   TouchableOpacity,
   Dimensions,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - 44) / 2;
 import CATEGORIES from "@/constants/categories";
-
+import { SearchOverlay } from "@/components/SearchOverlay";
 
 export default function TabTwoScreen() {
+
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const handleOpenSearch = () => {
+    setIsSearching(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseSearch = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSearching(false);
+      setSearchQuery("");
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -32,19 +59,19 @@ export default function TabTwoScreen() {
           </View>
 
           <View style={styles.searchSection}>
-            <View style={styles.inputWrapper}>
+            <TouchableOpacity 
+              activeOpacity={0.9} 
+              style={styles.inputWrapper}
+              onPress={handleOpenSearch}
+            >
               <Ionicons
                 name="search"
                 size={22}
                 color="#252424"
                 style={styles.searchIcon}
               />
-              <TextInput
-                style={styles.inputInput}
-                placeholder="What do you want to listen to?"
-                placeholderTextColor="#666"
-              />
-            </View>
+              <Text style={styles.placeholderText}>What do you want to listen to?</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.browseAllSection}>
@@ -62,6 +89,16 @@ export default function TabTwoScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <SearchOverlay 
+        isVisible={isSearching}
+        onClose={handleCloseSearch}
+        fadeAnim={fadeAnim}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        recentSearches={recentSearches}
+        setRecentSearches={setRecentSearches}
+      />
     </SafeAreaView>
   );
 }
@@ -109,11 +146,10 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 8,
   },
-  inputInput: {
-    flex: 1,
-    height: "100%",
+  placeholderText: {
     fontSize: 16,
-    color: "#000",
+    color: "#666",
+    flex: 1,
   },
   browseAllSection: {
     marginTop: 8,

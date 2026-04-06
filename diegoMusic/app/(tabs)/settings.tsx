@@ -9,7 +9,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContainer}
       >
         <View style={styles.container}>
-          <Text style={styles.text}>Welcome to Settings</Text>
+          <Text style={styles.text}>Coming soon :)</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
