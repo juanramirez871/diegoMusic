@@ -2,17 +2,16 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { useState } from 'react';
 import { MinimizedPlayer } from '@/components/minimizedPlayer';
 import { MaximazedPlayer } from '@/components/maximazedPlayer';
+import { PlayerProvider, usePlayer } from '@/context/PlayerContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
-
-  const [isMaximized, setIsMaximized] = useState(false);
+function RootLayoutContent() {
+  const { isMaximized, setIsMaximized } = usePlayer();
 
   return (
     <ThemeProvider value={DefaultTheme}>
@@ -23,5 +22,13 @@ export default function RootLayout() {
       <MaximazedPlayer visible={isMaximized} onClose={() => setIsMaximized(false)} />
       <StatusBar style="auto" />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <PlayerProvider>
+      <RootLayoutContent />
+    </PlayerProvider>
   );
 }

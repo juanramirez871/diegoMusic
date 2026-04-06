@@ -1,16 +1,17 @@
-import { View, StyleSheet, Image, Text, Platform, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Image, Text, Platform, TouchableOpacity, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface MinimizedPlayerProps {
   onPress: () => void;
+  style?: ViewStyle;
 }
 
-export const MinimizedPlayer = ({ onPress }: MinimizedPlayerProps) => {
+export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
   return (
     <TouchableOpacity 
       activeOpacity={0.9} 
       onPress={onPress} 
-      style={styles.container}
+      style={[styles.container, style]}
     >
       <Image
         source={{ uri: "https://thicc-uwu.mywaifulist.moe/waifus/rukia-kuchiki-bleach/hzirfGgp2zlBCB4OCnGo37EwGyMoVdM9J8BDFGcU.webp" }}
