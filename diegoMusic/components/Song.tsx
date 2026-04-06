@@ -1,5 +1,6 @@
 import { View, StyleSheet, Image, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 
@@ -21,7 +22,7 @@ export default function Song() {
           </Text>
           <View style={styles.metadataContainer}>
             <View style={styles.videoBadge}>
-              <Ionicons name="videocam" size={12} color="#000" />
+              <Foundation name="play-video" size={16} color="#b3b3b3" />
             </View>
             <Text style={styles.artist} numberOfLines={1}>
               Mon Laferta, Conociendo Rusia
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   videoBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#b3b3b3",
+    color: "#b3b3b3",
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 2,
