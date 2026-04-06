@@ -1,9 +1,17 @@
-import { View, StyleSheet, Image, Text, Platform } from "react-native";
+import { View, StyleSheet, Image, Text, Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export const MinimizedPlayer = () => {
+interface MinimizedPlayerProps {
+  onPress: () => void;
+}
+
+export const MinimizedPlayer = ({ onPress }: MinimizedPlayerProps) => {
   return (
-    <View style={styles.container}>
+    <TouchableOpacity 
+      activeOpacity={0.9} 
+      onPress={onPress} 
+      style={styles.container}
+    >
       <Image
         source={{ uri: "https://thicc-uwu.mywaifulist.moe/waifus/rukia-kuchiki-bleach/hzirfGgp2zlBCB4OCnGo37EwGyMoVdM9J8BDFGcU.webp" }}
         style={styles.cover}
@@ -12,14 +20,19 @@ export const MinimizedPlayer = () => {
         <Text style={styles.title} numberOfLines={1}>El muchacho de los ojos tristes</Text>
         <Text style={styles.artist} numberOfLines={1}>Rukia Kuchiki</Text>
       </View>
-      <View style={styles.controls}>
+      <TouchableOpacity 
+        style={styles.controls} 
+        onPress={(e) => {
+          e.stopPropagation();
+        }}
+      >
         <Ionicons name="play-circle" size={40} color="#fff" />
-      </View>
+      </TouchableOpacity>
       <View style={styles.progressContainer}>
         <View style={[styles.bgBar, { width: '100%' }]} />
         <View style={[styles.progressBar, { width: '35%' }]} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
