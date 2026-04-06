@@ -26,7 +26,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     >
       <View style={styles.modalContainer}>
         <LinearGradient
-          colors={['#4c4c4c', '#141414', '#000000']}
+          colors={['#2c5af3ff', '#141414', '#101010ff']}
           style={styles.gradient}
         >
           <View style={styles.header}>

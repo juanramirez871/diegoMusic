@@ -162,8 +162,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedTag: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#2c5af3ff",
+    borderColor: "#2c5af3ff",
   },
   tagText: {
     color: "#E0E0E0",
