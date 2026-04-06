@@ -1,10 +1,11 @@
-import Artists from "@/components/Artists";
+import FavoriteArtists from "@/components/FavoriteArtists";
 import CarouselPlayer from "@/components/CarouselPlayer";
 import MusicArtist from "@/components/MusicArtist";
 import RecentPlayed from "@/components/RecentPlayed";
 import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import FavoritePodcasts from "@/components/FavoritePodcasts";
 
 export default function HomeScreen() {
   const [selectedTag, setSelectedTag] = useState("Music");
@@ -83,7 +84,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View>
-                  <Artists />
+                  <FavoriteArtists />
                 </View>
 
                 <View>
@@ -95,7 +96,7 @@ export default function HomeScreen() {
 
             {selectedTag === "Podcasts" && (
               <View style={styles.podcastsPlaceholder}>
-                <Text style={styles.welcomeText}>Podcasts</Text>
+                <FavoritePodcasts />
               </View>
             )}
           </View>

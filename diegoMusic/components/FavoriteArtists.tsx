@@ -1,7 +1,7 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { IconSymbol } from "./IconSymbol";
 
-export default function Artists() {
+export default function FavoriteArtists() {
   const artists = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
   return (
@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#444",
-    borderStyle: "dashed",
   },
   artistName: {
     fontSize: 14,
