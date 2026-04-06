@@ -1,34 +1,47 @@
 import { View, StyleSheet, Image, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-
+import { useState } from "react";
+import SongOptionsModal from "./SongOptionsModal";
 
 export default function Song() {
+  const [modalVisible, setModalVisible] = useState(false);
+
   return (
-    <View style={styles.songContainer}>
-      <Image
-        source={{
-          uri: "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg",
-        }}
-        style={styles.image}
-      />
-      <View style={styles.infoContainer}>
-        <Text style={styles.title} numberOfLines={1}>
-          Esto es amor
-        </Text>
-        <View style={styles.metadataContainer}>
-          <View style={styles.videoBadge}>
-            <Ionicons name="videocam" size={12} color="#000" />
-          </View>
-          <Text style={styles.artist} numberOfLines={1}>
-            Mon Laferta, Conociendo Rusia
+    <>
+      <View style={styles.songContainer}>
+        <Image
+          source={{
+            uri: "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg",
+          }}
+          style={styles.image}
+        />
+        <View style={styles.infoContainer}>
+          <Text style={styles.title} numberOfLines={1}>
+            Esto es amor
           </Text>
+          <View style={styles.metadataContainer}>
+            <View style={styles.videoBadge}>
+              <Ionicons name="videocam" size={12} color="#000" />
+            </View>
+            <Text style={styles.artist} numberOfLines={1}>
+              Mon Laferta, Conociendo Rusia
+            </Text>
+          </View>
         </View>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.menuButton}>
-        <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
-      </TouchableOpacity>
-    </View>
+
+      <SongOptionsModal 
+        visible={modalVisible} 
+        onClose={() => setModalVisible(false)} 
+        songTitle="Esto es amor"
+      />
+    </>
   );
 }
 

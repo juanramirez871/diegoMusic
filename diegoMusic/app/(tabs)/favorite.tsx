@@ -102,6 +102,18 @@ export default function FavoriteScreen() {
     };
   });
 
+  const headerTitleAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [150, 180],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return {
+      opacity,
+    };
+  });
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" translucent />
@@ -111,6 +123,9 @@ export default function FavoriteScreen() {
           colors={["#2c5af3ff", "#252424ff"]}
           style={StyleSheet.absoluteFill}
         />
+        <Animated.View style={[styles.headerTitleContainer, headerTitleAnimatedStyle, { paddingTop: insets.top }]}>
+          <Text style={styles.headerTitle}>Liked Songs</Text>
+        </Animated.View>
         <View style={[styles.contentContainer, { paddingTop: insets.top + 10 }]}>
           <Animated.View style={[styles.containerSearch, searchAnimatedStyle]}>
             <View style={styles.inputWrapper}>
@@ -174,6 +189,17 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     overflow: "hidden",
+  },
+  headerTitleContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 15,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
   },
   contentContainer: {
     paddingHorizontal: 20,
