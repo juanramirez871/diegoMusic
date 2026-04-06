@@ -9,6 +9,7 @@ import FavoritePodcasts from "@/components/FavoritePodcasts";
 import Podcasts from "@/components/Podcasts";
 
 export default function HomeScreen() {
+  
   const [selectedTag, setSelectedTag] = useState("Music");
 
   return (
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 100, // Espacio extra para que el contenido no quede debajo de la barra glass
+    paddingBottom: 100,
   },
   container: {
     paddingHorizontal: 16,
