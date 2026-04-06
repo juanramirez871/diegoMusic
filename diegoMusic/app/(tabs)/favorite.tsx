@@ -4,7 +4,7 @@ export default function FavoriteScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Welcome to Favorite</Text>
+      <Text>Welcome to Favorite</Text>
     </View>
   );
 }
@@ -14,10 +14,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    backgroundColor: "#252424ff",
   },
 });
 
