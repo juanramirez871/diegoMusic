@@ -18,10 +18,7 @@ export default function FavoriteScreen() {
       <StatusBar style="light" translucent />
       <LinearGradient
         colors={["#2c5af3ff", "#252424ff"]}
-        style={[
-          styles.headerGradient,
-          { paddingTop: insets.top + 10 },
-        ]}
+        style={[styles.headerGradient, { paddingTop: insets.top + 10 }]}
       >
         <View style={styles.contentContainer}>
           <View style={styles.containerSearch}>
@@ -49,6 +46,10 @@ export default function FavoriteScreen() {
           </View>
         </View>
       </LinearGradient>
+      <View style={styles.containerIcons}>
+        <Ionicons name="shuffle" size={45} color="#fff" />
+        <Ionicons name="play-circle" size={45} color="#fff" />
+      </View>
     </View>
   );
 }
@@ -114,5 +115,13 @@ const styles = StyleSheet.create({
     color: "#b3b3b3",
     fontSize: 14,
     marginTop: 4,
+  },
+  containerIcons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 20,
+    paddingHorizontal: 20,
+    transform: [{ translateY: -30 }],
   },
 });
