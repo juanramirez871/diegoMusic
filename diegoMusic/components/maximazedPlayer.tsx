@@ -13,13 +13,13 @@ interface MaximazedPlayerProps {
   onClose: () => void;
 }
 
-
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const { currentSong } = usePlayer();
+  const { currentSong, toggleFavorite, isFavorite } = usePlayer();
 
   if (!currentSong) return null;
+  const favoriteStatus = isFavorite(currentSong.id);
 
   return (
     <Modal
@@ -60,8 +60,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                   <Text style={styles.title} numberOfLines={1}>{currentSong.title}</Text>
                   <Text style={styles.artist} numberOfLines={1}>{currentSong.channel.name}</Text>
                 </View>
-                <TouchableOpacity>
-                  <Ionicons name="heart-outline" size={28} color="#fff" />
+                <TouchableOpacity onPress={() => toggleFavorite(currentSong)}>
+                  <Ionicons 
+                    name={favoriteStatus ? "heart" : "heart-outline"} 
+                    size={28} 
+                    color={favoriteStatus ? "#2c5af3ff" : "#fff"} 
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -80,7 +84,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
             <View style={styles.controlsRow}>
               <TouchableOpacity>
-                <Ionicons name="shuffle" size={28} color="#1DB954" />
+                <Ionicons name="shuffle" size={28} color="#2c5af3ff" />
               </TouchableOpacity>
               <TouchableOpacity>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
@@ -112,7 +116,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       <SongOptionsModal 
         visible={isOptionsVisible} 
         onClose={() => setIsOptionsVisible(false)}
-        songTitle={currentSong.title}
+        song={currentSong}
       />
     </Modal>
   );

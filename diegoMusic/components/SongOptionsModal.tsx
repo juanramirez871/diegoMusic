@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Linking } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,21 +17,24 @@ import Animated, {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
+import { usePlayer } from "@/context/PlayerContext";
+import { SongData } from "./Song";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface SongOptionsModalProps {
   visible: boolean;
   onClose: () => void;
-  songTitle?: string;
+  song?: SongData;
 }
 
 export default function SongOptionsModal({
   visible,
   onClose,
-  songTitle = "Esto es amor",
+  song,
 }: SongOptionsModalProps) {
 
+  const { toggleFavorite, isFavorite } = usePlayer();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.4);
   const startOpenAnimation = () => {
@@ -62,6 +66,22 @@ export default function SongOptionsModal({
     );
   };
 
+  const handleToggleFavorite = () => {
+    if (song) {
+      toggleFavorite(song);
+    }
+  };
+
+  const handleOpenOriginalVideo = () => {
+    if (song?.url) {
+      Linking.openURL(song.url).catch((err) =>
+        console.error("Error opening URL:", err)
+      );
+    }
+  };
+
+  const favoriteStatus = song ? isFavorite(song.id) : false;
+
   useEffect(() => {
     if (!visible) {
       overlayOpacity.value = 0;
@@ -86,17 +106,35 @@ export default function SongOptionsModal({
           
           <View style={styles.header}>
             <Text style={styles.title} numberOfLines={1}>
-              {songTitle}
+              {song?.title || "Sin título"}
             </Text>
           </View>
 
           <View style={styles.optionsList}>
-            <TouchableOpacity style={styles.option} onPress={handleClose}>
-              <Ionicons name="heart-dislike-outline" size={24} color="#fff" />
-              <Text style={styles.optionText}>Eliminar de favoritos</Text>
+            <TouchableOpacity 
+              style={styles.option} 
+              onPress={() => {
+                handleToggleFavorite();
+                handleClose();
+              }}
+            >
+              <Ionicons 
+                name={favoriteStatus ? "heart" : "heart-outline"} 
+                size={24} 
+                color={favoriteStatus ? "#2c5af3ff" : "#fff"} 
+              />
+              <Text style={styles.optionText}>
+                {favoriteStatus ? "Eliminar de favoritos" : "Agregar a favoritos"}
+              </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.option} onPress={handleClose}>
+            <TouchableOpacity 
+              style={styles.option} 
+              onPress={() => {
+                handleOpenOriginalVideo();
+                handleClose();
+              }}
+            >
               <Ionicons name="videocam-outline" size={24} color="#fff" />
               <Text style={styles.optionText}>Ir a video original</Text>
             </TouchableOpacity>

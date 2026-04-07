@@ -73,7 +73,7 @@ export default function Song({ data, onPress }: SongProps) {
       <SongOptionsModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
-        songTitle={title}
+        song={data}
       />
     </>
   );
