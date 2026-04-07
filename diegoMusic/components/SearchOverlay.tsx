@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Song, { SongData } from "./Song";
+import { youtubeService } from "../services/api";
 
 export interface HistoryItem {
   id: string;
@@ -52,8 +53,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/youtube/search/video?search=${encodeURIComponent(trimmedQuery)}`);
-      const data = await response.json();
+      const data = await youtubeService.searchVideos(trimmedQuery);
       setResults(Array.isArray(data) ? data : []);
     }
     catch (error) {
