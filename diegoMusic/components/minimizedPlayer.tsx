@@ -14,7 +14,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   return (
     <TouchableOpacity 
-      activeOpacity={0.9} 
+      activeOpacity={1} 
       onPress={onPress} 
       style={[styles.container, style]}
     >
