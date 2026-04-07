@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Text,
   StyleSheet,
@@ -11,16 +11,43 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-const { width } = Dimensions.get("window");
-const ITEM_WIDTH = (width - 44) / 2;
+import storage from '@/services/storage';
 import CATEGORIES from "@/constants/categories";
 import { SearchOverlay, HistoryItem } from "@/components/SearchOverlay";
+
+const { width } = Dimensions.get("window");
+const ITEM_WIDTH = (width - 44) / 2;
+const RECENT_SEARCHES_KEY = '@recent_searches';
 
 export default function TabTwoScreen() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const savedHistory = await storage.getItem(RECENT_SEARCHES_KEY);
+        if (savedHistory) {
+          setRecentSearches(JSON.parse(savedHistory));
+        }
+      } catch (error) {
+        console.error('Error loading history:', error);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  const handleUpdateHistory = async (newHistory: HistoryItem[]) => {
+    setRecentSearches(newHistory);
+    try {
+      await storage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newHistory));
+    }
+    catch (error) {
+      console.error('Error saving history:', error);
+    }
+  };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const handleOpenSearch = () => {
@@ -97,7 +124,7 @@ export default function TabTwoScreen() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         recentSearches={recentSearches}
-        setRecentSearches={setRecentSearches}
+        setRecentSearches={handleUpdateHistory}
       />
     </SafeAreaView>
   );

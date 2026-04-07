@@ -1,5 +1,7 @@
 const BASE_URL = 'http://localhost:3000/api';
 
+const searchCache = new Map<string, any[]>();
+
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -12,7 +14,6 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // throw new Error(errorData.error || `HTTP error status: ${response.status}`);
       console.log(errorData.error);
     }
 
@@ -24,9 +25,24 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
 };
 
 export const youtubeService = {
-  searchVideos: (query: string) => 
-    apiFetch<any[]>(`/youtube/search/video?search=${encodeURIComponent(query)}`),
-};
+  searchVideos: async (query: string) => {
+    const cacheKey = `search:${query.trim().toLowerCase()}`;
+    
+    if (searchCache.has(cacheKey)) {
+      console.log(`[Cache Hit] for query: ${query}`);
+      return searchCache.get(cacheKey) as any[];
+    }
 
+    const data = await apiFetch<any[]>(`/youtube/search/video?search=${encodeURIComponent(query)}`);
+    
+    searchCache.set(cacheKey, data);
+    if (searchCache.size > 50) {
+      const firstKey = searchCache.keys().next().value;
+      if (firstKey) searchCache.delete(firstKey);
+    }
+
+    return data;
+  },
+};
 
 export default apiFetch;
