@@ -4,7 +4,7 @@ const searchVideo = async (search) => {
 
   console.log(YouTube.default.search)
   const videos = await YouTube.default.search(search, {
-    limit: 20,
+    limit: 21,
     safeSearch: true,
   });
   

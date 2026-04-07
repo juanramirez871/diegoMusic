@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
-  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Song, { SongData } from "./Song";
 import { youtubeService } from "../services/api";
+import { Skeleton } from "./Skeleton";
 
 export interface HistoryItem {
   id: string;
@@ -28,6 +28,53 @@ export interface SearchOverlayProps {
   recentSearches: HistoryItem[];
   setRecentSearches: (searches: HistoryItem[]) => void;
 }
+
+const SongSkeleton = () => (
+  <View style={styles.skeletonContainer}>
+    <Skeleton width={50} height={50} borderRadius={4} />
+    <View style={styles.skeletonInfo}>
+      <Skeleton width="70%" height={16} borderRadius={4} style={{ marginBottom: 8 }} />
+      <Skeleton width="40%" height={12} borderRadius={4} />
+    </View>
+  </View>
+);
+
+const SearchLoadingIndicator = () => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  return (
+    <Animated.View 
+      style={[
+        styles.searchLoadingBar, 
+        { 
+          opacity: animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.3, 1],
+          })
+        }
+      ]} 
+    />
+  );
+};
 
 export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   isVisible,
@@ -123,7 +170,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               onChangeText={setSearchQuery}
               returnKeyType="search"
             />
-            {isLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
+            {isLoading && <SearchLoadingIndicator />}
           </View>
           <TouchableOpacity onPress={onClose} style={styles.cancelButtonWrapper}>
             <Text style={styles.cancelButton}>Cancel</Text>
@@ -134,8 +181,10 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       <View style={styles.searchContent}>
         {searchQuery.trim().length > 3 ? (
           isLoading && results.length === 0 ? (
-            <View style={styles.emptyState}>
-              <ActivityIndicator size="large" color="#2c5af3ff" />
+            <View style={styles.resultsContainer}>
+              {[...Array(10)].map((_, i) => (
+                <SongSkeleton key={i} />
+              ))}
             </View>
           ) : (
             <ScrollView 
@@ -287,5 +336,24 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 14,
+  },
+  skeletonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    width: "100%",
+  },
+  skeletonInfo: {
+    flex: 1,
+    marginLeft: 15,
+    justifyContent: "center",
+  },
+  searchLoadingBar: {
+    width: 20,
+    height: 4,
+    backgroundColor: "#2c5af3ff",
+    borderRadius: 2,
+    marginLeft: 8,
   },
 });
