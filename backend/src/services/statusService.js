@@ -6,6 +6,6 @@ const getStatus = () => {
   };
 };
 
-module.exports = {
+export {
   getStatus
 };

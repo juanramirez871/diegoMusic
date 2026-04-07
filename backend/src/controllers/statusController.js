@@ -1,4 +1,4 @@
-const statusService = require('../services/statusService');
+import * as statusService from '../services/statusService.js';
 
 const getStatus = (req, res) => {
   try {
@@ -9,6 +9,6 @@ const getStatus = (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getStatus
 };

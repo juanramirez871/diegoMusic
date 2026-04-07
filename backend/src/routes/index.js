@@ -1,7 +1,10 @@
-const express = require('express');
+import express from 'express';
+import statusRoutes from './statusRoutes.js';
+import youtubeRoutes from './youtubeRoutes.js';
+
 const router = express.Router();
-const statusRoutes = require('./statusRoutes');
 
 router.use('/status', statusRoutes);
+router.use('/youtube', youtubeRoutes);
 
-module.exports = router;
+export default router;
