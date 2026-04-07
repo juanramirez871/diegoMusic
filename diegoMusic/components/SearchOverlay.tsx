@@ -42,11 +42,13 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastSearchedQuery, setLastSearchedQuery] = useState("");
 
   const fetchResults = async (query: string) => {
     const trimmedQuery = query.trim();
-    if (trimmedQuery.length < 3) {
+    if (trimmedQuery.length <= 3) {
       setResults([]);
+      setLastSearchedQuery("");
       setIsLoading(false);
       return;
     }
@@ -55,10 +57,12 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     try {
       const data = await youtubeService.searchVideos(trimmedQuery);
       setResults(Array.isArray(data) ? data : []);
+      setLastSearchedQuery(trimmedQuery);
     }
     catch (error) {
       console.error("Error fetching search results:", error);
       setResults([]);
+      setLastSearchedQuery(trimmedQuery);
     }
     finally {
       setIsLoading(false);
@@ -66,12 +70,15 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   };
 
   useEffect(() => {
-    if (searchQuery.trim().length < 3) {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length <= 3) {
       setResults([]);
+      setLastSearchedQuery("");
       setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
     const timer = setTimeout(() => {
       fetchResults(searchQuery);
     }, 500);
@@ -142,7 +149,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
                   onPress={handleSelectSong}
                 />
               ))}
-              {!isLoading && results.length === 0 && (
+              {!isLoading && results.length === 0 && searchQuery.trim() === lastSearchedQuery && (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyStateTitle}>No results found</Text>
                   <Text style={styles.emptyStateSub}>Try searching for something else.</Text>
