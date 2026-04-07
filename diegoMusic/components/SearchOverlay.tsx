@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -33,6 +33,14 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 }) => {
 
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    
+    if (searchQuery.length > 3) {
+      console.log("query", searchQuery);
+    }
+  }, [searchQuery]);
+
   if (!isVisible) return null;
 
   return (
