@@ -4,6 +4,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import SongOptionsModal from './SongOptionsModal';
+import { usePlayer } from '@/context/PlayerContext';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,9 @@ interface MaximazedPlayerProps {
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+  const { currentSong } = usePlayer();
+
+  if (!currentSong) return null;
 
   return (
     <Modal
@@ -45,7 +49,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           <View style={styles.content}>
             <View style={styles.imageContainer}>
               <Image
-                source={{ uri: "https://thicc-uwu.mywaifulist.moe/waifus/rukia-kuchiki-bleach/hzirfGgp2zlBCB4OCnGo37EwGyMoVdM9J8BDFGcU.webp" }}
+                source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
                 style={styles.cover}
               />
             </View>
@@ -53,8 +57,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
                 <View style={styles.textWrapper}>
-                  <Text style={styles.title}>El muchacho de los ojos tristes</Text>
-                  <Text style={styles.artist}>Rukia Kuchiki</Text>
+                  <Text style={styles.title} numberOfLines={1}>{currentSong.title}</Text>
+                  <Text style={styles.artist} numberOfLines={1}>{currentSong.channel.name}</Text>
                 </View>
                 <TouchableOpacity>
                   <Ionicons name="heart-outline" size={28} color="#fff" />
@@ -65,12 +69,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <View style={styles.progressSection}>
               <View style={styles.progressContainer}>
                 <View style={styles.bgBar} />
-                <View style={[styles.progressBar, { width: '35%' }]} />
-                <View style={[styles.progressDot, { left: '35%' }]} />
+                <View style={[styles.progressBar, { width: '0%' }]} />
+                <View style={[styles.progressDot, { left: '0%' }]} />
               </View>
               <View style={styles.timeRow}>
-                <Text style={styles.timeText}>01:34</Text>
-                <Text style={styles.timeText}>04:30</Text>
+                <Text style={styles.timeText}>00:00</Text>
+                <Text style={styles.timeText}>{currentSong.duration_formatted || "00:00"}</Text>
               </View>
             </View>
 
@@ -108,7 +112,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       <SongOptionsModal 
         visible={isOptionsVisible} 
         onClose={() => setIsOptionsVisible(false)}
-        songTitle="El muchacho de los ojos tristes"
+        songTitle={currentSong.title}
       />
     </Modal>
   );

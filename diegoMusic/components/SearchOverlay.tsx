@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Song, { SongData } from "./Song";
 import { youtubeService } from "../services/api";
 import { Skeleton } from "./Skeleton";
+import { usePlayer } from "../context/PlayerContext";
 
 export interface HistoryItem {
   id: string;
@@ -40,8 +41,8 @@ const SongSkeleton = () => (
 );
 
 const SearchLoadingIndicator = () => {
-  const animatedValue = useRef(new Animated.Value(0)).current;
 
+  const animatedValue = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
@@ -50,6 +51,7 @@ const SearchLoadingIndicator = () => {
           duration: 1000,
           useNativeDriver: true,
         }),
+
         Animated.timing(animatedValue, {
           toValue: 0,
           duration: 1000,
@@ -59,6 +61,7 @@ const SearchLoadingIndicator = () => {
     );
     animation.start();
     return () => animation.stop();
+  
   }, [animatedValue]);
 
   return (
@@ -86,6 +89,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   setRecentSearches,
 }) => {
 
+  const { playSong } = usePlayer();
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -135,7 +139,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   const handleSelectSong = (song: SongData) => {
 
+    playSong(song);
     const isAlreadyInHistory = recentSearches.some(item => item.text === song.title);
+
     if (!isAlreadyInHistory) {
       const newHistoryItem: HistoryItem = {
         id: song.id,

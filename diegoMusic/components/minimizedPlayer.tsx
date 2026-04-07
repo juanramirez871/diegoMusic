@@ -1,5 +1,6 @@
 import { View, StyleSheet, Image, Text, Platform, TouchableOpacity, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { usePlayer } from "@/context/PlayerContext";
 
 interface MinimizedPlayerProps {
   onPress: () => void;
@@ -7,6 +8,10 @@ interface MinimizedPlayerProps {
 }
 
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
+
+  const { currentSong } = usePlayer();
+  if (!currentSong) return null;
+
   return (
     <TouchableOpacity 
       activeOpacity={0.9} 
@@ -14,13 +19,14 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
       style={[styles.container, style]}
     >
       <Image
-        source={{ uri: "https://thicc-uwu.mywaifulist.moe/waifus/rukia-kuchiki-bleach/hzirfGgp2zlBCB4OCnGo37EwGyMoVdM9J8BDFGcU.webp" }}
+        source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
         style={styles.cover}
       />
       <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>El muchacho de los ojos tristes</Text>
-        <Text style={styles.artist} numberOfLines={1}>Rukia Kuchiki</Text>
+        <Text style={styles.title} numberOfLines={1}>{currentSong.title}</Text>
+        <Text style={styles.artist} numberOfLines={1}>{currentSong.channel.name}</Text>
       </View>
+
       <TouchableOpacity 
         style={styles.controls} 
         onPress={(e) => {
@@ -31,7 +37,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
       </TouchableOpacity>
       <View style={styles.progressContainer}>
         <View style={[styles.bgBar, { width: '100%' }]} />
-        <View style={[styles.progressBar, { width: '35%' }]} />
+        <View style={[styles.progressBar, { width: '0%' }]} />
       </View>
     </TouchableOpacity>
   );
