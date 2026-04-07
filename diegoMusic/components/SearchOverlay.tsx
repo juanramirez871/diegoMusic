@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,25 @@ import {
   StyleSheet,
   Animated,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import Song from "./Song";
+import Song, { SongData } from "./Song";
 
-interface SearchOverlayProps {
+export interface HistoryItem {
+  id: string;
+  text: string;
+}
+
+export interface SearchOverlayProps {
   isVisible: boolean;
   onClose: () => void;
   fadeAnim: Animated.Value;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  recentSearches: { id: number; text: string }[];
-  setRecentSearches: (searches: { id: number; text: string }[]) => void;
+  recentSearches: HistoryItem[];
+  setRecentSearches: (searches: HistoryItem[]) => void;
 }
 
 export const SearchOverlay: React.FC<SearchOverlayProps> = ({
@@ -33,13 +39,66 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 }) => {
 
   const insets = useSafeAreaInsets();
+  const [results, setResults] = useState<SongData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchResults = async (query: string) => {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 3) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/youtube/search/video?search=${encodeURIComponent(trimmedQuery)}`);
+      const data = await response.json();
+      setResults(Array.isArray(data) ? data : []);
+    }
+    catch (error) {
+      console.error("Error fetching search results:", error);
+      setResults([]);
+    }
+    finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    
-    if (searchQuery.length > 3) {
-      console.log("query", searchQuery);
+    if (searchQuery.trim().length < 3) {
+      setResults([]);
+      setIsLoading(false);
+      return;
     }
+
+    const timer = setTimeout(() => {
+      fetchResults(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  const handleSelectSong = (song: SongData) => {
+
+    const isAlreadyInHistory = recentSearches.some(item => item.text === song.title);
+    if (!isAlreadyInHistory) {
+      const newHistoryItem: HistoryItem = {
+        id: song.id,
+        text: song.title,
+      };
+
+      setRecentSearches([newHistoryItem, ...recentSearches].slice(0, 10));
+    }
+  };
+
+  const removeHistoryItem = (id: string) => {
+    setRecentSearches(recentSearches.filter(item => item.id !== id));
+  };
+
+  const clearAllHistory = () => {
+    setRecentSearches([]);
+  };
 
   if (!isVisible) return null;
 
@@ -57,6 +116,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               onChangeText={setSearchQuery}
               returnKeyType="search"
             />
+            {isLoading && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 8 }} />}
           </View>
           <TouchableOpacity onPress={onClose} style={styles.cancelButtonWrapper}>
             <Text style={styles.cancelButton}>Cancel</Text>
@@ -65,19 +125,31 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       </View>
 
       <View style={styles.searchContent}>
-        {searchQuery.length > 3 ? (
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
-            contentContainerStyle={styles.resultsContainer}
-          >
-            
-            {
-              [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((item, index) => (
-                <Song key={item} />
-              ))
-            }
-            
-          </ScrollView>
+        {searchQuery.trim().length > 3 ? (
+          isLoading && results.length === 0 ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color="#2c5af3ff" />
+            </View>
+          ) : (
+            <ScrollView 
+              showsVerticalScrollIndicator={false} 
+              contentContainerStyle={styles.resultsContainer}
+            >
+              {results.map((item) => (
+                <Song 
+                  key={item.id} 
+                  data={item} 
+                  onPress={handleSelectSong}
+                />
+              ))}
+              {!isLoading && results.length === 0 && (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateTitle}>No results found</Text>
+                  <Text style={styles.emptyStateSub}>Try searching for something else.</Text>
+                </View>
+              )}
+            </ScrollView>
+          )
         ) : recentSearches.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>Play what you love</Text>
@@ -87,7 +159,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           <View style={styles.recentSearchesContainer}>
             <View style={styles.recentSearchesHeader}>
               <Text style={styles.recentSearchesTitle}>Recent searches</Text>
-              <TouchableOpacity onPress={() => setRecentSearches([])}>
+              <TouchableOpacity onPress={clearAllHistory}>
                 <Text style={styles.clearRecentText}>Clear all</Text>
               </TouchableOpacity>
             </View>
@@ -95,11 +167,17 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 100 }}
             >
-              {recentSearches.map((item, index) => (
-                <TouchableOpacity key={item.id} style={styles.recentSearchItem}>
+              {recentSearches.map((item) => (
+                <TouchableOpacity 
+                  key={item.id} 
+                  style={styles.recentSearchItem}
+                  onPress={() => setSearchQuery(item.text)}
+                >
                   <Ionicons name="time-outline" size={20} color="#b3b3b3" style={styles.recentSearchIcon} />
                   <Text style={styles.recentSearchText}>{item.text}</Text>
-                  <Ionicons name="close" size={18} color="#b3b3b3" />
+                  <TouchableOpacity onPress={() => removeHistoryItem(item.id)}>
+                    <Ionicons name="close" size={18} color="#b3b3b3" />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -151,13 +229,13 @@ const styles = StyleSheet.create({
   resultsContainer: {
     paddingTop: 10,
     paddingBottom: 150,
+    flexGrow: 1,
   },
   emptyState: {
     flex: 1,
     paddingHorizontal: 16,
     justifyContent: "center",
     alignItems: "center",
-    paddingBottom: 100,
   },
   emptyStateTitle: {
     color: "#fff",

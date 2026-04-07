@@ -14,26 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - 44) / 2;
 import CATEGORIES from "@/constants/categories";
-import { SearchOverlay } from "@/components/SearchOverlay";
+import { SearchOverlay, HistoryItem } from "@/components/SearchOverlay";
 
 export default function TabTwoScreen() {
 
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [recentSearches, setRecentSearches] = useState<{id: number, text: string}[]>([
-    {
-      id: 1,
-      text: "Enamorado tuyo"
-    },
-    {
-      id: 2,
-      text: "El fantasma de la opera"
-    },
-    {
-      id: 3,
-      text: "Esto es amor"
-    }
-  ]);
+  const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const handleOpenSearch = () => {

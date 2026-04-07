@@ -4,43 +4,76 @@ import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 
-export default function Song() {
+export interface SongData {
+  id: string;
+  url: string;
+  title: string;
+  thumbnail: {
+    url: string;
+  };
+  channel: {
+    name: string;
+  };
+  duration_formatted: string;
+}
+
+interface SongProps {
+  data?: SongData;
+  onPress?: (song: SongData) => void;
+}
+
+export default function Song({ data, onPress }: SongProps) {
+
   const [modalVisible, setModalVisible] = useState(false);
+  const title = data?.title || "Sin título";
+  const artist = data?.channel?.name || "Sin artista";
+  const thumbnail = data?.thumbnail?.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg";
+
+  const handlePress = () => {
+    if (onPress && data) {
+      onPress(data);
+    }
+  };
 
   return (
     <>
-      <View style={styles.songContainer}>
+      <TouchableOpacity 
+        style={styles.songContainer} 
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
         <Image
-          source={{
-            uri: "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg",
-          }}
+          source={{ uri: thumbnail }}
           style={styles.image}
         />
         <View style={styles.infoContainer}>
           <Text style={styles.title} numberOfLines={1}>
-            Esto es amor
+            {title}
           </Text>
           <View style={styles.metadataContainer}>
             <View style={styles.videoBadge}>
               <Foundation name="play-video" size={16} color="#b3b3b3" />
             </View>
             <Text style={styles.artist} numberOfLines={1}>
-              Mon Laferta, Conociendo Rusia
+              {artist} {data?.duration_formatted ? `• ${data.duration_formatted}` : ""}
             </Text>
           </View>
         </View>
         <TouchableOpacity 
           style={styles.menuButton}
-          onPress={() => setModalVisible(true)}
+          onPress={(e) => {
+            e.stopPropagation();
+            setModalVisible(true);
+          }}
         >
           <Ionicons name="ellipsis-horizontal" size={20} color="#b3b3b3" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
 
       <SongOptionsModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
-        songTitle="Esto es amor"
+        songTitle={title}
       />
     </>
   );
