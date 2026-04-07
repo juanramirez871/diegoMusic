@@ -10,6 +10,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import Song from "@/components/Song";
+import { usePlayer } from "@/context/PlayerContext";
+import React, { useState, useMemo } from "react";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -22,7 +24,16 @@ export default function FavoriteScreen() {
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
-  const songs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const { favorites, playSong } = usePlayer();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredFavorites = useMemo(() => {
+    return favorites.filter(
+      (song) =>
+        song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        song.channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+  }, [favorites, searchQuery]);
 
   const scrollHandler = useAnimatedScrollHandler((event) => {
     scrollY.value = event.contentOffset.y;
@@ -33,13 +44,13 @@ export default function FavoriteScreen() {
       scrollY.value,
       [0, 60],
       [1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const translateY = interpolate(
       scrollY.value,
       [0, 60],
       [0, -20],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       opacity,
@@ -52,13 +63,13 @@ export default function FavoriteScreen() {
       scrollY.value,
       [0, 60],
       [1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     const translateY = interpolate(
       scrollY.value,
       [0, 60],
       [0, -20],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       opacity,
@@ -70,8 +81,8 @@ export default function FavoriteScreen() {
     const translateY = interpolate(
       scrollY.value,
       [0, 180],
-      [0, -145],
-      Extrapolation.CLAMP
+      [0, -125],
+      Extrapolation.CLAMP,
     );
     return {
       transform: [{ translateY }],
@@ -83,7 +94,7 @@ export default function FavoriteScreen() {
       scrollY.value,
       [120, 150],
       [1, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       opacity,
@@ -95,7 +106,7 @@ export default function FavoriteScreen() {
       scrollY.value,
       [0, 180],
       [insets.top + 180, insets.top + 65],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       height,
@@ -107,7 +118,7 @@ export default function FavoriteScreen() {
       scrollY.value,
       [150, 180],
       [0, 1],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       opacity,
@@ -116,17 +127,25 @@ export default function FavoriteScreen() {
 
   return (
     <View style={styles.container}>
+
       <StatusBar style="light" translucent />
-      
       <Animated.View style={[styles.headerContainer, headerGradientStyle]}>
         <LinearGradient
           colors={["#2c5af3ff", "#252424ff"]}
           style={StyleSheet.absoluteFill}
         />
-        <Animated.View style={[styles.headerTitleContainer, headerTitleAnimatedStyle, { paddingTop: insets.top }]}>
+        <Animated.View
+          style={[
+            styles.headerTitleContainer,
+            headerTitleAnimatedStyle,
+            { paddingTop: insets.top },
+          ]}
+        >
           <Text style={styles.headerTitle}>Liked Songs</Text>
         </Animated.View>
-        <View style={[styles.contentContainer, { paddingTop: insets.top + 10 }]}>
+        <View
+          style={[styles.contentContainer, { paddingTop: insets.top + 10 }]}
+        >
           <Animated.View style={[styles.containerSearch, searchAnimatedStyle]}>
             <View style={styles.inputWrapper}>
               <Ionicons
@@ -139,41 +158,61 @@ export default function FavoriteScreen() {
                 style={styles.input}
                 placeholder="Find in liked songs"
                 placeholderTextColor="#b3b3b3"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Ionicons name="close-circle" size={18} color="#b3b3b3" />
+                </TouchableOpacity>
+              )}
             </View>
-            <TouchableOpacity style={styles.sortButton}>
-              <Text style={styles.buttonText}>Sort</Text>
-            </TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={[styles.titleContainer, titleAnimatedStyle]}>
             <Text style={styles.title}>Liked Songs</Text>
-            <Text style={styles.count}>281 songs</Text>
+            <Text style={styles.count}>{favorites.length} songs</Text>
           </Animated.View>
         </View>
       </Animated.View>
 
       <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
         <Animated.View style={shuffleAnimatedStyle}>
-          <Ionicons name="shuffle" size={35} color="#fff" />
+          <TouchableOpacity>
+            <Ionicons name="shuffle" size={35} color="#fff" />
+          </TouchableOpacity>
         </Animated.View>
-        <Ionicons name="play-circle" size={55} color="#fff" />
+        <TouchableOpacity>
+          <Ionicons name="play-circle" size={55} color="#fff" />
+        </TouchableOpacity>
       </Animated.View>
 
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         style={styles.scrollView}
-        contentContainerStyle={{ 
+        contentContainerStyle={{
           paddingTop: insets.top + 200,
           paddingBottom: 120,
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.songContainer}>
-          {songs.map((_, index) => (
-            <Song key={index} />
-          ))}
+          {filteredFavorites.length > 0 ? (
+            filteredFavorites.map((song) => (
+              <Song key={song.id} data={song} onPress={() => playSong(song)} />
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="heart-outline" size={60} color="#333" />
+              <Text style={styles.emptyStateText}>
+                {searchQuery ? "No results found" : "No liked songs yet"}
+              </Text>
+            </View>
+          )}
         </View>
       </Animated.ScrollView>
     </View>
@@ -260,7 +299,7 @@ const styles = StyleSheet.create({
   },
   containerIcons: {
     position: "absolute",
-    top: 210,
+    top: 190,
     right: 20,
     flexDirection: "row",
     alignItems: "center",
@@ -273,5 +312,16 @@ const styles = StyleSheet.create({
   songContainer: {
     gap: 5,
     paddingBottom: 20,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 100,
+  },
+  emptyStateText: {
+    color: "#b3b3b3",
+    fontSize: 16,
+    marginTop: 15,
   },
 });
