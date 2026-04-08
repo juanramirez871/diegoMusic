@@ -13,6 +13,7 @@ export interface SongData {
   };
   channel: {
     name: string;
+    id?: string;
   };
   duration_formatted: string;
 }

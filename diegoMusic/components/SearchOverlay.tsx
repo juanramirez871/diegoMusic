@@ -107,7 +107,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     setIsLoading(true);
     try {
       const data = await youtubeService.searchVideos(trimmedQuery);
-      setResults(Array.isArray(data) ? data : []);
+      setResults(data);
       setLastSearchedQuery(trimmedQuery);
     }
     catch (error) {
@@ -137,9 +137,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleSelectSong = (song: SongData) => {
-
-    playSong(song);
+  const handleSelectSong = async (song: SongData) => {
     const isAlreadyInHistory = recentSearches.some(item => item.text === song.title);
 
     if (!isAlreadyInHistory) {
@@ -147,9 +145,24 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         id: song.id,
         text: song.title,
       };
-
       setRecentSearches([newHistoryItem, ...recentSearches].slice(0, 10));
     }
+
+    if (song.channel?.id) {
+      try {
+        const channelVideos = await youtubeService.getChannelVideos(song.channel.id);
+        const filteredQueue = channelVideos.filter(s => s.id !== song.id);
+        playSong(song, [song, ...filteredQueue]);
+      }
+      catch (error) {
+        console.error("Error fetching channel videos for queue:", error);
+        playSong(song);
+      }
+    }
+    else {
+      playSong(song);
+    }
+    
   };
 
   const removeHistoryItem = (id: string) => {
@@ -197,9 +210,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               showsVerticalScrollIndicator={false} 
               contentContainerStyle={styles.resultsContainer}
             >
-              {results.map((item) => (
+              {results.map((item, index) => (
                 <Song 
-                  key={item.id} 
+                  key={`${item.id}-${index}`} 
                   data={item} 
                   onPress={handleSelectSong}
                 />
@@ -229,9 +242,9 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: 100 }}
             >
-              {recentSearches.map((item) => (
+              {recentSearches.map((item, index) => (
                 <TouchableOpacity 
-                  key={item.id} 
+                  key={`${item.id}-${index}`} 
                   style={styles.recentSearchItem}
                   onPress={() => setSearchQuery(item.text)}
                 >

@@ -1,4 +1,5 @@
 import YouTube from "youtube-sr";
+import ytch from "yt-channel-info";
 
 const searchVideo = async (search) => {
 
@@ -11,6 +12,18 @@ const searchVideo = async (search) => {
   return videos;
 };
 
+const searchChannelVideos = async (channelId) => {
+  const videos = await ytch.getChannelVideos({
+    channelId: channelId,
+    sortBy: 'popular',
+  });
+
+  return videos.items;
+};
+
+
+
 export {
   searchVideo,
+  searchChannelVideos
 };

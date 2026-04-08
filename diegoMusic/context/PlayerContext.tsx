@@ -4,16 +4,19 @@ import storage from '@/services/storage';
 
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
-const QUEUE_KEY = '@player_queue';
+const FAVORITES_QUEUE_KEY = '@player_favorites_queue';
+const FAVORITES_DEFAULT_QUEUE_KEY = '@player_favorites_default_queue';
+const SEARCH_QUEUE_KEY = '@player_search_queue';
+const SEARCH_DEFAULT_QUEUE_KEY = '@player_search_default_queue';
+const QUEUE_SOURCE_KEY = '@player_queue_source';
 const SHUFFLE_KEY = '@player_shuffle';
-const DEFAULT_QUEUE_KEY = '@player_default_queue';
 
 interface PlayerContextType {
   isMaximized: boolean;
   setIsMaximized: (value: boolean) => void;
   currentSong: SongData | null;
   setCurrentSong: (song: SongData | null) => void;
-  playSong: (song: SongData, initialQueue?: SongData[]) => void;
+  playSong: (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => void;
   favorites: SongData[];
   toggleFavorite: (song: SongData) => void;
   isFavorite: (songId: string) => boolean;
@@ -35,11 +38,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [queue, setQueueState] = useState<SongData[]>([]);
   const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
+  const [queueSource, setQueueSource] = useState<'favorites' | 'search'>('search');
 
   const setQueue = async (newQueue: SongData[]) => {
     setQueueState(newQueue);
     try {
-      await storage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+      const queueKey = queueSource === 'favorites' ? FAVORITES_QUEUE_KEY : SEARCH_QUEUE_KEY;
+      await storage.setItem(queueKey, JSON.stringify(newQueue));
     }
     catch (error) {
       console.error('Error persisting queue:', error);
@@ -74,9 +79,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     
     setQueueState(newQueue);
     try {
+      const queueKey = queueSource === 'favorites' ? FAVORITES_QUEUE_KEY : SEARCH_QUEUE_KEY;
       await Promise.all([
         storage.setItem(SHUFFLE_KEY, JSON.stringify(newShuffleState)),
-        storage.setItem(QUEUE_KEY, JSON.stringify(newQueue))
+        storage.setItem(queueKey, JSON.stringify(newQueue))
       ]);
     }
     catch (error) {
@@ -87,11 +93,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
-        const [savedSong, savedFavorites, savedQueue, savedDefaultQueue, savedShuffle] = await Promise.all([
+        const [savedSong, savedFavorites, savedSource, savedShuffle] = await Promise.all([
           storage.getItem(CURRENT_SONG_KEY),
           storage.getItem(FAVORITES_KEY),
-          storage.getItem(QUEUE_KEY),
-          storage.getItem(DEFAULT_QUEUE_KEY),
+          storage.getItem(QUEUE_SOURCE_KEY),
           storage.getItem(SHUFFLE_KEY)
         ]);
         
@@ -105,6 +110,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setFavorites(favorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
         }
 
+        const source: 'favorites' | 'search' = (savedSource as 'favorites' | 'search') || 'search';
+        setQueueSource(source);
+
+        const queueKey = source === 'favorites' ? FAVORITES_QUEUE_KEY : SEARCH_QUEUE_KEY;
+        const defaultQueueKey = source === 'favorites' ? FAVORITES_DEFAULT_QUEUE_KEY : SEARCH_DEFAULT_QUEUE_KEY;
+
+        const [savedQueue, savedDefaultQueue] = await Promise.all([
+          storage.getItem(queueKey),
+          storage.getItem(defaultQueueKey)
+        ]);
+
         if (savedQueue) setQueueState(JSON.parse(savedQueue));
         if (savedDefaultQueue) setDefaultQueue(JSON.parse(savedDefaultQueue));
         if (savedShuffle) setIsShuffle(JSON.parse(savedShuffle));
@@ -116,13 +132,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadPersistedData();
   }, []);
 
-  const playSong = async (song: SongData, initialQueue?: SongData[]) => {
+  const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
     setCurrentSong(song);
     let newQueue = queue;
     let newDefaultQueue = defaultQueue;
+    let newSource = queueSource;
     
     if (initialQueue) {
+      newSource = source || 'search';
+      setQueueSource(newSource);
       newQueue = [...initialQueue];
       newDefaultQueue = [...initialQueue];
       
@@ -148,13 +167,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     try {
+      const queueKey = newSource === 'favorites' ? FAVORITES_QUEUE_KEY : SEARCH_QUEUE_KEY;
+      const defaultQueueKey = newSource === 'favorites' ? FAVORITES_DEFAULT_QUEUE_KEY : SEARCH_DEFAULT_QUEUE_KEY;
+
       const storagePromises = [
-        storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song))
+        storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song)),
+        storage.setItem(QUEUE_SOURCE_KEY, newSource)
       ];
       
       if (initialQueue) {
-        storagePromises.push(storage.setItem(QUEUE_KEY, JSON.stringify(newQueue)));
-        storagePromises.push(storage.setItem(DEFAULT_QUEUE_KEY, JSON.stringify(newDefaultQueue)));
+        storagePromises.push(storage.setItem(queueKey, JSON.stringify(newQueue)));
+        storagePromises.push(storage.setItem(defaultQueueKey, JSON.stringify(newDefaultQueue)));
       }
       
       await Promise.all(storagePromises);

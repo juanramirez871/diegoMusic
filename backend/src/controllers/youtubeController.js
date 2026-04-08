@@ -12,6 +12,19 @@ const searchVideo = async (req, res) => {
   }
 };
 
+const searchChannelVideos = async (req, res) => {
+  try {
+    const videos = await youtubeService.searchChannelVideos(req.query.channelId);
+    res.status(200).json(videos);
+  }
+  catch (error) {
+    console.log(error)
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
 export {
-  searchVideo
+  searchVideo,
+  searchChannelVideos
 };

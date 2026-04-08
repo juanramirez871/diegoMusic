@@ -184,7 +184,7 @@ export default function FavoriteScreen() {
             <Ionicons name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
           </TouchableOpacity>
         </Animated.View>
-        <TouchableOpacity onPress={() => filteredFavorites.length > 0 && playSong(filteredFavorites[0], filteredFavorites)}>
+        <TouchableOpacity onPress={() => filteredFavorites.length > 0 && playSong(filteredFavorites[0], filteredFavorites, 'favorites')}>
           <Ionicons name="play-circle" size={55} color="#fff" />
         </TouchableOpacity>
       </Animated.View>
@@ -206,7 +206,7 @@ export default function FavoriteScreen() {
               <Song 
                 key={song.id} 
                 data={song} 
-                onPress={() => playSong(song, filteredFavorites)} 
+                onPress={() => playSong(song, filteredFavorites, 'favorites')} 
               />
             ))
           ) : (
