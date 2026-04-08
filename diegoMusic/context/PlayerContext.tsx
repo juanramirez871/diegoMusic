@@ -41,7 +41,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const song = JSON.parse(savedSong);
           setCurrentSong(song);
         }
-        if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+
+        if (savedFavorites) {
+          const favorites = JSON.parse(savedFavorites);
+          setFavorites(favorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
+        }
       }
       catch (error) {
         console.error('Error loading persisted data:', error);

@@ -6,9 +6,12 @@ import { useState } from 'react';
 import SongOptionsModal from './SongOptionsModal';
 import { usePlayer } from '@/context/PlayerContext';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
+import { useEffect } from 'react';
 
 const { width } = Dimensions.get('window');
+const IMAGE_SIZE = width - 48;
+const SWIPE_THRESHOLD = 80;
 
 interface MaximazedPlayerProps {
   visible: boolean;
@@ -18,22 +21,92 @@ interface MaximazedPlayerProps {
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const { currentSong, toggleFavorite, isFavorite, playNext, playPrevious } = usePlayer();
+  const { currentSong, queue, toggleFavorite, isFavorite, playNext, playPrevious } = usePlayer();
   const translateX = useSharedValue(0);
+
+  const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
+  const nextSong = currentIndex !== -1 && currentIndex < queue.length - 1 ? queue[currentIndex + 1] : null;
+  const prevSong = currentIndex > 0 ? queue[currentIndex - 1] : null;
+
+  useEffect(() => {
+    translateX.value = 0;
+  }, [currentSong?.id]);
+
+  const handleNext = () => {
+    if (!nextSong) return;
+    translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
+      if (finished) runOnJS(playNext)();
+    });
+  };
+
+  const handlePrevious = () => {
+    if (!prevSong) return;
+    translateX.value = withTiming(width, { duration: 300 }, (finished) => {
+      if (finished) runOnJS(playPrevious)();
+    });
+  };
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       translateX.value = event.translationX;
     })
     .onEnd((event) => {
-      if (event.translationX < -100) runOnJS(playNext)();
-      else if (event.translationX > 100) runOnJS(playPrevious)();
-      translateX.value = withSpring(0);
+      if (event.translationX < -SWIPE_THRESHOLD && nextSong) {
+        translateX.value = withSpring(-width, { velocity: event.velocityX }, (finished) => {
+          if (finished) runOnJS(playNext)();
+        });
+      }
+      else if (event.translationX > SWIPE_THRESHOLD && prevSong) {
+        translateX.value = withSpring(width, { velocity: event.velocityX }, (finished) => {
+          if (finished) {
+            runOnJS(playPrevious)();
+          }
+        });
+      }
+      else {
+        translateX.value = withSpring(0);
+      }
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
+
+  const mainImageStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      Math.abs(translateX.value),
+      [0, width],
+      [1, 0.5],
+      Extrapolation.CLAMP
+    );
+    const scale = interpolate(
+      Math.abs(translateX.value),
+      [0, width],
+      [1, 0.8],
+      Extrapolation.CLAMP
+    );
+    return { opacity, transform: [{ scale }] };
+  });
+
+  const sideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
+    const targetValue = isNext ? -width : width;
+    const opacity = interpolate(
+      translateX.value,
+      [0, targetValue],
+      [0.5, 1],
+      Extrapolation.CLAMP
+    );
+    const scale = interpolate(
+      translateX.value,
+      [0, targetValue],
+      [0.8, 1],
+      Extrapolation.CLAMP
+    );
+    return { opacity, transform: [{ scale }] };
+  });
+
+  const nextImageStyle = sideImageStyle(true);
+  const prevImageStyle = sideImageStyle(false);
 
   if (!currentSong) return null;
   const favoriteStatus = isFavorite(currentSong.id);
@@ -64,14 +137,42 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           </View>
 
           <View style={styles.content}>
-            <GestureDetector gesture={panGesture}>
-              <Animated.View style={[styles.imageContainer, animatedStyle]}>
-                <Image
-                  source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
-                  style={styles.cover}
-                />
-              </Animated.View>
-            </GestureDetector>
+            <View style={styles.carouselContainer}>
+              <GestureDetector gesture={panGesture}>
+                <Animated.View style={[styles.imagesWrapper, animatedStyle]}>
+                  <View style={styles.imageContainerWrapper}>
+                    {prevSong && (
+                      <Animated.View style={prevImageStyle}>
+                        <Image
+                          source={{ uri: prevSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          style={styles.cover}
+                        />
+                      </Animated.View>
+                    )}
+                  </View>
+
+                  <View style={styles.imageContainerWrapper}>
+                    <Animated.View style={[styles.imageContainer, mainImageStyle]}>
+                      <Image
+                        source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                        style={styles.cover}
+                      />
+                    </Animated.View>
+                  </View>
+
+                  <View style={styles.imageContainerWrapper}>
+                    {nextSong && (
+                      <Animated.View style={nextImageStyle}>
+                        <Image
+                          source={{ uri: nextSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          style={styles.cover}
+                        />
+                      </Animated.View>
+                    )}
+                  </View>
+                </Animated.View>
+              </GestureDetector>
+            </View>
 
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
@@ -105,13 +206,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity>
                 <Ionicons name="shuffle" size={28} color="#2c5af3ff" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={playPrevious}>
+              <TouchableOpacity onPress={handlePrevious}>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.playButton}>
                 <Ionicons name="pause-circle" size={80} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={playNext}>
+              <TouchableOpacity onPress={handleNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity>
@@ -174,21 +275,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 40,
   },
+  carouselContainer: {
+    width: width,
+    height: IMAGE_SIZE,
+    marginLeft: -24,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagesWrapper: {
+    flexDirection: 'row',
+    width: width * 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   imageContainer: {
-    width: width - 48,
-    height: width - 48,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 20,
-  },
-  cover: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-  },
+     width: IMAGE_SIZE,
+     height: IMAGE_SIZE,
+     borderRadius: 12,
+     shadowColor: '#000',
+     shadowOffset: { width: 0, height: 10 },
+     shadowOpacity: 0.5,
+     shadowRadius: 15,
+     elevation: 20,
+   },
+   imageContainerWrapper: {
+     width: width,
+     justifyContent: 'center',
+     alignItems: 'center',
+   },
+   cover: {
+     width: IMAGE_SIZE,
+     height: IMAGE_SIZE,
+     borderRadius: 12,
+   },
   infoContainer: {
     marginTop: 40,
   },
