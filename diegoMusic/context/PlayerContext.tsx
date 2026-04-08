@@ -3,6 +3,62 @@ import { SongData, ArtistData } from '@/components/Song';
 import storage from '@/services/storage';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
+let MediaControl: any = null;
+let PlaybackState: any = {};
+let Command: any = {};
+
+if (Constants.executionEnvironment !== ExecutionEnvironment.StoreClient) {
+  try {
+    const MediaControlModule = require('expo-media-control');
+    MediaControl = MediaControlModule.MediaControl;
+    PlaybackState = MediaControlModule.PlaybackState;
+    Command = MediaControlModule.Command;
+  } catch (e) {
+    console.warn('MediaControl module not found');
+  }
+}
+
+const SafeMediaControl = {
+  isEnabled: async () => {
+    try {
+      if (!MediaControl) return false;
+      return await MediaControl.isEnabled();
+    } catch (e) {
+      return false;
+    }
+  },
+  enableMediaControls: async (options: any) => {
+    try {
+      if (MediaControl && await SafeMediaControl.isEnabled()) {
+        return await MediaControl.enableMediaControls(options);
+      }
+    } catch (e) {}
+  },
+  updateMetadata: async (metadata: any) => {
+    try {
+      if (MediaControl && await SafeMediaControl.isEnabled()) {
+        return await MediaControl.updateMetadata(metadata);
+      }
+    } catch (e) {}
+  },
+  updatePlaybackState: async (state: any, position?: number) => {
+    try {
+      if (MediaControl && await SafeMediaControl.isEnabled()) {
+        return await MediaControl.updatePlaybackState(state, position);
+      }
+    } catch (e) {}
+  },
+  addListener: (listener: (event: any) => void) => {
+    try {
+      if (MediaControl && typeof MediaControl.addListener === 'function') {
+        return MediaControl.addListener(listener);
+      }
+    } catch (e) {}
+    return () => {};
+  }
+};
 import { youtubeService } from '@/services/api';
 
 const CURRENT_SONG_KEY = '@current_song';
@@ -84,15 +140,77 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
           playThroughEarpieceAndroid: false,
         });
+
+        const isMediaControlEnabled = await SafeMediaControl.isEnabled();
+        if (isMediaControlEnabled) {
+          await SafeMediaControl.enableMediaControls({
+            capabilities: [
+              Command.PLAY,
+              Command.PAUSE,
+              Command.NEXT_TRACK,
+              Command.PREVIOUS_TRACK,
+              Command.STOP,
+              Command.SEEK,
+            ],
+            compactCapabilities: [
+              Command.PREVIOUS_TRACK,
+              Command.PLAY,
+              Command.PAUSE,
+              Command.NEXT_TRACK,
+            ],
+            notification: {
+              color: '#2c5af3',
+            },
+          });
+        }
       } catch (error) {
-        console.error('Error setting audio mode:', error);
+        console.warn('Error setting audio mode or media controls:', error);
       }
     };
     setupAudio();
+
+    let removeListener: (() => void) | undefined;
+    SafeMediaControl.isEnabled().then(enabled => {
+      if (enabled) {
+        removeListener = SafeMediaControl.addListener((event: any) => {
+          switch (event.command) {
+            case Command.PLAY:
+              togglePlayPause();
+              break;
+            case Command.PAUSE:
+              togglePlayPause();
+              break;
+            case Command.NEXT_TRACK:
+              playNext();
+              break;
+            case Command.PREVIOUS_TRACK:
+              playPrevious();
+              break;
+            case Command.SEEK:
+              if (event.data?.position !== undefined) {
+                seekTo(event.data.position * 1000);
+              }
+              break;
+          }
+        });
+      }
+    }).catch(() => {});
+
+    return () => {
+      if (removeListener) removeListener();
+    };
   }, []);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
+    if (currentSong) {
+      SafeMediaControl.updateMetadata({
+        title: currentSong.title,
+        artist: currentSong.channel?.name || 'Unknown Artist',
+        artwork: { uri: currentSong.thumbnail.url },
+        duration: parseDuration(currentSong.duration_formatted) / 1000,
+      }).catch(() => {});
+    }
   }, [currentSong]);
 
   const cleanupLocalFile = async () => {
@@ -223,6 +341,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       if (status.didJustFinish) playNext();
+
+      const state = status.isPlaying ? PlaybackState.PLAYING : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
+      SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
     }
   };
 
