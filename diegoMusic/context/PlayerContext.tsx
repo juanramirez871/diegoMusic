@@ -10,10 +10,14 @@ interface PlayerContextType {
   setIsMaximized: (value: boolean) => void;
   currentSong: SongData | null;
   setCurrentSong: (song: SongData | null) => void;
-  playSong: (song: SongData) => void;
+  playSong: (song: SongData, initialQueue?: SongData[]) => void;
   favorites: SongData[];
   toggleFavorite: (song: SongData) => void;
   isFavorite: (songId: string) => boolean;
+  queue: SongData[];
+  setQueue: (queue: SongData[]) => void;
+  playNext: () => void;
+  playPrevious: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -23,6 +27,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [favorites, setFavorites] = useState<SongData[]>([]);
+  const [queue, setQueue] = useState<SongData[]>([]);
 
   useEffect(() => {
     const loadPersistedData = async () => {
@@ -32,7 +37,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           storage.getItem(FAVORITES_KEY)
         ]);
         
-        if (savedSong) setCurrentSong(JSON.parse(savedSong));
+        if (savedSong) {
+          const song = JSON.parse(savedSong);
+          setCurrentSong(song);
+        }
         if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
       }
       catch (error) {
@@ -42,16 +50,37 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadPersistedData();
   }, []);
 
-  const playSong = async (song: SongData) => {
+  const playSong = async (song: SongData, initialQueue?: SongData[]) => {
     setCurrentSong(song);
+    if (initialQueue) setQueue(initialQueue);
+    else if (queue.length === 0) setQueue([]);
+
     try {
       await storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song));
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error persisting song:', error);
     }
   };
 
+  const playNext = () => {
+    if (queue.length === 0 || !currentSong) return;
+    const currentIndex = queue.findIndex(s => s.id === currentSong.id);
+    if (currentIndex !== -1 && currentIndex < queue.length - 1) {
+      playSong(queue[currentIndex + 1]);
+    }
+  };
+
+  const playPrevious = () => {
+    if (queue.length === 0 || !currentSong) return;
+    const currentIndex = queue.findIndex(s => s.id === currentSong.id);
+    if (currentIndex > 0) {
+      playSong(queue[currentIndex - 1]);
+    }
+  };
+
   const toggleFavorite = async (song: SongData) => {
+
     const newFavorites = favorites.some(f => f.id === song.id)
       ? favorites.filter(f => f.id !== song.id)
       : [...favorites, song];
@@ -59,7 +88,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setFavorites(newFavorites);
     try {
       await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error persisting favorites:', error);
     }
   };
@@ -77,7 +107,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       playSong,
       favorites,
       toggleFavorite,
-      isFavorite
+      isFavorite,
+      queue,
+      setQueue,
+      playNext,
+      playPrevious
     }}>
       {children}
     </PlayerContext.Provider>

@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import SongOptionsModal from './SongOptionsModal';
 import { usePlayer } from '@/context/PlayerContext';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
@@ -16,7 +18,22 @@ interface MaximazedPlayerProps {
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const { currentSong, toggleFavorite, isFavorite } = usePlayer();
+  const { currentSong, toggleFavorite, isFavorite, playNext, playPrevious } = usePlayer();
+  const translateX = useSharedValue(0);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (event.translationX < -100) runOnJS(playNext)();
+      else if (event.translationX > 100) runOnJS(playPrevious)();
+      translateX.value = withSpring(0);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   if (!currentSong) return null;
   const favoriteStatus = isFavorite(currentSong.id);
@@ -47,12 +64,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           </View>
 
           <View style={styles.content}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
-                style={styles.cover}
-              />
-            </View>
+            <GestureDetector gesture={panGesture}>
+              <Animated.View style={[styles.imageContainer, animatedStyle]}>
+                <Image
+                  source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                  style={styles.cover}
+                />
+              </Animated.View>
+            </GestureDetector>
 
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
@@ -86,13 +105,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity>
                 <Ionicons name="shuffle" size={28} color="#2c5af3ff" />
               </TouchableOpacity>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={playPrevious}>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.playButton}>
                 <Ionicons name="pause-circle" size={80} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={playNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity>
