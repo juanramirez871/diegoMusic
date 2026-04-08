@@ -63,6 +63,23 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
     }
   }, [isVisible, genreTitle]);
 
+  const handleSelectSong = async (song: SongData) => {
+    if (song.channel?.id) {
+      try {
+        const channelVideos = await youtubeService.getChannelVideos(song.channel.id);
+        const filteredQueue = channelVideos.filter(s => s.id !== song.id);
+        playSong(song, [song, ...filteredQueue]);
+      }
+      catch (error) {
+        console.error("Error fetching channel videos for queue:", error);
+        playSong(song);
+      }
+    }
+    else {
+      playSong(song);
+    }
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -89,7 +106,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
             <Song
               key={`${item.id}-${index}`}
               data={item}
-              onPress={(song) => playSong(song)}
+              onPress={handleSelectSong}
             />
           ))
         ) : (
