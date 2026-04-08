@@ -51,13 +51,19 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   }, [currentSong?.id]);
 
   const formatTime = (millis: number) => {
-    const totalSeconds = millis / 1000;
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = Math.floor(totalSeconds % 60);
+    if (!millis || isNaN(millis)) return "00:00";
+    const totalSeconds = Math.floor(millis / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
+  const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
 
   const handleNext = () => {
     if (!nextSong) return;

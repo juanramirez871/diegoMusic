@@ -64,7 +64,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const currentSongRef = useRef<SongData | null>(null);
   const preloadedSoundsRef = useRef<Map<string, Audio.Sound>>(new Map());
+
+  useEffect(() => {
+    currentSongRef.current = currentSong;
+  }, [currentSong]);
 
   useEffect(() => {
     if (currentSong && queue.length > 0) {
@@ -114,15 +119,32 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const parseDuration = (durationStr: string): number => {
+    if (!durationStr || durationStr === "00:00") return 0;
+    const parts = durationStr.split(':').map(Number);
+    if (parts.length === 1) return parts[0] * 1000;
+    else if (parts.length === 2) return (parts[0] * 60 + parts[1]) * 1000;
+    else if (parts.length === 3) return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
+
+    return 0;
+  };
+
   const onPlaybackStatusUpdate = (status: any) => {
+
     if (status.isLoaded) {
       setIsPlaying(status.isPlaying);
       setProgress(status.positionMillis);
-      setDuration(status.durationMillis || 0);
-
-      if (status.didJustFinish) {
-        playNext();
+      
+      const song = currentSongRef.current;
+      if (song?.duration_formatted && song.duration_formatted !== "00:00") {
+        const parsed = parseDuration(song.duration_formatted);
+        if (parsed > 0) setDuration(parsed);
       }
+      else if (status.durationMillis && status.durationMillis > 0) {
+        setDuration(status.durationMillis);
+      }
+
+      if (status.didJustFinish) playNext();
     }
   };
 
@@ -212,6 +234,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (savedSong) {
           const song = JSON.parse(savedSong);
           setCurrentSong(song);
+          setDuration(parseDuration(song.duration_formatted));
         }
 
         if (savedFavorites) {
@@ -252,15 +275,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentSong(song);
     setIsPlaying(false);
     setProgress(0);
-    setDuration(0);
+    setDuration(parseDuration(song.duration_formatted));
     
     if (!preloadedSound) setIsLoading(true);
-
     if (soundRef.current) {
       try {
+        await soundRef.current.setOnPlaybackStatusUpdate(null);
         await soundRef.current.unloadAsync();
         soundRef.current = null;
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Error unloading previous sound:', error);
       }
     }

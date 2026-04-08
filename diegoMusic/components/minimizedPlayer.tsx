@@ -12,7 +12,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   const { currentSong, isPlaying, togglePlayPause, progress, duration, isLoading } = usePlayer();
   if (!currentSong) return null;
-  const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
+  const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
 
   return (
     <TouchableOpacity 
@@ -92,22 +92,26 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
         borderBottomLeftRadius: 8,
         borderBottomRightRadius: 8,
         overflow: 'hidden',
     },
     bgBar: {
-        height: '100%',
-        backgroundColor: '#8a8a8aff',
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
     progressBar: {
         position: 'absolute',
         left: 0,
         top: 0,
-        height: '100%',
-        zIndex: 1000,
+        bottom: 0,
         backgroundColor: '#fff',
+        zIndex: 1,
     }
     
 });
