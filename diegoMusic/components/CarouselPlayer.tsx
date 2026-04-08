@@ -8,21 +8,30 @@ import { Skeleton } from "./Skeleton";
 interface CarouselPlayerProps {
   channelId?: string;
   query?: string;
+  data?: SongData[];
 }
 
-export default function CarouselPlayer({ channelId }: CarouselPlayerProps) {
+export default function CarouselPlayer({ channelId, query, data }: CarouselPlayerProps) {
 
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
   const { playSong } = usePlayer();
 
   useEffect(() => {
+    if (data) {
+      setSongs(data);
+      setLoading(false);
+      return;
+    }
+
     const fetchSongs = async () => {
       setLoading(true);
       try {
-        let data: SongData[] = [];
-        if (channelId) data = await youtubeService.getChannelVideos(channelId);
-        setSongs(data);
+        let fetchedData: SongData[] = [];
+        if (channelId) fetchedData = await youtubeService.getChannelVideos(channelId);
+        else if (query) fetchedData = await youtubeService.searchVideos(query, 10);
+
+        setSongs(fetchedData);
       }
       catch (error) {
         console.error("Error fetching carousel songs:", error);
@@ -33,7 +42,7 @@ export default function CarouselPlayer({ channelId }: CarouselPlayerProps) {
     };
 
     fetchSongs();
-  }, [channelId]);
+  }, [channelId, query, data]);
 
   if (loading) {
     return (

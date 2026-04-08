@@ -24,6 +24,7 @@ export interface SongData {
     icon?: string;
   };
   duration_formatted: string;
+  timesPlayed?: number;
 }
 
 interface SongProps {

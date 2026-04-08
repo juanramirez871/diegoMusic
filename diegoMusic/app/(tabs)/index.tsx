@@ -14,7 +14,7 @@ import { ArtistData } from "@/components/Song";
 export default function HomeScreen() {
   
   const [selectedTag, setSelectedTag] = useState("Music");
-  const { favoriteArtists } = usePlayer();
+  const { favoriteArtists, mostPlayed } = usePlayer();
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
@@ -112,7 +112,7 @@ export default function HomeScreen() {
                 
                 <View>
                   <Text style={styles.title}>Music you might like</Text>
-                  <CarouselPlayer query="trending music" />
+                  <CarouselPlayer />
                 </View>
 
                 <View style={styles.musicArtistContainer}>
@@ -127,7 +127,11 @@ export default function HomeScreen() {
 
                 <View>
                   <Text style={styles.title}>Your most played music</Text>
-                  <CarouselPlayer query="most played hits" />
+                  {mostPlayed.length > 0 ? (
+                    <CarouselPlayer data={mostPlayed} />
+                  ) : (
+                    <Text style={styles.noData}>No most played music</Text>
+                  )}
                 </View>
               </View>
             )}
@@ -240,5 +244,12 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     width: "100%",
     gap: 12,
+  },
+  noData: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
