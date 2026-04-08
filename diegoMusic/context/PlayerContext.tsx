@@ -79,6 +79,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     duration,
     setDuration,
     togglePlayPause,
+    pause,
     seekTo,
     playSongLogic,
     cancelDownload,
@@ -90,6 +91,27 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addRecentPlayed,
     addMostPlayed
   );
+
+  const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
+  const sleepTimerRef = React.useRef<any>(null);
+
+  const setSleepTimer = useCallback((minutes: number | null) => {
+    if (sleepTimerRef.current) {
+      clearTimeout(sleepTimerRef.current);
+      sleepTimerRef.current = null;
+    }
+
+    setSleepTimerState(minutes);
+
+    if (minutes !== null) {
+      const ms = minutes * 60 * 1000;
+      sleepTimerRef.current = setTimeout(() => {
+        pause();
+        setSleepTimerState(null);
+        sleepTimerRef.current = null;
+      }, ms);
+    }
+  }, [pause]);
 
   useEffect(() => {
     const loadCurrentSong = async () => {
@@ -227,7 +249,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       progress,
       duration,
       seekTo,
-      isLoading
+      isLoading,
+      sleepTimer,
+      setSleepTimer
     }}>
       {children}
     </PlayerContext.Provider>

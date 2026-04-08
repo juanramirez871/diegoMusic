@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import SongOptionsModal from './SongOptionsModal';
 import QueueModal from './QueueModal';
+import SleepTimerModal from './SleepTimerModal';
 import { usePlayer } from '@/context/PlayerContext';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
@@ -24,6 +25,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
+  const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
   const { 
@@ -40,7 +42,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     progress,
     duration,
     seekTo,
-    isLoading
+    isLoading,
+    sleepTimer
   } = usePlayer();
   const translateX = useSharedValue(0);
 
@@ -314,8 +317,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity onPress={handleNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity>
-                <MaterialCommunityIcons name="timer-outline" size={28} color="#fff" />
+              <TouchableOpacity onPress={() => setIsSleepTimerVisible(true)}>
+                <MaterialCommunityIcons 
+                  name={sleepTimer ? "timer" : "timer-outline"} 
+                  size={28} 
+                  color={sleepTimer ? "#2c5af3ff" : "#fff"} 
+                />
               </TouchableOpacity>
             </View>
 
@@ -341,6 +348,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       <QueueModal
         visible={isQueueVisible}
         onClose={() => setIsQueueVisible(false)}
+      />
+
+      <SleepTimerModal
+        visible={isSleepTimerVisible}
+        onClose={() => setIsSleepTimerVisible(false)}
       />
     </Modal>
   );

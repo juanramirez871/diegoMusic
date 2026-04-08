@@ -102,6 +102,12 @@ export const useAudioPlayer = (
     else await soundRef.current.playAsync();
   };
 
+  const pause = async () => {
+    if (soundRef.current && isPlaying) {
+      await soundRef.current.pauseAsync();
+    }
+  };
+
   const switchToLocalFile = async (position: number) => {
     if (!soundRef.current || !localFileUriRef.current) return false;
     
@@ -284,14 +290,11 @@ export const useAudioPlayer = (
     isLoading,
     progress,
     duration,
-    setProgress,
     setDuration,
-    setIsPlaying,
-    setIsLoading,
     togglePlayPause,
+    pause,
     seekTo,
     playSongLogic,
-    soundRef,
     cancelDownload,
     cleanupLocalFile
   };

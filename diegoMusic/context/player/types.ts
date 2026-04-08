@@ -38,4 +38,6 @@ export interface PlayerContextType {
   duration: number;
   seekTo: (position: number) => void;
   isLoading: boolean;
+  sleepTimer: number | null;
+  setSleepTimer: (minutes: number | null) => void;
 }
