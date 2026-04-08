@@ -21,7 +21,7 @@ const searchChannelVideos = async (channelId) => {
   return videos.items;
 };
 
-const downloadAudio = async (url) => {
+const downloadAudio = async (url, startSeconds = 0) => {
   try {
     const youtube = await Innertube.create({
       client_type: "ANDROID",
@@ -34,7 +34,8 @@ const downloadAudio = async (url) => {
 
     const stream = await youtube.download(videoId, {
       quality: "best",
-      type: "video+audio"
+      type: "video+audio",
+      start: startSeconds
     });
 
     return stream;

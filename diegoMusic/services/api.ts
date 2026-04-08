@@ -94,8 +94,8 @@ export const youtubeService = {
 
     return mappedData;
   },
-  getAudioDownloadUrl: (url: string) => {
-    return `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}`;
+  getAudioDownloadUrl: (url: string, startSeconds: number = 0) => {
+    return `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}&start=${startSeconds}`;
   },
 };
 

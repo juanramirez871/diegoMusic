@@ -24,6 +24,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekProgress, setSeekProgress] = useState(0);
   const { 
     currentSong, 
     queue, 
@@ -46,12 +48,21 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const nextSong = currentIndex !== -1 && currentIndex < queue.length - 1 ? queue[currentIndex + 1] : null;
   const prevSong = currentIndex > 0 ? queue[currentIndex - 1] : null;
 
+  const currentDisplayProgress = (isSeeking || isLoading) ? seekProgress : progress;
+
   useEffect(() => {
     translateX.value = 0;
+    setSeekProgress(0);
   }, [currentSong?.id]);
 
+  useEffect(() => {
+    if (!isLoading && !isSeeking) {
+      setSeekProgress(progress);
+    }
+  }, [isLoading, isSeeking, progress]);
+
   const formatTime = (millis: number) => {
-    if (!millis || isNaN(millis)) return "00:00";
+    if (millis === undefined || millis === null || isNaN(millis)) return "00:00";
     const totalSeconds = Math.floor(millis / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -63,7 +74,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
+  const progressPercentage = duration > 0 ? Math.min(Math.max((currentDisplayProgress / duration) * 100, 0), 100) : 0;
 
   const handleNext = () => {
     if (!nextSong) return;
@@ -155,6 +166,39 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const nextImageStyle = sideImageStyle(true);
   const prevImageStyle = sideImageStyle(false);
 
+  const progressGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      if (duration > 0) {
+        if (!isSeeking) runOnJS(setIsSeeking)(true);
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
+        runOnJS(setSeekProgress)(newProgress);
+      }
+    })
+    .onEnd((event) => {
+      if (duration > 0) {
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
+        runOnJS(seekTo)(newProgress);
+        setTimeout(() => {
+          runOnJS(setIsSeeking)(false);
+        }, 1500);
+      } else {
+        runOnJS(setIsSeeking)(false);
+      }
+    })
+
+  const progressTap = Gesture.Tap()
+    .onEnd((event) => {
+      if (duration > 0) {
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
+        runOnJS(setSeekProgress)(newProgress);
+        runOnJS(setIsSeeking)(true);
+        runOnJS(seekTo)(newProgress);
+        setTimeout(() => {
+          runOnJS(setIsSeeking)(false);
+        }, 1500);
+      }
+    });
+
   if (!currentSong) return null;
   const favoriteStatus = isFavorite(currentSong.id);
 
@@ -238,13 +282,15 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </View>
 
             <View style={styles.progressSection}>
-              <View style={styles.progressContainer}>
-                <View style={styles.bgBar} />
-                <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
-                <View style={[styles.progressDot, { left: `${progressPercentage}%` }]} />
-              </View>
+              <GestureDetector gesture={Gesture.Exclusive(progressGesture, progressTap)}>
+                <View style={styles.progressContainer}>
+                  <View style={styles.bgBar} />
+                  <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
+                  <View style={[styles.progressDot, { left: `${progressPercentage}%` }]} />
+                </View>
+              </GestureDetector>
               <View style={styles.timeRow}>
-                <Text style={styles.timeText}>{formatTime(progress)}</Text>
+                <Text style={styles.timeText}>{formatTime(currentDisplayProgress)}</Text>
                 <Text style={styles.timeText}>{formatTime(duration)}</Text>
               </View>
             </View>
@@ -401,19 +447,22 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   progressContainer: {
-    height: 4,
+    height: 20, // Aumentado para facilitar el toque
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'transparent',
     borderRadius: 2,
     position: 'relative',
     justifyContent: 'center',
   },
   bgBar: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
+    height: 4,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 2,
   },
   progressBar: {
-    height: '100%',
+    position: 'absolute',
+    height: 4,
     backgroundColor: '#fff',
     borderRadius: 2,
   },
