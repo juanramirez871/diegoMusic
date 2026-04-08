@@ -4,6 +4,12 @@ import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 
+export interface ArtistData {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 export interface SongData {
   id: string;
   url: string;
@@ -14,6 +20,7 @@ export interface SongData {
   channel: {
     name: string;
     id?: string;
+    avatar?: string;
   };
   duration_formatted: string;
 }

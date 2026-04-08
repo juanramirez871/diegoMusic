@@ -36,6 +36,7 @@ export const youtubeService = {
     channel: {
       name: video.channel?.name || "Unknown",
       id: video.channel?.id,
+      avatar: video.channel?.icon || "",
     },
     duration_formatted: video.duration_formatted || "00:00",
   }),
@@ -50,6 +51,7 @@ export const youtubeService = {
     channel: {
       name: video.author,
       id: video.authorId,
+      avatar:  video.videoThumbnails?.sort((a: any, b: any) => b.width - a.width)[0]?.url || "",
     },
     duration_formatted: video.durationText || "00:00",
   }),

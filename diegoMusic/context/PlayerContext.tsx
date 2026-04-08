@@ -1,9 +1,10 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { SongData } from '@/components/Song';
+import { SongData, ArtistData } from '@/components/Song';
 import storage from '@/services/storage';
 
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
+const FAVORITE_ARTISTS_KEY = '@favorite_artists';
 const RECENT_PLAYED_KEY = '@last_music_played';
 const FAVORITES_QUEUE_KEY = '@player_favorites_queue';
 const FAVORITES_DEFAULT_QUEUE_KEY = '@player_favorites_default_queue';
@@ -19,9 +20,12 @@ interface PlayerContextType {
   setCurrentSong: (song: SongData | null) => void;
   playSong: (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => void;
   favorites: SongData[];
+  favoriteArtists: ArtistData[];
   recentPlayed: SongData[];
   toggleFavorite: (song: SongData) => void;
+  toggleFavoriteArtist: (artist: ArtistData) => void;
   isFavorite: (songId: string) => boolean;
+  isFavoriteArtist: (artistId: string) => boolean;
   queue: SongData[];
   setQueue: (queue: SongData[]) => void;
   playNext: () => void;
@@ -37,6 +41,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [favorites, setFavorites] = useState<SongData[]>([]);
+  const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [queue, setQueueState] = useState<SongData[]>([]);
   const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
@@ -96,9 +101,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
-        const [savedSong, savedFavorites, savedRecent, savedSource, savedShuffle] = await Promise.all([
+        const [savedSong, savedFavorites, savedArtists, savedRecent, savedSource, savedShuffle] = await Promise.all([
           storage.getItem(CURRENT_SONG_KEY),
           storage.getItem(FAVORITES_KEY),
+          storage.getItem(FAVORITE_ARTISTS_KEY),
           storage.getItem(RECENT_PLAYED_KEY),
           storage.getItem(QUEUE_SOURCE_KEY),
           storage.getItem(SHUFFLE_KEY)
@@ -114,9 +120,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setFavorites(favorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
         }
 
-        if (savedRecent) {
-          setRecentPlayed(JSON.parse(savedRecent));
-        }
+        if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
+        if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
 
         const source: 'favorites' | 'search' = (savedSource as 'favorites' | 'search') || 'search';
         setQueueSource(source);
@@ -241,6 +246,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return favorites.some(f => f.id === songId);
   };
 
+  const toggleFavoriteArtist = async (artist: ArtistData) => {
+    const isAlreadyFavorite = favoriteArtists.some(f => f.id === artist.id);
+    const newFavoriteArtists = isAlreadyFavorite
+      ? favoriteArtists.filter(f => f.id !== artist.id)
+      : [...favoriteArtists, artist];
+    
+    setFavoriteArtists(newFavoriteArtists);
+    try {
+      await storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(newFavoriteArtists));
+    }
+    catch (error) {
+      console.error('Error persisting favorite artists:', error);
+    }
+  };
+
+  const isFavoriteArtist = (artistId: string) => {
+    return favoriteArtists.some(f => f.id === artistId);
+  };
+
   return (
     <PlayerContext.Provider value={{ 
       isMaximized, 
@@ -249,9 +273,12 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setCurrentSong,
       playSong,
       favorites,
+      favoriteArtists,
       recentPlayed,
       toggleFavorite,
+      toggleFavoriteArtist,
       isFavorite,
+      isFavoriteArtist,
       queue,
       setQueue,
       playNext,

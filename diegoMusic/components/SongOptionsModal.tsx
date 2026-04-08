@@ -34,7 +34,7 @@ export default function SongOptionsModal({
   song,
 }: SongOptionsModalProps) {
 
-  const { toggleFavorite, isFavorite } = usePlayer();
+  const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = usePlayer();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.4);
   const startOpenAnimation = () => {
@@ -72,6 +72,16 @@ export default function SongOptionsModal({
     }
   };
 
+  const handleToggleArtistFavorite = () => {
+    if (song?.channel?.id && song?.channel?.name) {
+      toggleFavoriteArtist({
+        id: song.channel.id,
+        name: song.channel.name,
+        avatar: song.channel.avatar || ""
+      });
+    }
+  };
+
   const handleOpenOriginalVideo = () => {
     if (song?.url) {
       Linking.openURL(song.url).catch((err) =>
@@ -81,6 +91,7 @@ export default function SongOptionsModal({
   };
 
   const favoriteStatus = song ? isFavorite(song.id) : false;
+  const artistFavoriteStatus = song?.channel?.id ? isFavoriteArtist(song.channel.id) : false;
 
   useEffect(() => {
     if (!visible) {
@@ -131,11 +142,18 @@ export default function SongOptionsModal({
             <TouchableOpacity 
               style={styles.option} 
               onPress={() => {
+                handleToggleArtistFavorite();
                 handleClose();
               }}
             >
-              <Ionicons name="person-add-outline" size={24} color="#fff" />
-              <Text style={styles.optionText}>Add artist to favorites</Text>
+              <Ionicons 
+                name={artistFavoriteStatus ? "person" : "person-add-outline"} 
+                size={24} 
+                color={artistFavoriteStatus ? "#2c5af3ff" : "#fff"} 
+              />
+              <Text style={styles.optionText}>
+                {artistFavoriteStatus ? "Remove artist from favorites" : "Add artist to favorites"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
