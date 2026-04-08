@@ -64,14 +64,55 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const preloadedSoundsRef = useRef<Map<string, Audio.Sound>>(new Map());
+
+  useEffect(() => {
+    if (currentSong && queue.length > 0) {
+      const currentIndex = queue.findIndex(s => s.id === currentSong.id);
+      if (currentIndex !== -1) {
+        preloadNextSongs(queue, currentIndex);
+      }
+    }
+  }, [currentSong?.id, queue]);
 
   useEffect(() => {
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
       }
+      preloadedSoundsRef.current.forEach(sound => sound.unloadAsync());
+      preloadedSoundsRef.current.clear();
     };
   }, []);
+
+  const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number) => {
+
+    const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
+    const nextSongIds = new Set(nextSongs.map(s => s.id));
+    for (const [id, sound] of preloadedSoundsRef.current.entries())
+    {
+      if (!nextSongIds.has(id)) {
+        await sound.unloadAsync();
+        preloadedSoundsRef.current.delete(id);
+      }
+    }
+
+    for (const song of nextSongs) {
+      if (!preloadedSoundsRef.current.has(song.id)) {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            { uri: youtubeService.getAudioDownloadUrl(song.url) },
+            { shouldPlay: false }
+          );
+
+          preloadedSoundsRef.current.set(song.id, sound);
+        }
+        catch (error) {
+          console.error(`Error preloading song ${song.id}:`, error);
+        }
+      }
+    }
+  };
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
@@ -86,10 +127,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const togglePlayPause = async () => {
-
-    if (!soundRef.current) return;
-    if (isPlaying) await soundRef.current.pauseAsync();
-    else await soundRef.current.playAsync();
+    if (!soundRef.current) {
+      if (currentSong) {
+        await playSong(currentSong);
+      }
+      return;
+    }
+    
+    if (isPlaying) {
+      await soundRef.current.pauseAsync();
+    } else {
+      await soundRef.current.playAsync();
+    }
   };
 
   const seekTo = async (position: number) => {
@@ -198,27 +247,42 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
+    const preloadedSound = preloadedSoundsRef.current.get(song.id);
+    
     setCurrentSong(song);
-    setIsLoading(true);
     setIsPlaying(false);
     setProgress(0);
     setDuration(0);
+    
+    if (!preloadedSound) setIsLoading(true);
 
     if (soundRef.current) {
       try {
         await soundRef.current.unloadAsync();
-      }
-      catch (error) {
+        soundRef.current = null;
+      } catch (error) {
         console.error('Error unloading previous sound:', error);
       }
     }
 
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: youtubeService.getAudioDownloadUrl(song.url) },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
+      let sound: Audio.Sound;
+      
+      if (preloadedSound) {
+        sound = preloadedSound;
+        preloadedSoundsRef.current.delete(song.id);
+        await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+        await sound.playAsync();
+      }
+      else {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: youtubeService.getAudioDownloadUrl(song.url) },
+          { shouldPlay: true },
+          onPlaybackStatusUpdate
+        );
+        sound = newSound;
+      }
+      
       soundRef.current = sound;
     }
     catch (error) {
@@ -227,7 +291,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     finally {
       setIsLoading(false);
     }
-
+  
     setRecentPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
       const updated = [song, ...filtered].slice(0, 8);
