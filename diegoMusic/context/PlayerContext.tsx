@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { SongData, ArtistData } from '@/components/Song';
 import storage from '@/services/storage';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import { youtubeService } from '@/services/api';
 
@@ -72,6 +72,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const localFileUriRef = useRef<string | null>(null);
   const isUsingLocalFileRef = useRef<boolean>(false);
   const lastSeekTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (error) {
+        console.error('Error setting audio mode:', error);
+      }
+    };
+    setupAudio();
+  }, []);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
