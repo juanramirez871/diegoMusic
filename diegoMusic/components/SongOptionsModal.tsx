@@ -124,8 +124,18 @@ export default function SongOptionsModal({
                 color={favoriteStatus ? "#2c5af3ff" : "#fff"} 
               />
               <Text style={styles.optionText}>
-                {favoriteStatus ? "Eliminar de favoritos" : "Agregar a favoritos"}
+                {favoriteStatus ? "Remove from favorites" : "Add to favorites"}
               </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.option} 
+              onPress={() => {
+                handleClose();
+              }}
+            >
+              <Ionicons name="person-add-outline" size={24} color="#fff" />
+              <Text style={styles.optionText}>Add artist to favorites</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -136,7 +146,7 @@ export default function SongOptionsModal({
               }}
             >
               <Ionicons name="videocam-outline" size={24} color="#fff" />
-              <Text style={styles.optionText}>Ir a video original</Text>
+              <Text style={styles.optionText}>Open original video</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
