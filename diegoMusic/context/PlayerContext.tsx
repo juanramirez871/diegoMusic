@@ -71,6 +71,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const downloadResumableRef = useRef<any>(null);
   const localFileUriRef = useRef<string | null>(null);
   const isUsingLocalFileRef = useRef<boolean>(false);
+  const lastSeekTimeRef = useRef<number>(0);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -183,11 +184,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
+
+      const now = Date.now();
+      if (now - lastSeekTimeRef.current < 800) return;
+
       setIsPlaying(status.isPlaying);
-      // Si estamos usando archivo local, el offset es 0
       const actualPosition = isUsingLocalFileRef.current 
         ? status.positionMillis 
         : status.positionMillis + seekOffsetRef.current;
+
       setProgress(actualPosition);
       const song = currentSongRef.current;
 
@@ -222,7 +227,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!soundRef.current || !localFileUriRef.current) return false;
     
     try {
-      setIsLoading(true);
+      lastSeekTimeRef.current = Date.now(); // Bloquear actualizaciones de progreso
       const status = await soundRef.current.getStatusAsync() as any;
       const isPlayingNow = status.isPlaying;
       
@@ -239,18 +244,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isUsingLocalFileRef.current = true;
       seekOffsetRef.current = 0;
       setProgress(position);
-      setIsLoading(false);
       return true;
     }
     catch (error) {
       console.error('Error switching to local file:', error);
-      setIsLoading(false);
       return false;
     }
   };
 
   const seekTo = async (position: number) => {
+
     if (!soundRef.current || !currentSong) return;
+    lastSeekTimeRef.current = Date.now();
     
     try {
       const diff = Math.abs(position - progress);
@@ -260,9 +265,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setProgress(position);
           try {
             await soundRef.current.setPositionAsync(position);
-          } catch (e: any) {
+          }
+          catch (e: any) {
             if (e.message?.includes('interrupted')) {
               setTimeout(async () => {
+                lastSeekTimeRef.current = Date.now();
                 await soundRef.current?.setPositionAsync(position).catch(() => {});
               }, 100);
             }
@@ -281,7 +288,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         if (localFileUriRef.current) {
           const success = await switchToLocalFile(position);
-          if (success) return;
+          if (success) {
+            setIsLoading(false);
+            return;
+          }
         }
 
         await soundRef.current.unloadAsync();
@@ -306,6 +316,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     catch (error) {
       console.warn('Seek error:', error);
+      setIsLoading(false);
     }
   };
 
