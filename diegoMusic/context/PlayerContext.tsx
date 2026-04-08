@@ -5,6 +5,8 @@ import storage from '@/services/storage';
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
 const QUEUE_KEY = '@player_queue';
+const SHUFFLE_KEY = '@player_shuffle';
+const DEFAULT_QUEUE_KEY = '@player_default_queue';
 
 interface PlayerContextType {
   isMaximized: boolean;
@@ -19,6 +21,8 @@ interface PlayerContextType {
   setQueue: (queue: SongData[]) => void;
   playNext: () => void;
   playPrevious: () => void;
+  isShuffle: boolean;
+  toggleShuffle: () => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -29,6 +33,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [favorites, setFavorites] = useState<SongData[]>([]);
   const [queue, setQueueState] = useState<SongData[]>([]);
+  const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
+  const [isShuffle, setIsShuffle] = useState(false);
 
   const setQueue = async (newQueue: SongData[]) => {
     setQueueState(newQueue);
@@ -40,13 +46,53 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const toggleShuffle = async () => {
+    const newShuffleState = !isShuffle;
+    setIsShuffle(newShuffleState);
+    
+    let newQueue = [...queue];
+    if (newShuffleState)
+    {
+      for (let i = newQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newQueue[i], newQueue[j]] = [newQueue[j], newQueue[i]];
+      }
+
+      if (currentSong)
+      {
+        const currentIndex = newQueue.findIndex(s => s.id === currentSong.id);
+        if (currentIndex !== -1) {
+          newQueue.splice(currentIndex, 1);
+          newQueue.unshift(currentSong);
+        }
+      }
+    }
+    else
+    {
+      newQueue = [...defaultQueue];
+    }
+    
+    setQueueState(newQueue);
+    try {
+      await Promise.all([
+        storage.setItem(SHUFFLE_KEY, JSON.stringify(newShuffleState)),
+        storage.setItem(QUEUE_KEY, JSON.stringify(newQueue))
+      ]);
+    }
+    catch (error) {
+      console.error('Error persisting shuffle state:', error);
+    }
+  };
+
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
-        const [savedSong, savedFavorites, savedQueue] = await Promise.all([
+        const [savedSong, savedFavorites, savedQueue, savedDefaultQueue, savedShuffle] = await Promise.all([
           storage.getItem(CURRENT_SONG_KEY),
           storage.getItem(FAVORITES_KEY),
-          storage.getItem(QUEUE_KEY)
+          storage.getItem(QUEUE_KEY),
+          storage.getItem(DEFAULT_QUEUE_KEY),
+          storage.getItem(SHUFFLE_KEY)
         ]);
         
         if (savedSong) {
@@ -60,6 +106,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         if (savedQueue) setQueueState(JSON.parse(savedQueue));
+        if (savedDefaultQueue) setDefaultQueue(JSON.parse(savedDefaultQueue));
+        if (savedShuffle) setIsShuffle(JSON.parse(savedShuffle));
       }
       catch (error) {
         console.error('Error loading persisted data:', error);
@@ -69,16 +117,34 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const playSong = async (song: SongData, initialQueue?: SongData[]) => {
+
     setCurrentSong(song);
-    
     let newQueue = queue;
+    let newDefaultQueue = defaultQueue;
+    
     if (initialQueue) {
-      newQueue = initialQueue;
-      setQueueState(initialQueue);
+      newQueue = [...initialQueue];
+      newDefaultQueue = [...initialQueue];
+      
+      if (isShuffle)
+      {
+        const songsToShuffle = newQueue.filter(s => s.id !== song.id);
+        for (let i = songsToShuffle.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [songsToShuffle[i], songsToShuffle[j]] = [songsToShuffle[j], songsToShuffle[i]];
+        }
+
+        newQueue = [song, ...songsToShuffle];
+      }
+      
+      setQueueState(newQueue);
+      setDefaultQueue(newDefaultQueue);
     }
     else if (queue.length === 0) {
       newQueue = [];
+      newDefaultQueue = [];
       setQueueState([]);
+      setDefaultQueue([]);
     }
 
     try {
@@ -87,7 +153,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ];
       
       if (initialQueue) {
-        storagePromises.push(storage.setItem(QUEUE_KEY, JSON.stringify(initialQueue)));
+        storagePromises.push(storage.setItem(QUEUE_KEY, JSON.stringify(newQueue)));
+        storagePromises.push(storage.setItem(DEFAULT_QUEUE_KEY, JSON.stringify(newDefaultQueue)));
       }
       
       await Promise.all(storagePromises);
@@ -145,7 +212,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       queue,
       setQueue,
       playNext,
-      playPrevious
+      playPrevious,
+      isShuffle,
+      toggleShuffle
     }}>
       {children}
     </PlayerContext.Provider>

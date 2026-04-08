@@ -4,6 +4,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import SongOptionsModal from './SongOptionsModal';
+import QueueModal from './QueueModal';
 import { usePlayer } from '@/context/PlayerContext';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
@@ -21,7 +22,8 @@ interface MaximazedPlayerProps {
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const { currentSong, queue, toggleFavorite, isFavorite, playNext, playPrevious } = usePlayer();
+  const [isQueueVisible, setIsQueueVisible] = useState(false);
+  const { currentSong, queue, toggleFavorite, isFavorite, playNext, playPrevious, isShuffle, toggleShuffle } = usePlayer();
   const translateX = useSharedValue(0);
 
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
@@ -58,9 +60,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       }
       else if (event.translationX > SWIPE_THRESHOLD && prevSong) {
         translateX.value = withSpring(width, { velocity: event.velocityX }, (finished) => {
-          if (finished) {
-            runOnJS(playPrevious)();
-          }
+          if (finished) runOnJS(playPrevious)();
         });
       }
       else {
@@ -79,12 +79,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       [1, 0.5],
       Extrapolation.CLAMP
     );
+
     const scale = interpolate(
       Math.abs(translateX.value),
       [0, width],
       [1, 0.8],
       Extrapolation.CLAMP
     );
+
     return { opacity, transform: [{ scale }] };
   });
 
@@ -203,8 +205,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </View>
 
             <View style={styles.controlsRow}>
-              <TouchableOpacity>
-                <Ionicons name="shuffle" size={28} color="#2c5af3ff" />
+              <TouchableOpacity onPress={toggleShuffle}>
+                <Ionicons name="shuffle" size={28} color={isShuffle ? "#2c5af3ff" : "#fff"} />
               </TouchableOpacity>
               <TouchableOpacity onPress={handlePrevious}>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
@@ -225,7 +227,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <Ionicons name="share-outline" size={24} color="#b3b3b3" />
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsQueueVisible(true)}>
                 <Ionicons name="list" size={24} color="#b3b3b3" />
               </TouchableOpacity>
             </View>
@@ -237,6 +239,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
         visible={isOptionsVisible} 
         onClose={() => setIsOptionsVisible(false)}
         song={currentSong}
+      />
+
+      <QueueModal
+        visible={isQueueVisible}
+        onClose={() => setIsQueueVisible(false)}
       />
     </Modal>
   );
