@@ -4,6 +4,7 @@ import storage from '@/services/storage';
 
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
+const RECENT_PLAYED_KEY = '@last_music_played';
 const FAVORITES_QUEUE_KEY = '@player_favorites_queue';
 const FAVORITES_DEFAULT_QUEUE_KEY = '@player_favorites_default_queue';
 const SEARCH_QUEUE_KEY = '@player_search_queue';
@@ -18,6 +19,7 @@ interface PlayerContextType {
   setCurrentSong: (song: SongData | null) => void;
   playSong: (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => void;
   favorites: SongData[];
+  recentPlayed: SongData[];
   toggleFavorite: (song: SongData) => void;
   isFavorite: (songId: string) => boolean;
   queue: SongData[];
@@ -35,6 +37,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [favorites, setFavorites] = useState<SongData[]>([]);
+  const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [queue, setQueueState] = useState<SongData[]>([]);
   const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
@@ -93,9 +96,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
-        const [savedSong, savedFavorites, savedSource, savedShuffle] = await Promise.all([
+        const [savedSong, savedFavorites, savedRecent, savedSource, savedShuffle] = await Promise.all([
           storage.getItem(CURRENT_SONG_KEY),
           storage.getItem(FAVORITES_KEY),
+          storage.getItem(RECENT_PLAYED_KEY),
           storage.getItem(QUEUE_SOURCE_KEY),
           storage.getItem(SHUFFLE_KEY)
         ]);
@@ -108,6 +112,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (savedFavorites) {
           const favorites = JSON.parse(savedFavorites);
           setFavorites(favorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
+        }
+
+        if (savedRecent) {
+          setRecentPlayed(JSON.parse(savedRecent));
         }
 
         const source: 'favorites' | 'search' = (savedSource as 'favorites' | 'search') || 'search';
@@ -135,6 +143,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
     setCurrentSong(song);
+
+    setRecentPlayed(prev => {
+      const filtered = prev.filter(s => s.id !== song.id);
+      const updated = [song, ...filtered].slice(0, 8);
+      storage.setItem(RECENT_PLAYED_KEY, JSON.stringify(updated)).catch(err => 
+        console.error('Error saving recent played:', err)
+      );
+      
+      return updated;
+    });
+
     let newQueue = queue;
     let newDefaultQueue = defaultQueue;
     let newSource = queueSource;
@@ -230,6 +249,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setCurrentSong,
       playSong,
       favorites,
+      recentPlayed,
       toggleFavorite,
       isFavorite,
       queue,

@@ -1,34 +1,64 @@
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { usePlayer } from "@/context/PlayerContext";
+import { SongData } from "./Song";
 
 export default function RecentPlayed() {
 
-  const items = [1, 2, 3, 4, 5, 6, 7, 8];
-  const leftColumn = items.slice(0, 4);
-  const rightColumn = items.slice(4, 8);
+  const { recentPlayed, playSong } = usePlayer();
+  const leftColumn = recentPlayed.slice(0, 4);
+  const rightColumn = recentPlayed.slice(4, 8);
 
-  const renderItem = (item: number, index: number) => (
-    <View style={styles.containerItem} key={index}>
+  const renderSkeleton = (key: string) => (
+    <View style={[styles.containerItem, styles.skeletonItem]} key={key}>
+      <View style={styles.skeletonImage} />
+      <View style={styles.textContainer}>
+        <View style={styles.skeletonText} />
+      </View>
+    </View>
+  );
+
+  const renderItem = (item: SongData) => (
+    <TouchableOpacity 
+      style={styles.containerItem} 
+      key={item.id}
+      onPress={() => playSong(item)}
+      activeOpacity={0.7}
+    >
       <Image
         source={{
-          uri: "https://i0.wp.com/codigoespagueti.com/wp-content/uploads/2024/05/imagen_2024-05-07_215034139.jpg?resize=1280%2C1600&ssl=1",
+          uri: item.thumbnail.url,
         }}
         style={styles.image}
       />
       <View style={styles.textContainer}>
         <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
-          Cigarettes After Sex
+          {item.title}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
+
+  const renderColumn = (items: SongData[], startIndex: number) => {
+
+    const columnItems = [];
+    for (let i = 0; i < items.length; i++) {
+      columnItems.push(renderItem(items[i]));
+    }
+
+    for (let i = items.length; i < 4; i++) {
+      columnItems.push(renderSkeleton(`skeleton-${startIndex + i}`));
+    }
+
+    return columnItems;
+  };
 
   return (
     <View style={styles.gridContainer}>
       <View style={styles.column}>
-        {leftColumn.map((item, index) => renderItem(item, index))}
+        {renderColumn(leftColumn, 0)}
       </View>
       <View style={styles.column}>
-        {rightColumn.map((item, index) => renderItem(item, index + 4))}
+        {renderColumn(rightColumn, 4)}
       </View>
     </View>
   );
@@ -53,6 +83,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     height: 50,
   },
+  skeletonItem: {
+    backgroundColor: "#2a2a2aff",
+    opacity: 0.5,
+  },
+  skeletonImage: {
+    width: 50,
+    height: 50,
+    backgroundColor: "#3c3b3bff",
+  },
+  skeletonText: {
+    height: 12,
+    backgroundColor: "#3c3b3bff",
+    borderRadius: 4,
+    width: '80%',
+  },
   image: {
     width: 50,
     height: 50,
@@ -68,5 +113,4 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
 });
-
 
