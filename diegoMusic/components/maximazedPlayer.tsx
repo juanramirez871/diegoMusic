@@ -9,6 +9,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { LoadingSpinner } from './LoadingSpinner';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -23,7 +24,22 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
-  const { currentSong, queue, toggleFavorite, isFavorite, playNext, playPrevious, isShuffle, toggleShuffle } = usePlayer();
+  const { 
+    currentSong, 
+    queue, 
+    toggleFavorite, 
+    isFavorite, 
+    playNext, 
+    playPrevious, 
+    isShuffle, 
+    toggleShuffle,
+    isPlaying,
+    togglePlayPause,
+    progress,
+    duration,
+    seekTo,
+    isLoading
+  } = usePlayer();
   const translateX = useSharedValue(0);
 
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
@@ -33,6 +49,15 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   useEffect(() => {
     translateX.value = 0;
   }, [currentSong?.id]);
+
+  const formatTime = (millis: number) => {
+    const totalSeconds = millis / 1000;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
 
   const handleNext = () => {
     if (!nextSong) return;
@@ -209,12 +234,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <View style={styles.progressSection}>
               <View style={styles.progressContainer}>
                 <View style={styles.bgBar} />
-                <View style={[styles.progressBar, { width: '0%' }]} />
-                <View style={[styles.progressDot, { left: '0%' }]} />
+                <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
+                <View style={[styles.progressDot, { left: `${progressPercentage}%` }]} />
               </View>
               <View style={styles.timeRow}>
-                <Text style={styles.timeText}>00:00</Text>
-                <Text style={styles.timeText}>{currentSong.duration_formatted || "00:00"}</Text>
+                <Text style={styles.timeText}>{formatTime(progress)}</Text>
+                <Text style={styles.timeText}>{formatTime(duration)}</Text>
               </View>
             </View>
 
@@ -225,8 +250,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity onPress={handlePrevious}>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.playButton}>
-                <Ionicons name="pause-circle" size={80} color="#fff" />
+              <TouchableOpacity style={styles.playButton} onPress={() => !isLoading && togglePlayPause()}>
+                {isLoading ? (
+                  <View style={{ width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
+                    <LoadingSpinner size={60} />
+                  </View>
+                ) : (
+                  <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={80} color="#fff" />
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={handleNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />

@@ -1,6 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { SongData, ArtistData } from '@/components/Song';
 import storage from '@/services/storage';
+import { Audio } from 'expo-av';
+import { youtubeService } from '@/services/api';
 
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
@@ -34,6 +36,12 @@ interface PlayerContextType {
   playPrevious: () => void;
   isShuffle: boolean;
   toggleShuffle: () => void;
+  isPlaying: boolean;
+  togglePlayPause: () => void;
+  progress: number;
+  duration: number;
+  seekTo: (position: number) => void;
+  isLoading: boolean;
 }
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
@@ -50,6 +58,44 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
   const [queueSource, setQueueSource] = useState<'favorites' | 'search'>('search');
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const soundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync();
+      }
+    };
+  }, []);
+
+  const onPlaybackStatusUpdate = (status: any) => {
+    if (status.isLoaded) {
+      setIsPlaying(status.isPlaying);
+      setProgress(status.positionMillis);
+      setDuration(status.durationMillis || 0);
+
+      if (status.didJustFinish) {
+        playNext();
+      }
+    }
+  };
+
+  const togglePlayPause = async () => {
+
+    if (!soundRef.current) return;
+    if (isPlaying) await soundRef.current.pauseAsync();
+    else await soundRef.current.playAsync();
+  };
+
+  const seekTo = async (position: number) => {
+    if (!soundRef.current) return;
+    await soundRef.current.setPositionAsync(position);
+  };
 
   const setQueue = async (newQueue: SongData[]) => {
     setQueueState(newQueue);
@@ -153,6 +199,34 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
     setCurrentSong(song);
+    setIsLoading(true);
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(0);
+
+    if (soundRef.current) {
+      try {
+        await soundRef.current.unloadAsync();
+      }
+      catch (error) {
+        console.error('Error unloading previous sound:', error);
+      }
+    }
+
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: youtubeService.getAudioDownloadUrl(song.url) },
+        { shouldPlay: true },
+        onPlaybackStatusUpdate
+      );
+      soundRef.current = sound;
+    }
+    catch (error) {
+      console.error('Error playing song:', error);
+    }
+    finally {
+      setIsLoading(false);
+    }
 
     setRecentPlayed(prev => {
       const filtered = prev.filter(s => s.id !== song.id);
@@ -314,7 +388,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       playNext,
       playPrevious,
       isShuffle,
-      toggleShuffle
+      toggleShuffle,
+      isPlaying,
+      togglePlayPause,
+      progress,
+      duration,
+      seekTo,
+      isLoading
     }}>
       {children}
     </PlayerContext.Provider>

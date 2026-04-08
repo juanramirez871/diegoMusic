@@ -110,10 +110,11 @@ export default function HomeScreen() {
                   <RecentPlayed />
                 </View>
                 
-                <View>
+                {/* Todo: Add music you might like for V.2 DiegoMusic */}
+                {/* <View>
                   <Text style={styles.title}>Music you might like</Text>
                   <CarouselPlayer />
-                </View>
+                </View> */}
 
                 <View style={styles.musicArtistContainer}>
                   {displayArtists.map((artist) => (

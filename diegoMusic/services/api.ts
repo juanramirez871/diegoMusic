@@ -94,6 +94,9 @@ export const youtubeService = {
 
     return mappedData;
   },
+  getAudioDownloadUrl: (url: string) => {
+    return `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}`;
+  },
 };
 
 export default apiFetch;

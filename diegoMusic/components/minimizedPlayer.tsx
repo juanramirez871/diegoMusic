@@ -1,6 +1,7 @@
 import { View, StyleSheet, Image, Text, Platform, TouchableOpacity, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface MinimizedPlayerProps {
   onPress: () => void;
@@ -9,8 +10,9 @@ interface MinimizedPlayerProps {
 
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
-  const { currentSong } = usePlayer();
+  const { currentSong, isPlaying, togglePlayPause, progress, duration, isLoading } = usePlayer();
   if (!currentSong) return null;
+  const progressPercentage = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
     <TouchableOpacity 
@@ -31,13 +33,20 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
         style={styles.controls} 
         onPress={(e) => {
           e.stopPropagation();
+          if (!isLoading) togglePlayPause();
         }}
       >
-        <Ionicons name="play-circle" size={40} color="#fff" />
+        {isLoading ? (
+          <View style={{ marginRight: 10 }}>
+            <LoadingSpinner size={30} />
+          </View>
+        ) : (
+          <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={40} color="#fff" />
+        )}
       </TouchableOpacity>
       <View style={styles.progressContainer}>
         <View style={[styles.bgBar, { width: '100%' }]} />
-        <View style={[styles.progressBar, { width: '0%' }]} />
+        <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
       </View>
     </TouchableOpacity>
   );
