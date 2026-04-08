@@ -54,7 +54,7 @@ export const youtubeService = {
     duration_formatted: video.durationText || "00:00",
   }),
 
-  searchVideos: async (query: string) => {
+  searchVideos: async (query: string, limit: number = 21) => {
     const cacheKey = `search:${query.trim().toLowerCase()}`;
     
     if (searchCache.has(cacheKey)) {
@@ -62,7 +62,7 @@ export const youtubeService = {
       return searchCache.get(cacheKey) as any[];
     }
 
-    const data = await apiFetch<any[]>(`/youtube/search/video?search=${encodeURIComponent(query)}`);
+    const data = await apiFetch<any[]>(`/youtube/search/video?search=${encodeURIComponent(query)}&limit=${limit}`);
     const mappedData = (Array.isArray(data) ? data : []).map(youtubeService.mapSearchToSongData);
     
     searchCache.set(cacheKey, mappedData);

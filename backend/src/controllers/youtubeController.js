@@ -3,7 +3,7 @@ import * as youtubeService from '../services/youtubeService.js';
 
 const searchVideo = async (req, res) => {
   try {
-    const videos = await youtubeService.searchVideo(req.query.search);
+    const videos = await youtubeService.searchVideo(req.query.search, req.query.limit);
     res.status(200).json(videos);
   }
   catch (error) {

@@ -106,7 +106,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
     setIsLoading(true);
     try {
-      const data = await youtubeService.searchVideos(trimmedQuery);
+      const data = await youtubeService.searchVideos(trimmedQuery, 21);
       setResults(data);
       setLastSearchedQuery(trimmedQuery);
     }

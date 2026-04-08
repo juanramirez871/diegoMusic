@@ -1,11 +1,10 @@
 import YouTube from "youtube-sr";
 import ytch from "yt-channel-info";
 
-const searchVideo = async (search) => {
+const searchVideo = async (search, limit) => {
 
-  console.log(YouTube.default.search)
   const videos = await YouTube.default.search(search, {
-    limit: 21,
+    limit: Number(limit),
     safeSearch: true,
   });
   

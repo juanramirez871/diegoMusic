@@ -50,12 +50,14 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
         setIsLoading(true);
         try {
           const query = `best ${genreTitle} songs`;
-          const data = await youtubeService.searchVideos(query);
+          const data = await youtubeService.searchVideos(query, 41);
           setResults(data);
-        } catch (error) {
+        }
+        catch (error) {
           console.error("Error fetching genre songs:", error);
           setResults([]);
-        } finally {
+        }
+        finally {
           setIsLoading(false);
         }
       };
