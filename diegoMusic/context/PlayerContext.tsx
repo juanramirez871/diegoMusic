@@ -70,6 +70,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const preloadedSoundsRef = useRef<Map<string, Audio.Sound>>(new Map());
   const downloadResumableRef = useRef<any>(null);
   const localFileUriRef = useRef<string | null>(null);
+  const isUsingLocalFileRef = useRef<boolean>(false);
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -125,27 +126,47 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
     const nextSongIds = new Set(nextSongs.map(s => s.id));
+    
     for (const [id, sound] of preloadedSoundsRef.current.entries())
     {
       if (!nextSongIds.has(id)) {
         await sound.unloadAsync();
         preloadedSoundsRef.current.delete(id);
+        
+        const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${id}.mp3`;
+        await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
       }
     }
 
     for (const song of nextSongs) {
-      if (!preloadedSoundsRef.current.has(song.id)) {
-        try {
+      const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${song.id}.mp3`;
+      
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(localUri);
+        
+        if (!fileInfo.exists) {
+          const downloadResumable = FileSystem.createDownloadResumable(
+            youtubeService.getAudioDownloadUrl(song.url),
+            localUri,
+            {}
+          );
+          await downloadResumable.downloadAsync().catch(err => console.error(`Error downloading preloaded song ${song.id}:`, err));
+        }
+
+        if (!preloadedSoundsRef.current.has(song.id)) {
+          const sourceUri = (await FileSystem.getInfoAsync(localUri)).exists 
+            ? localUri 
+            : youtubeService.getAudioDownloadUrl(song.url);
+
           const { sound } = await Audio.Sound.createAsync(
-            { uri: youtubeService.getAudioDownloadUrl(song.url) },
+            { uri: sourceUri },
             { shouldPlay: false }
           );
-
           preloadedSoundsRef.current.set(song.id, sound);
         }
-        catch (error) {
-          console.error(`Error preloading song ${song.id}:`, error);
-        }
+      }
+      catch (error) {
+        console.error(`Error preloading song ${song.id}:`, error);
       }
     }
   };
@@ -163,10 +184,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
       setIsPlaying(status.isPlaying);
-      const actualPosition = localFileUriRef.current 
+      // Si estamos usando archivo local, el offset es 0
+      const actualPosition = isUsingLocalFileRef.current 
         ? status.positionMillis 
         : status.positionMillis + seekOffsetRef.current;
-
       setProgress(actualPosition);
       const song = currentSongRef.current;
 
@@ -197,25 +218,61 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const switchToLocalFile = async (position: number) => {
+    if (!soundRef.current || !localFileUriRef.current) return false;
+    
+    try {
+      setIsLoading(true);
+      const status = await soundRef.current.getStatusAsync() as any;
+      const isPlayingNow = status.isPlaying;
+      
+      await soundRef.current.unloadAsync();
+      const { sound: localSound } = await Audio.Sound.createAsync(
+        { uri: localFileUriRef.current },
+        { 
+          shouldPlay: isPlayingNow,
+          positionMillis: position
+        },
+        onPlaybackStatusUpdate
+      );
+      soundRef.current = localSound;
+      isUsingLocalFileRef.current = true;
+      seekOffsetRef.current = 0;
+      setProgress(position);
+      setIsLoading(false);
+      return true;
+    }
+    catch (error) {
+      console.error('Error switching to local file:', error);
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   const seekTo = async (position: number) => {
     if (!soundRef.current || !currentSong) return;
     
     try {
-
       const diff = Math.abs(position - progress);
+      
       if (localFileUriRef.current) {
-        setProgress(position);
-        try {
-          await soundRef.current.setPositionAsync(position);
-        }
-        catch (e: any) {
-          if (e.message?.includes('interrupted')) {
-            setTimeout(async () => {
-              await soundRef.current?.setPositionAsync(position).catch(() => {});
-            }, 100);
+        if (isUsingLocalFileRef.current) {
+          setProgress(position);
+          try {
+            await soundRef.current.setPositionAsync(position);
+          } catch (e: any) {
+            if (e.message?.includes('interrupted')) {
+              setTimeout(async () => {
+                await soundRef.current?.setPositionAsync(position).catch(() => {});
+              }, 100);
+            }
           }
+          return;
         }
-        return;
+        else {
+          const success = await switchToLocalFile(position);
+          if (success) return;
+        }
       }
 
       if (diff > 30000 || position < seekOffsetRef.current) {
@@ -223,9 +280,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setProgress(position);
         
         if (localFileUriRef.current) {
-          setIsLoading(false);
-          await soundRef.current.setPositionAsync(position);
-          return;
+          const success = await switchToLocalFile(position);
+          if (success) return;
         }
 
         await soundRef.current.unloadAsync();
@@ -357,14 +413,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
     await cancelDownload();
-    await cleanupLocalFile();
+    if (!preloadedSound) await cleanupLocalFile();
 
     setCurrentSong(song);
     setIsPlaying(false);
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
     seekOffsetRef.current = 0;
+    isUsingLocalFileRef.current = false;
     
+    if (preloadedSound)
+    {
+      const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${song.id}.mp3`;
+      const fileInfo = await FileSystem.getInfoAsync(localUri);
+      if (fileInfo.exists) {
+        localFileUriRef.current = localUri;
+        isUsingLocalFileRef.current = true;
+      }
+    }
+
     if (!preloadedSound) setIsLoading(true);
     if (soundRef.current) {
       try {
@@ -389,7 +456,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       downloadResumableRef.current = downloadResumable;
 
       const downloadPromise = downloadResumable.downloadAsync();      
-      if (preloadedSound) {
+      if (preloadedSound)
+      {
         sound = preloadedSound;
         preloadedSoundsRef.current.delete(song.id);
         await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
@@ -399,30 +467,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
             console.log('Song downloaded to:', result.uri);
-            
-            if (soundRef.current && currentSongRef.current?.id === song.id) {
-              const status = await soundRef.current.getStatusAsync() as any;
-              const currentPos = status.positionMillis || 0;
-              const isStillPlaying = status.isPlaying;
-              
-              await soundRef.current.unloadAsync();
-              const { sound: localSound } = await Audio.Sound.createAsync(
-                { uri: result.uri },
-                { 
-                  shouldPlay: isStillPlaying,
-                  positionMillis: currentPos
-                },
-                onPlaybackStatusUpdate
-              );
-              soundRef.current = localSound;
-              seekOffsetRef.current = 0;
-              console.log('Switched preloaded sound to local file');
-            }
           }
         }).catch((err: any) => console.error('Download error:', err));
       }
       else {
-
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: downloadUrl },
           { shouldPlay: true },
@@ -434,26 +482,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
             console.log('Song downloaded to:', result.uri);
-            
-            if (soundRef.current && currentSongRef.current?.id === song.id) {
-
-              const status = await soundRef.current.getStatusAsync() as any;
-              const currentPos = status.positionMillis || 0;
-              const isStillPlaying = status.isPlaying;
-              await soundRef.current.unloadAsync();
-
-              const { sound: localSound } = await Audio.Sound.createAsync(
-                { uri: result.uri },
-                { 
-                  shouldPlay: isStillPlaying,
-                  positionMillis: currentPos
-                },
-                onPlaybackStatusUpdate
-              );
-              soundRef.current = localSound;
-              seekOffsetRef.current = 0;
-              console.log('Switched to local file sound');
-            }
           }
         }).catch((err: any) => console.error('Download error:', err));
       }

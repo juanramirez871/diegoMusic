@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   progressContainer: {
-    height: 20, // Aumentado para facilitar el toque
+    height: 20,
     width: '100%',
     backgroundColor: 'transparent',
     borderRadius: 2,
