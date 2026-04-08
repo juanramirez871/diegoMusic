@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, Image, Modal, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Text, Image, Modal, TouchableOpacity, Dimensions, Platform, Share } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,6 +46,20 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     translateX.value = withTiming(width, { duration: 300 }, (finished) => {
       if (finished) runOnJS(playPrevious)();
     });
+  };
+
+  const handleShare = async () => {
+    if (!currentSong) return;
+    try {
+      const result = await Share.share({
+        message: `¡Escucha "${currentSong.title}" de ${currentSong.channel.name} en Diego Music!\nhttps://www.youtube.com/watch?v=${currentSong.id}`,
+        url: `https://www.youtube.com/watch?v=${currentSong.id}`,
+        title: currentSong.title,
+      });
+    }
+    catch (error: any) {
+      console.error(error.message);
+    }
   };
 
   const panGesture = Gesture.Pan()
@@ -223,7 +237,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </View>
 
             <View style={styles.footerActions}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleShare}>
                 <Ionicons name="share-outline" size={24} color="#b3b3b3" />
               </TouchableOpacity>
               <View style={{ flex: 1 }} />

@@ -33,8 +33,10 @@ interface QueueModalProps {
 }
 
 export default function QueueModal({ visible, onClose }: QueueModalProps) {
+
   const { queue, setQueue, currentSong, playSong, isShuffle, toggleShuffle } = usePlayer();
   const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
@@ -42,10 +44,13 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
         duration: 400,
         easing: Easing.out(Easing.quad),
       });
+
+      backdropOpacity.value = withTiming(1, { duration: 400 });
     }
   }, [visible]);
 
   const handleClose = () => {
+    backdropOpacity.value = withTiming(0, { duration: 300 });
     translateY.value = withTiming(SCREEN_HEIGHT, {
       duration: 300,
       easing: Easing.in(Easing.quad),
@@ -58,6 +63,10 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
   }));
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<SongData>) => {
@@ -103,11 +112,13 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={handleClose}
-        />
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={handleClose}
+          />
+        </Animated.View>
         <Animated.View style={[styles.content, animatedStyle]}>
           <LinearGradient
             colors={["#0a0a0aff", "#141414"]}
