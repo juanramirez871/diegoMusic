@@ -19,6 +19,7 @@ interface GenreOverlayProps {
   isVisible: boolean;
   onClose: () => void;
   genreTitle: string;
+  channelId?: string;
   fadeAnim: Animated.Value;
 }
 
@@ -36,6 +37,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
   isVisible,
   onClose,
   genreTitle,
+  channelId,
   fadeAnim,
 }) => {
 
@@ -46,24 +48,29 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
 
   useEffect(() => {
     if (isVisible && genreTitle) {
-      const fetchGenreSongs = async () => {
+      const fetchSongs = async () => {
         setIsLoading(true);
         try {
-          const query = `best ${genreTitle} songs`;
-          const data = await youtubeService.searchVideos(query, 41);
+          let data: SongData[] = [];
+          if (channelId) {
+            data = await youtubeService.getChannelVideos(channelId);
+          } else {
+            const query = `best ${genreTitle} songs`;
+            data = await youtubeService.searchVideos(query, 41);
+          }
           setResults(data);
         }
         catch (error) {
-          console.error("Error fetching genre songs:", error);
+          console.error("Error fetching songs:", error);
           setResults([]);
         }
         finally {
           setIsLoading(false);
         }
       };
-      fetchGenreSongs();
+      fetchSongs();
     }
-  }, [isVisible, genreTitle]);
+  }, [isVisible, genreTitle, channelId]);
 
   const handleSelectSong = async (song: SongData) => {
     if (song.channel?.id) {

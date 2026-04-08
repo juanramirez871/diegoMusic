@@ -2,17 +2,43 @@ import FavoriteArtists from "@/components/FavoriteArtists";
 import CarouselPlayer from "@/components/CarouselPlayer";
 import MusicArtist from "@/components/MusicArtist";
 import RecentPlayed from "@/components/RecentPlayed";
-import React, { useState } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from "react-native";
+import React, { useState, useRef } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FavoritePodcasts from "@/components/FavoritePodcasts";
 import Podcasts from "@/components/Podcasts";
 import { usePlayer } from "@/context/PlayerContext";
+import { GenreOverlay } from "@/components/GenreOverlay";
+import { ArtistData } from "@/components/Song";
 
 export default function HomeScreen() {
   
   const [selectedTag, setSelectedTag] = useState("Music");
   const { favoriteArtists } = usePlayer();
+  const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
+  const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
+  const artistFadeAnim = useRef(new Animated.Value(0)).current;
+
+  const handleOpenArtist = (artist: ArtistData) => {
+    setSelectedArtist(artist);
+    setIsArtistOverlayVisible(true);
+    Animated.timing(artistFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseArtist = () => {
+    Animated.timing(artistFadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsArtistOverlayVisible(false);
+      setSelectedArtist(null);
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -88,7 +114,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View>
-                  <FavoriteArtists />
+                  <FavoriteArtists onArtistPress={handleOpenArtist} />
                 </View>
 
                 <View>
@@ -112,6 +138,14 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <GenreOverlay 
+        isVisible={isArtistOverlayVisible}
+        onClose={handleCloseArtist}
+        genreTitle={selectedArtist?.name || ""}
+        channelId={selectedArtist?.id}
+        fadeAnim={artistFadeAnim}
+      />
     </SafeAreaView>
   );
 }

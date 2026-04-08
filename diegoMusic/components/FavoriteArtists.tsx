@@ -1,8 +1,13 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { IconSymbol } from "./IconSymbol";
+import { usePlayer } from "@/context/PlayerContext";
+import { ArtistData } from "./Song";
 
-export default function FavoriteArtists() {
-  const artists = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+interface FavoriteArtistsProps {
+  onArtistPress?: (artist: ArtistData) => void;
+}
+
+export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps) {
+  const { favoriteArtists } = usePlayer();
 
   return (
     <View style={styles.container}>
@@ -12,26 +17,30 @@ export default function FavoriteArtists() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {artists.map((item, index) => (
-          <View key={index} style={styles.artistItem}>
+        {favoriteArtists.map((artist) => (
+          <TouchableOpacity 
+            key={artist.id} 
+            style={styles.artistItem}
+            activeOpacity={0.7}
+            onPress={() => onArtistPress?.(artist)}
+          >
             <Image
               source={{
-                uri: "https://static.wikia.nocookie.net/5toubun-no-hanayome/images/4/4d/Quintuplets_color_art_-_volume_6_release.jpg/revision/latest?cb=20190122040542",
+                uri: artist.avatar || "https://i.pinimg.com/736x/47/cb/be/47cbbee4df2bc1fccc63c3b0f9af46aa.jpg",
               }}
               style={styles.artistImage}
             />
             <Text style={styles.artistName} numberOfLines={1}>
-              Mon Laferte
+              {artist.name}
             </Text>
-          </View>
+          </TouchableOpacity>
         ))}
 
-        <TouchableOpacity style={styles.artistItem} activeOpacity={0.7}>
-          <View style={styles.addButton}>
-            <IconSymbol name="plus" size={30} color="#fff" />
+        {favoriteArtists.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No favorite artists yet</Text>
           </View>
-          <Text style={styles.artistName}>Add Artist</Text>
-        </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -62,21 +71,26 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
   },
-  addButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#333",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#444",
-  },
   artistName: {
     fontSize: 14,
     fontWeight: "600",
     color: "#fff",
     textAlign: "center",
   },
+  emptyContainer: {
+    width: 200,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#444',
+  },
+  emptyText: {
+    color: '#b3b3b3',
+    fontSize: 12,
+  }
 });
 
