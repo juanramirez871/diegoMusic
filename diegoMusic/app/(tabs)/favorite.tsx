@@ -24,7 +24,7 @@ export default function FavoriteScreen() {
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
-  const { favorites, playSong } = usePlayer();
+  const { favorites, playSong, isShuffle, toggleShuffle } = usePlayer();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredFavorites = useMemo(() => {
@@ -180,8 +180,8 @@ export default function FavoriteScreen() {
 
       <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
         <Animated.View style={shuffleAnimatedStyle}>
-          <TouchableOpacity>
-            <Ionicons name="shuffle" size={35} color="#fff" />
+          <TouchableOpacity onPress={toggleShuffle}>
+            <Ionicons name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
           </TouchableOpacity>
         </Animated.View>
         <TouchableOpacity onPress={() => filteredFavorites.length > 0 && playSong(filteredFavorites[0], filteredFavorites)}>
