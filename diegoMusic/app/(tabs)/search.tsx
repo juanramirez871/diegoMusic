@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import storage from '@/services/storage';
 import CATEGORIES from "@/constants/categories";
 import { SearchOverlay, HistoryItem } from "@/components/SearchOverlay";
+import { GenreOverlay } from "@/components/GenreOverlay";
 
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - 44) / 2;
@@ -24,6 +25,8 @@ export default function TabTwoScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [isGenreVisible, setIsGenreVisible] = useState(false);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -50,6 +53,8 @@ export default function TabTwoScreen() {
   };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const genreFadeAnim = useRef(new Animated.Value(0)).current;
+
   const handleOpenSearch = () => {
     setIsSearching(true);
     Animated.timing(fadeAnim, {
@@ -57,6 +62,27 @@ export default function TabTwoScreen() {
       duration: 300,
       useNativeDriver: true,
     }).start();
+  };
+
+  const handleOpenGenre = (genreTitle: string) => {
+    setSelectedGenre(genreTitle);
+    setIsGenreVisible(true);
+    Animated.timing(genreFadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseGenre = () => {
+    Animated.timing(genreFadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsGenreVisible(false);
+      setSelectedGenre(null);
+    });
   };
 
   const handleCloseSearch = () => {
@@ -108,6 +134,7 @@ export default function TabTwoScreen() {
                 <TouchableOpacity
                   key={category.id}
                   style={[styles.categoryCard, { backgroundColor: category.color }]}
+                  onPress={() => handleOpenGenre(category.title)}
                 >
                   <Text style={styles.categoryTitle}>{category.title}</Text>
                 </TouchableOpacity>
@@ -125,6 +152,13 @@ export default function TabTwoScreen() {
         setSearchQuery={setSearchQuery}
         recentSearches={recentSearches}
         setRecentSearches={handleUpdateHistory}
+      />
+
+      <GenreOverlay 
+        isVisible={isGenreVisible}
+        onClose={handleCloseGenre}
+        genreTitle={selectedGenre || ""}
+        fadeAnim={genreFadeAnim}
       />
     </SafeAreaView>
   );
