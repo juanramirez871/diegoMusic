@@ -4,6 +4,7 @@ import storage from '@/services/storage';
 
 const CURRENT_SONG_KEY = '@current_song';
 const FAVORITES_KEY = '@favorites_songs';
+const QUEUE_KEY = '@player_queue';
 
 interface PlayerContextType {
   isMaximized: boolean;
@@ -27,14 +28,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const [favorites, setFavorites] = useState<SongData[]>([]);
-  const [queue, setQueue] = useState<SongData[]>([]);
+  const [queue, setQueueState] = useState<SongData[]>([]);
+
+  const setQueue = async (newQueue: SongData[]) => {
+    setQueueState(newQueue);
+    try {
+      await storage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+    }
+    catch (error) {
+      console.error('Error persisting queue:', error);
+    }
+  };
 
   useEffect(() => {
     const loadPersistedData = async () => {
       try {
-        const [savedSong, savedFavorites] = await Promise.all([
+        const [savedSong, savedFavorites, savedQueue] = await Promise.all([
           storage.getItem(CURRENT_SONG_KEY),
-          storage.getItem(FAVORITES_KEY)
+          storage.getItem(FAVORITES_KEY),
+          storage.getItem(QUEUE_KEY)
         ]);
         
         if (savedSong) {
@@ -46,6 +58,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const favorites = JSON.parse(savedFavorites);
           setFavorites(favorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
         }
+
+        if (savedQueue) setQueueState(JSON.parse(savedQueue));
       }
       catch (error) {
         console.error('Error loading persisted data:', error);
@@ -56,14 +70,30 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const playSong = async (song: SongData, initialQueue?: SongData[]) => {
     setCurrentSong(song);
-    if (initialQueue) setQueue(initialQueue);
-    else if (queue.length === 0) setQueue([]);
+    
+    let newQueue = queue;
+    if (initialQueue) {
+      newQueue = initialQueue;
+      setQueueState(initialQueue);
+    }
+    else if (queue.length === 0) {
+      newQueue = [];
+      setQueueState([]);
+    }
 
     try {
-      await storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song));
+      const storagePromises = [
+        storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song))
+      ];
+      
+      if (initialQueue) {
+        storagePromises.push(storage.setItem(QUEUE_KEY, JSON.stringify(initialQueue)));
+      }
+      
+      await Promise.all(storagePromises);
     }
     catch (error) {
-      console.error('Error persisting song:', error);
+      console.error('Error persisting playback data:', error);
     }
   };
 
