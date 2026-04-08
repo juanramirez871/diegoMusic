@@ -137,6 +137,10 @@ export default function TabTwoScreen() {
                   onPress={() => handleOpenGenre(category.title)}
                 >
                   <Text style={styles.categoryTitle}>{category.title}</Text>
+                  <Image
+                    source={category.image}
+                    style={styles.categoryIcon}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -232,11 +236,22 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     padding: 12,
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
   },
   categoryTitle: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  categoryIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    right: 3,
+    bottom: 3,
+    position: "absolute",
   },
 });
