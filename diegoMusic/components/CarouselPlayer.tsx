@@ -1,7 +1,57 @@
-import { View, Text, StyleSheet, Image, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
+import { youtubeService } from "@/services/api";
+import { SongData } from "./Song";
+import { usePlayer } from "@/context/PlayerContext";
+import { Skeleton } from "./Skeleton";
 
-export default function CarouselPlayer() {
-  const songs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+interface CarouselPlayerProps {
+  channelId?: string;
+  query?: string;
+}
+
+export default function CarouselPlayer({ channelId }: CarouselPlayerProps) {
+
+  const [songs, setSongs] = useState<SongData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { playSong } = usePlayer();
+
+  useEffect(() => {
+    const fetchSongs = async () => {
+      setLoading(true);
+      try {
+        let data: SongData[] = [];
+        if (channelId) data = await youtubeService.getChannelVideos(channelId);
+        setSongs(data);
+      }
+      catch (error) {
+        console.error("Error fetching carousel songs:", error);
+      }
+      finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSongs();
+  }, [channelId]);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <View key={i} style={styles.songItem}>
+              <Skeleton width={140} height={140} borderRadius={8} />
+              <View style={styles.infoContainer}>
+                <Skeleton width={100} height={14} borderRadius={4} style={{ marginBottom: 4 }} />
+                <Skeleton width={80} height={12} borderRadius={4} />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -11,22 +61,27 @@ export default function CarouselPlayer() {
         contentContainerStyle={styles.scrollContent}
       >
         {songs.map((item, index) => (
-          <View key={index} style={styles.songItem}>
+          <TouchableOpacity 
+            key={item.id + index} 
+            style={styles.songItem}
+            onPress={() => playSong(item, songs)}
+            activeOpacity={0.8}
+          >
             <Image
               source={{
-                uri: "https://images7.alphacoders.com/121/thumb-1920-1210002.png",
+                uri: item.thumbnail.url,
               }}
               style={styles.image}
             />
             <View style={styles.infoContainer}>
               <Text style={styles.titleSong} numberOfLines={1}>
-                Enamorado tuyo
+                {item.title}
               </Text>
               <Text style={styles.subtitleSong} numberOfLines={1}>
-                Cuarteto de nos
+                {item.channel.name}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>

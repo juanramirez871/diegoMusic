@@ -21,6 +21,7 @@ export interface SongData {
     name: string;
     id?: string;
     avatar?: string;
+    icon?: string;
   };
   duration_formatted: string;
 }

@@ -7,10 +7,12 @@ import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import FavoritePodcasts from "@/components/FavoritePodcasts";
 import Podcasts from "@/components/Podcasts";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function HomeScreen() {
   
   const [selectedTag, setSelectedTag] = useState("Music");
+  const { favoriteArtists } = usePlayer();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -76,13 +78,13 @@ export default function HomeScreen() {
                 
                 <View>
                   <Text style={styles.title}>Music you might like</Text>
-                  <CarouselPlayer />
+                  <CarouselPlayer query="trending music" />
                 </View>
 
                 <View style={styles.musicArtistContainer}>
-                  <MusicArtist />
-                  <MusicArtist />
-                  <MusicArtist />
+                  {favoriteArtists.map((artist) => (
+                    <MusicArtist key={artist.id} artist={artist} />
+                  ))}
                 </View>
 
                 <View>
@@ -91,7 +93,7 @@ export default function HomeScreen() {
 
                 <View>
                   <Text style={styles.title}>Your most played music</Text>
-                  <CarouselPlayer />
+                  <CarouselPlayer query="most played hits" />
                 </View>
               </View>
             )}

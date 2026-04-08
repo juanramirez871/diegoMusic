@@ -77,7 +77,7 @@ export default function SongOptionsModal({
       toggleFavoriteArtist({
         id: song.channel.id,
         name: song.channel.name,
-        avatar: song.channel.avatar || ""
+        avatar: song.channel?.avatar ?? (song.channel?.icon ?? "")
       });
     }
   };
