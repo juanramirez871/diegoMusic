@@ -35,13 +35,12 @@ export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps)
             </Text>
           </TouchableOpacity>
         ))}
-
-        {favoriteArtists.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No favorite artists yet</Text>
-          </View>
-        )}
       </ScrollView>
+      {favoriteArtists.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No favorite artists yet (ㆆ_ㆆ)</Text>
+          </View>
+      )}
     </View>
   );
 }
@@ -78,13 +77,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyContainer: {
-    width: 200,
+    width: "100%",
     height: 100,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#333',
     borderRadius: 8,
-    borderStyle: 'dashed',
     borderWidth: 1,
     borderColor: '#444',
   },

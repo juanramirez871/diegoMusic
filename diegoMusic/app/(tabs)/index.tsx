@@ -135,7 +135,9 @@ export default function HomeScreen() {
                   {mostPlayed.length > 0 ? (
                     <CarouselPlayer data={mostPlayed} />
                   ) : (
-                    <Text style={styles.noData}>No most played music</Text>
+                    <View style={styles.emptyContainer}>
+                      <Text style={styles.emptyText}>No most played music yet ( ˘︹˘ )</Text>
+                    </View>
                   )}
                 </View>
               </View>
@@ -250,11 +252,19 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 12,
   },
-  noData: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
-    marginTop: 20,
+  emptyContainer: {
+    width: "100%",
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 15,
+    borderColor: '#444',
   },
+  emptyText: {
+    color: '#b3b3b3',
+    fontSize: 12,
+  }
 });
