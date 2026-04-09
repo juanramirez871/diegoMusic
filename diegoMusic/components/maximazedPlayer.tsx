@@ -1,16 +1,16 @@
-import { View, StyleSheet, Text, Image, Modal, TouchableOpacity, Dimensions, Platform, Share } from 'react-native';
+import { usePlayer } from '@/context/PlayerContext';
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import SongOptionsModal from './SongOptionsModal';
+import { useEffect, useState } from 'react';
+import { Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Foundation from '@expo/vector-icons/Foundation';
+import { LoadingSpinner } from './LoadingSpinner';
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
-import { usePlayer } from '@/context/PlayerContext';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, withSpring, useSharedValue, runOnJS, withTiming, interpolate, Extrapolation } from 'react-native-reanimated';
-import { useEffect } from 'react';
-import { LoadingSpinner } from './LoadingSpinner';
+import SongOptionsModal from './SongOptionsModal';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -236,7 +236,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <Animated.View style={[styles.imagesWrapper, animatedStyle]}>
                   <View style={styles.imageContainerWrapper}>
                     {prevSong && (
-                      <Animated.View style={prevImageStyle}>
+                      <Animated.View style={[prevImageStyle, styles.imageWrapper]}>
                         <Image
                           source={{ uri: prevSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
                           style={styles.cover}
@@ -251,6 +251,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                         source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
                         style={styles.cover}
                       />
+                      <Foundation name="play-video" size={30} color="#b3b3b3" style={styles.icon} />
                     </Animated.View>
                   </View>
 
@@ -414,7 +415,8 @@ const styles = StyleSheet.create({
      shadowOpacity: 0.5,
      shadowRadius: 15,
      elevation: 20,
-   },
+     position: 'relative',
+    },
    imageContainerWrapper: {
      width: width,
      justifyContent: 'center',
@@ -509,4 +511,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
   },
-});
+  icon: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    zIndex: 10,
+    elevation: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  imageWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
+ });
