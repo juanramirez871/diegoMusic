@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { ArtistData, SongData } from '@/components/Song';
+import { youtubeService } from '@/services/api';
 import storage from '@/services/storage';
-import { SongData, ArtistData } from '@/components/Song';
-import { 
-  FAVORITES_KEY, 
-  FAVORITE_ARTISTS_KEY, 
-  RECENT_PLAYED_KEY, 
-  MOST_PLAYED_KEY 
+import * as FileSystem from 'expo-file-system/legacy';
+import { useEffect, useState } from 'react';
+import {
+    FAVORITES_KEY,
+    FAVORITE_ARTISTS_KEY,
+    MOST_PLAYED_KEY,
+    RECENT_PLAYED_KEY
 } from './types';
 
 export const usePlayerStorage = () => {
@@ -42,10 +44,31 @@ export const usePlayerStorage = () => {
 
   const toggleFavorite = async (song: SongData) => {
     const isFav = favorites.some(f => f.id === song.id);
-    const newFavorites = isFav
-      ? favorites.filter(f => f.id !== song.id)
-      : [...favorites, song];
-    
+    const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
+    let newFavorites;
+    if (isFav) {
+      newFavorites = favorites.filter(f => f.id !== song.id);
+      try {
+        await FileSystem.deleteAsync(persistentUri, { idempotent: true });
+      } catch (e) {}
+    }
+    else {
+      newFavorites = [...favorites, song];
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(persistentUri);
+        if (!fileInfo.exists) {
+          const downloadResumable = FileSystem.createDownloadResumable(
+            youtubeService.getAudioDownloadUrl(song.url),
+            persistentUri,
+            {}
+          );
+          await downloadResumable.downloadAsync();
+        }
+      }
+      catch (e) {
+        console.warn('Error guardando canción favorita en almacenamiento:', e);
+      }
+    }
     setFavorites(newFavorites);
     try {
       await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));

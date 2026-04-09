@@ -15,6 +15,8 @@ import storage from '@/services/storage';
 import CATEGORIES from "@/constants/categories";
 import { SearchOverlay, HistoryItem } from "@/components/SearchOverlay";
 import { GenreOverlay } from "@/components/GenreOverlay";
+import { OfflineView } from "@/components/OfflineView";
+import { useNetwork } from "@/context/NetworkContext";
 
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - 44) / 2;
@@ -27,6 +29,7 @@ export default function TabTwoScreen() {
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [isGenreVisible, setIsGenreVisible] = useState(false);
+  const { isOnline } = useNetwork();
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -98,6 +101,9 @@ export default function TabTwoScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+
+      {!isOnline && <OfflineView />}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
