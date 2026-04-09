@@ -1,5 +1,4 @@
 import * as youtubeService from '../services/youtubeService.js';
-import { Readable } from 'stream';
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
 
@@ -16,6 +15,7 @@ const searchVideo = async (req, res) => {
   }
 };
 
+
 const searchChannelVideos = async (req, res) => {
   try {
     const videos = await youtubeService.searchChannelVideos(req.query.channelId);
@@ -27,40 +27,28 @@ const searchChannelVideos = async (req, res) => {
   }
 };
 
+
 const downloadAudio = async (req, res) => {
   try {
-    const { url, bitrate = '192', start = '0' } = req.query;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    const { url, start = 0 } = req.query;
+    const nodeStream = await youtubeService.downloadAudio(url, Number(start));
 
-    const startSeconds = parseInt(start, 10) || 0;
-    const stream = await youtubeService.downloadAudio(url, startSeconds);
-    const nodeStream = Readable.from(stream);
-
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Transfer-Encoding', 'chunked');
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Transfer-Encoding", "chunked");
 
     ffmpeg(nodeStream)
-      .seekInput(startSeconds)
-      .outputOptions(['-vn'])
-      .audioBitrate(bitrate)
-      .toFormat('mp3')
-      .on('error', (err) => {
-        if (err.message.includes('Output stream closed') || err.message.includes('EPIPE')) {
-          return;
-        }
-        console.error('FFmpeg error:', err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'FFmpeg conversion failed' });
-        }
+      .audioBitrate(128)
+      .format("mp3")
+      .on("error", (err) => {
+        console.error("FFmpeg error:", err.message);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
       })
       .pipe(res, { end: true });
 
   }
   catch (error) {
-    console.error('Error in downloadAudio controller:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
+    console.error("Error in downloadAudio controller:", error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 };
 
