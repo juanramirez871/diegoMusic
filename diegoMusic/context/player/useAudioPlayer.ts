@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
-import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system/legacy';
 import { SongData } from '@/components/Song';
 import { youtubeService } from '@/services/api';
-import { SafeMediaControl, PlaybackState } from './mediaControls';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
+import { useEffect, useRef, useState } from 'react';
+import { PlaybackState, SafeMediaControl } from './mediaControls';
 import { parseDuration } from './utils';
 
 export const useAudioPlayer = (
@@ -245,18 +245,35 @@ export const useAudioPlayer = (
       const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, localUri, {});
       downloadResumableRef.current = downloadResumable;
 
-      const downloadPromise = downloadResumable.downloadAsync();      
-      if (preloadedSound) {
+      const downloadPromise = downloadResumable.downloadAsync();
+      if (preloadedSound)
+      {
         sound = preloadedSound;
         preloadedSoundsRef.current.delete(song.id);
+        console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
         await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-        await sound.playAsync();
-        
+
+        let status = await sound.getStatusAsync();
+        if (!status.isLoaded)
+        {
+          const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
+          try {
+            await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
+            status = await sound.getStatusAsync();
+            console.warn('[PRELOADED] Fallback: recargado sound para', song.id, 'status:', status);
+          }
+          catch (e) {
+            console.error('[PRELOADED] Error recargando sound para', song.id, e);
+          }
+        }
+        if (status.isLoaded) await sound.playAsync();
         downloadPromise.then(async (result: any) => {
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
+            console.log('Descarga finalizada para', song.id, 'en', result.uri);
           }
-        }).catch((err: any) => console.error('Download error:', err));
+        })
+        .catch((err: any) => console.error('Download error:', err));
       }
       else {
         const { sound: newSound } = await Audio.Sound.createAsync(
@@ -269,8 +286,10 @@ export const useAudioPlayer = (
         downloadPromise.then(async (result: any) => {
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
+            console.log('Descarga finalizada para', song.id, 'en', result.uri);
           }
-        }).catch((err: any) => console.error('Download error:', err));
+        })
+        .catch((err: any) => console.error('Download error:', err));
       }
       
       soundRef.current = sound;
