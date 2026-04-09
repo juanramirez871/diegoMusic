@@ -1,17 +1,17 @@
-import FavoriteArtists from "@/components/FavoriteArtists";
 import CarouselPlayer from "@/components/CarouselPlayer";
-import MusicArtist from "@/components/MusicArtist";
-import RecentPlayed from "@/components/RecentPlayed";
-import React, { useState, useRef, useMemo, useEffect } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, Animated } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import FavoriteArtists from "@/components/FavoriteArtists";
 import FavoritePodcasts from "@/components/FavoritePodcasts";
-import Podcasts from "@/components/Podcasts";
-import { usePlayer } from "@/context/PlayerContext";
 import { GenreOverlay } from "@/components/GenreOverlay";
+import MusicArtist from "@/components/MusicArtist";
+import { OfflineView } from "@/components/OfflineView";
+import Podcasts from "@/components/Podcasts";
+import RecentPlayed from "@/components/RecentPlayed";
 import { ArtistData } from "@/components/Song";
 import { useNetwork } from "@/context/NetworkContext";
-import { OfflineView } from "@/components/OfflineView";
+import { usePlayer } from "@/context/PlayerContext";
+import React, { useMemo, useRef, useState } from "react";
+import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function HomeScreen() {
@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
-  const { isOnline } = useNetwork();
+  const { isOnline, isNetworkChecked } = useNetwork();
 
   const displayArtists = useMemo(() => {
     if (favoriteArtists.length <= 3) return favoriteArtists;
@@ -51,9 +51,16 @@ export default function HomeScreen() {
     });
   };
 
+  if (isNetworkChecked && !isOnline) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <OfflineView />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {!isOnline && <OfflineView />}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}

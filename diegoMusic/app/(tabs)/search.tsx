@@ -1,22 +1,22 @@
-import { useState, useRef, useEffect } from "react";
-import {
-  Text,
-  StyleSheet,
-  View,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  Animated,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import storage from '@/services/storage';
-import CATEGORIES from "@/constants/categories";
-import { SearchOverlay, HistoryItem } from "@/components/SearchOverlay";
 import { GenreOverlay } from "@/components/GenreOverlay";
 import { OfflineView } from "@/components/OfflineView";
+import { HistoryItem, SearchOverlay } from "@/components/SearchOverlay";
+import CATEGORIES from "@/constants/categories";
 import { useNetwork } from "@/context/NetworkContext";
+import storage from '@/services/storage';
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const ITEM_WIDTH = (width - 44) / 2;
@@ -29,7 +29,7 @@ export default function TabTwoScreen() {
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [isGenreVisible, setIsGenreVisible] = useState(false);
-  const { isOnline } = useNetwork();
+  const { isOnline, isNetworkChecked } = useNetwork();
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -99,11 +99,16 @@ export default function TabTwoScreen() {
     });
   };
 
+  if (isNetworkChecked && !isOnline) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <OfflineView />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-
-      {!isOnline && <OfflineView />}
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}

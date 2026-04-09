@@ -1,13 +1,13 @@
+import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 import React, {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  ReactNode,
 } from "react";
-import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 
 NetInfo.configure({
   reachabilityUrl: "https://clients3.google.com/generate_204",
@@ -20,13 +20,14 @@ NetInfo.configure({
   useNativeReachability: false,
 });
 
-type NetworkContextType = { isOnline: boolean };
-const NetworkContext = createContext<NetworkContextType>({ isOnline: true });
+type NetworkContextType = { isOnline: boolean; isNetworkChecked: boolean };
+const NetworkContext = createContext<NetworkContextType>({ isOnline: true, isNetworkChecked: false });
 interface Props { children: ReactNode }
 
 export function NetworkProvider({ children }: Props) {
 
   const [isOnline, setIsOnline] = useState(true);
+  const [isNetworkChecked, setIsNetworkChecked] = useState(false);
   const mountedRef = useRef(true);
   const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopRetry = useCallback(() => {
@@ -59,6 +60,7 @@ export function NetworkProvider({ children }: Props) {
   const handleNetworkChange = useCallback((state: NetInfoState) => {
 
     if (!mountedRef.current) return;
+    setIsNetworkChecked(true);
     if (!state.isConnected) {
       stopRetry();
       setIsOnline(false);
@@ -96,7 +98,7 @@ export function NetworkProvider({ children }: Props) {
   }, [handleNetworkChange, stopRetry]);
 
   return (
-    <NetworkContext.Provider value={{ isOnline }}>
+    <NetworkContext.Provider value={{ isOnline, isNetworkChecked }}>
       {children}
     </NetworkContext.Provider>
   );
