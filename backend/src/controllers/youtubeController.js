@@ -1,17 +1,13 @@
-import * as youtubeService from '../services/youtubeService.js';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from 'ffmpeg-static';
-
-ffmpeg.setFfmpegPath(ffmpegPath);
+import * as youtubeService from "../services/youtubeService.js";
+import { createReadStream, statSync } from "fs";
 
 const searchVideo = async (req, res) => {
   try {
     const videos = await youtubeService.searchVideo(req.query.search, req.query.limit);
     res.status(200).json(videos);
-  }
-  catch (error) {
-    console.log(error)
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -20,42 +16,55 @@ const searchChannelVideos = async (req, res) => {
   try {
     const videos = await youtubeService.searchChannelVideos(req.query.channelId);
     res.status(200).json(videos);
-  }
-  catch (error) {
-    console.log(error)
-    res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-
 const downloadAudio = async (req, res) => {
   try {
+
     const { url, start = 0 } = req.query;
-    const nodeStream = await youtubeService.downloadAudio(url, Number(start));
+    const filePath = await youtubeService.downloadAudio(url, Number(start));
+    const fileSize = statSync(filePath).size;
+    const rangeHeader = req.headers.range;
 
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Transfer-Encoding", "chunked");
+    if (rangeHeader) {
+      const [startByte, endByte] = rangeHeader
+        .replace("bytes=", "")
+        .split("-")
+        .map(Number);
 
-    ffmpeg(nodeStream)
-      .audioBitrate(128)
-      .format("mp3")
-      .on("error", (err) => {
-        console.error("FFmpeg error:", err.message);
-        if (!res.headersSent) res.status(500).json({ error: err.message });
-      })
-      .pipe(res, { end: true });
+      const start = startByte || 0;
+      const end   = endByte   || fileSize - 1;
+      const chunkSize = end - start + 1;
+
+      res.writeHead(206, {
+        "Content-Type":   "audio/mp4",
+        "Accept-Ranges":  "bytes",
+        "Content-Range":  `bytes ${start}-${end}/${fileSize}`,
+        "Content-Length": chunkSize,
+      });
+
+      createReadStream(filePath, { start, end }).pipe(res);
+
+    }
+    else {
+      res.writeHead(200, {
+        "Content-Type": "audio/mp4",
+        "Accept-Ranges": "bytes",
+        "Content-Length": fileSize,
+      });
+
+      createReadStream(filePath).pipe(res);
+    }
 
   }
   catch (error) {
-    console.error("Error in downloadAudio controller:", error);
+    console.error("Error in downloadAudio:", error);
     if (!res.headersSent) res.status(500).json({ error: error.message });
   }
 };
 
-
-
-export {
-  searchVideo,
-  searchChannelVideos,
-  downloadAudio
-};
+export { searchVideo, searchChannelVideos, downloadAudio };
