@@ -6,6 +6,7 @@ import { MinimizedPlayer } from '@/components/minimizedPlayer';
 import { MaximazedPlayer } from '@/components/maximazedPlayer';
 import { PlayerProvider, usePlayer } from '@/context/PlayerContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { NetworkProvider } from '@/context/NetworkContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -30,8 +31,10 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <PlayerProvider>
-      <RootLayoutContent />
-    </PlayerProvider>
+    <NetworkProvider>
+      <PlayerProvider>
+        <RootLayoutContent />
+      </PlayerProvider>
+    </NetworkProvider>
   );
 }

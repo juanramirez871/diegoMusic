@@ -2,7 +2,7 @@ import FavoriteArtists from "@/components/FavoriteArtists";
 import CarouselPlayer from "@/components/CarouselPlayer";
 import MusicArtist from "@/components/MusicArtist";
 import RecentPlayed from "@/components/RecentPlayed";
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FavoritePodcasts from "@/components/FavoritePodcasts";
@@ -10,6 +10,9 @@ import Podcasts from "@/components/Podcasts";
 import { usePlayer } from "@/context/PlayerContext";
 import { GenreOverlay } from "@/components/GenreOverlay";
 import { ArtistData } from "@/components/Song";
+import { useNetwork } from "@/context/NetworkContext";
+import { OfflineView } from "@/components/OfflineView";
+
 
 export default function HomeScreen() {
   
@@ -18,9 +21,9 @@ export default function HomeScreen() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
+  const { isOnline } = useNetwork();
 
   const displayArtists = useMemo(() => {
-
     if (favoriteArtists.length <= 3) return favoriteArtists;
     const shuffled = [...favoriteArtists].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 3);
@@ -50,6 +53,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {!isOnline && <OfflineView />}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
