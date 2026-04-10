@@ -40,6 +40,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoAutoPlay, setVideoAutoPlay] = useState(false);
   const videoRef = useRef<Video | null>(null);
+  const videoDidFinishHandledRef = useRef(false);
   const showVideoRef = useRef(false);
   const pendingVideoSeekRef = useRef<number | null>(null);
   const audioStateBeforeVideoRef = useRef<{ wasPlaying: boolean; position: number } | null>(null);
@@ -93,6 +94,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       setVideoProgress(0);
       setVideoDuration(0);
     }
+    videoDidFinishHandledRef.current = false;
   }, [currentSong?.id, translateX]);
 
   useEffect(() => {
@@ -137,6 +139,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
         Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
         return;
       }
+      videoDidFinishHandledRef.current = false;
       audioStateBeforeVideoRef.current = { wasPlaying: isPlaying, position: progress };
       pendingVideoSeekRef.current = progress;
       setVideoAutoPlay(true);
@@ -160,6 +163,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     setIsVideoLoading(false);
     setIsVideoReady(false);
     setIsVideoPlaying(false);
+    videoDidFinishHandledRef.current = false;
     seekTo(position);
 
     if (shouldResumeAudio) togglePlayPause();
@@ -372,12 +376,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                           source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
                           style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
                           resizeMode={ResizeMode.COVER}
-                          isLooping
+                          isLooping={false}
                           shouldPlay={false}
                           onLoad={(status) => {
                             if (!(status as any).isLoaded) return;
                             setIsVideoLoading(false);
                             setIsVideoReady(true);
+                            videoDidFinishHandledRef.current = false;
                             const durationMillis = (status as any).durationMillis ?? 0;
                             if (durationMillis > 0) setVideoDuration(durationMillis);
                             const pending = pendingVideoSeekRef.current;
@@ -407,6 +412,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                             setVideoProgress(Number((status as any).positionMillis || 0));
                             const durationMillis = Number((status as any).durationMillis || 0);
                             if (durationMillis > 0) setVideoDuration(durationMillis);
+                            if ((status as any).didJustFinish && !videoDidFinishHandledRef.current) {
+                              videoDidFinishHandledRef.current = true;
+                              runOnJS(playNext)();
+                            }
                           }}
                         />
                       )}
