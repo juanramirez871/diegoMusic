@@ -147,6 +147,17 @@ export default function HomeScreen() {
                     </View>
                   )}
                 </View>
+
+                <View style={{ width: "100%", alignItems: "center" }}>
+                  <Image
+                    source={require("@/assets/images/footer.png")}
+                    style={{
+                      width: 200,
+                      height: 100,
+                      transform: [{ translateY: 35 }],
+                    }}
+                  />
+                </View>
               </View>
             )}
 
