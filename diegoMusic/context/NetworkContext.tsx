@@ -60,20 +60,26 @@ export function NetworkProvider({ children }: Props) {
   const handleNetworkChange = useCallback((state: NetInfoState) => {
 
     if (!mountedRef.current) return;
-    setIsNetworkChecked(true);
-    if (!state.isConnected) {
+    if (state.isConnected === false) {
       stopRetry();
       setIsOnline(false);
-      return;
-    }
-    if (state.isInternetReachable === true) {
-      stopRetry();
-      setIsOnline(true);
+      setIsNetworkChecked(true);
       return;
     }
 
-    setIsOnline(false);
-    startRetryUntilReachable();
+    if (state.isInternetReachable === true) {
+      stopRetry();
+      setIsOnline(true);
+      setIsNetworkChecked(true);
+      return;
+    }
+
+    if (state.isInternetReachable === false) {
+      setIsOnline(false);
+      setIsNetworkChecked(true);
+      startRetryUntilReachable();
+      return;
+    }
 
   }, [stopRetry, startRetryUntilReachable]);
 
@@ -85,7 +91,10 @@ export function NetworkProvider({ children }: Props) {
         handleNetworkChange(state);
       })
       .catch(() => {
-        if (mountedRef.current) setIsOnline(false);
+        if (mountedRef.current) {
+          setIsOnline(false);
+          setIsNetworkChecked(true);
+        }
       });
 
     const unsubscribe = NetInfo.addEventListener(handleNetworkChange);
