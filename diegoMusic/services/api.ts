@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://192.168.1.37:3000/api';
 
 const searchCache = new Map<string, any[]>();
 
