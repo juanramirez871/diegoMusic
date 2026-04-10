@@ -3,6 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
+import { usePlayer } from "@/context/PlayerContext";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 export interface ArtistData {
   id: string;
@@ -34,7 +36,10 @@ interface SongProps {
 
 export default function Song({ data, onPress }: SongProps) {
 
+  const { currentSong, isPlaying, isLoading } = usePlayer();
   const [modalVisible, setModalVisible] = useState(false);
+  
+  const isCurrentSong = currentSong?.id === data?.id;
   const title = data?.title || "Sin título";
   const artist = data?.channel?.name || "Sin artista";
   const thumbnail = data?.thumbnail?.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg";
@@ -52,19 +57,44 @@ export default function Song({ data, onPress }: SongProps) {
         onPress={handlePress}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: thumbnail }}
-          style={styles.image}
-        />
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri: thumbnail }}
+            style={[styles.image, isCurrentSong && { opacity: 0.6 }]}
+          />
+          {isCurrentSong && (
+            <View style={styles.playingOverlay}>
+              {isLoading ? (
+                <LoadingSpinner size={20} color="#2c5af3" />
+              ) : (
+                <Ionicons 
+                  name={isPlaying ? "pause" : "play"} 
+                  size={20} 
+                  color="#2c5af3" 
+                />
+              )}
+            </View>
+          )}
+        </View>
         <View style={styles.infoContainer}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text 
+            style={[styles.title, isCurrentSong && { color: "#2c5af3" }]} 
+            numberOfLines={1}
+          >
             {title}
           </Text>
           <View style={styles.metadataContainer}>
             <View style={styles.videoBadge}>
-              <Foundation name="play-video" size={16} color="#b3b3b3" />
+              <Foundation 
+                name="play-video" 
+                size={16} 
+                color={isCurrentSong ? "#2c5af3" : "#b3b3b3"} 
+              />
             </View>
-            <Text style={styles.artist} numberOfLines={1}>
+            <Text 
+              style={[styles.artist, isCurrentSong && { color: "rgba(44, 90, 243, 0.7)" }]} 
+              numberOfLines={1}
+            >
               {artist} {data?.duration_formatted ? `• ${data.duration_formatted}` : ""}
             </Text>
           </View>
@@ -101,6 +131,21 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 4,
+  },
+  imageWrapper: {
+    width: 50,
+    height: 50,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoContainer: {
     flex: 1,
