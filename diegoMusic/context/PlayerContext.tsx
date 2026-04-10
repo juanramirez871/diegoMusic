@@ -92,7 +92,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     preloadedSoundsRef,
     addRecentPlayed,
     addMostPlayed,
-    isOnline
+    isOnline,
+    isFavorite
   );
 
   const togglePlayPauseRef = useRef(togglePlayPause);

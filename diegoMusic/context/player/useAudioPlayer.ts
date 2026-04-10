@@ -3,6 +3,7 @@ import { youtubeService } from '@/services/api';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { PlaybackState, SafeMediaControl } from './mediaControls';
 import { parseDuration } from './utils';
 
@@ -12,7 +13,8 @@ export const useAudioPlayer = (
   preloadedSoundsRef: React.MutableRefObject<Map<string, Audio.Sound>>,
   addRecentPlayed: (song: SongData) => Promise<void>,
   addMostPlayed: (song: SongData) => Promise<void>,
-  isOnline: boolean = true
+  isOnline: boolean = true,
+  isFavorite: (id: string) => boolean
 ) => {
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,9 +43,19 @@ export const useAudioPlayer = (
   const cleanupLocalFile = async () => {
     if (localFileUriRef.current) {
       try {
-        const fileInfo = await FileSystem.getInfoAsync(localFileUriRef.current);
-        if (fileInfo.exists) {
-          await FileSystem.deleteAsync(localFileUriRef.current, { idempotent: true });
+
+        const cacheDir = FileSystem.cacheDirectory ?? 'cache';
+        const isCacheFile = localFileUriRef.current.includes(cacheDir);
+        
+        if (isCacheFile) {
+          const fileInfo = await FileSystem.getInfoAsync(localFileUriRef.current);
+          if (fileInfo.exists) {
+            console.log('[CLEANUP] Eliminando archivo temporal:', localFileUriRef.current);
+            await FileSystem.deleteAsync(localFileUriRef.current, { idempotent: true });
+          }
+        }
+        else {
+          console.log('[CLEANUP] Omitiendo eliminación de archivo persistente:', localFileUriRef.current);
         }
       }
       catch (error) {
@@ -145,6 +157,10 @@ export const useAudioPlayer = (
       
       if (!isOnline && !localUri) {
         console.warn('[OFFLINE] Sin conexión y sin archivo local para:', song.id);
+        Alert.alert(
+          'Sin conexión',
+          'Esta canción no está disponible sin internet. Guárdala en favoritos para escucharla offline.'
+        );
         setIsLoading(false);
         return;
       }
@@ -186,7 +202,9 @@ export const useAudioPlayer = (
           
           if (!localUri && isOnline) {
             const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-            const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, cacheUri, {});
+            const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
+            console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
+            const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, targetUri, {});
             downloadResumableRef.current = downloadResumable;
             downloadResumable.downloadAsync().then(async (result: any) => {
               if (result && result.uri && currentSongRef.current?.id === song.id) {
@@ -249,7 +267,9 @@ export const useAudioPlayer = (
 
         sound = newSound;
         
-        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, cacheUri, {});
+        const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
+        console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
+        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, targetUri, {});
         downloadResumableRef.current = downloadResumable;
         downloadResumable.downloadAsync().then(async (result: any) => {
           if (result && result.uri && currentSongRef.current?.id === song.id) {
