@@ -165,6 +165,26 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     if (shouldResumeAudio) togglePlayPause();
   };
 
+  const presentVideoFullscreen = async () => {
+    if (!showVideo || !isVideoReady) return;
+    const player: any = videoRef.current;
+    if (typeof player?.presentFullscreenPlayer === 'function') {
+      player.presentFullscreenPlayer();
+      return;
+    }
+    if (typeof player?.presentFullscreenPlayerAsync === 'function') {
+      await player.presentFullscreenPlayerAsync();
+    }
+  };
+
+  const videoLongPressGesture = Gesture.LongPress()
+    .minDuration(450)
+    .onStart(() => {
+      if (showVideo && isVideoReady) {
+        runOnJS(presentVideoFullscreen)();
+      }
+    });
+
   const handlePlayPausePress = async () => {
     if (showVideo) {
       if (!isVideoReady) return;
@@ -344,7 +364,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                   </View>
 
                   <View style={styles.imageContainerWrapper}>
-                    <Animated.View style={[styles.imageContainer, mainImageStyle]}>
+                    <GestureDetector gesture={videoLongPressGesture}>
+                      <Animated.View style={[styles.imageContainer, mainImageStyle]}>
                       {showVideo && (
                         <Video
                           ref={videoRef}
@@ -402,7 +423,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                           <Foundation name="play-video" size={30} color="#ffffffff" />
                         )}
                       </TouchableOpacity>
-                    </Animated.View>
+                      </Animated.View>
+                    </GestureDetector>
                   </View>
 
                   <View style={styles.imageContainerWrapper}>
