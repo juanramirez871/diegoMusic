@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Foundation from '@expo/vector-icons/Foundation';
 import { LoadingSpinner } from './LoadingSpinner';
 import QueueModal from './QueueModal';
@@ -75,10 +75,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const activeIsLoading = showVideo ? isVideoLoading : isLoading;
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
+  const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
+  const playTint = useSharedValue(!showVideo && isLoading ? 1 : 0);
 
   useEffect(() => {
     showVideoRef.current = showVideo;
   }, [showVideo]);
+
+  useEffect(() => {
+    playTint.value = withTiming(!showVideo && isLoading ? 1 : 0, { duration: 220 });
+  }, [showVideo, isLoading, playTint]);
 
   useEffect(() => {
     translateX.value = 0;
@@ -119,6 +125,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   };
 
   const progressPercentage = activeDuration > 0 ? Math.min(Math.max((currentDisplayProgress / activeDuration) * 100, 0), 100) : 0;
+  const playIconAnimatedProps = useAnimatedProps(() => ({
+    color: interpolateColor(playTint.value, [0, 1], ["#fff", "#6b6b6b"]),
+  }));
 
   const handleSeek = (position: number) => {
     if (showVideo) {
@@ -489,13 +498,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.playButton} onPress={handlePlayPausePress}>
-                {!showVideo && isLoading ? (
-                  <View style={{ width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
-                    <LoadingSpinner size={60} />
-                  </View>
-                ) : (
-                  <Ionicons name={activeIsPlaying ? "pause-circle" : "play-circle"} size={80} color="#fff" />
-                )}
+                <AnimatedIonicons
+                  animatedProps={playIconAnimatedProps}
+                  name={!showVideo && isLoading ? "play-circle" : (activeIsPlaying ? "pause-circle" : "play-circle")}
+                  size={80}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={handleNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />

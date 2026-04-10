@@ -1,7 +1,8 @@
 import { View, StyleSheet, Image, Text, Platform, TouchableOpacity, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
-import { LoadingSpinner } from "./LoadingSpinner";
+import { useEffect } from "react";
+import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 
 interface MinimizedPlayerProps {
   onPress: () => void;
@@ -11,6 +12,17 @@ interface MinimizedPlayerProps {
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   const { currentSong, isPlaying, togglePlayPause, progress, duration, isLoading } = usePlayer();
+  const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
+  const loadingProgress = useSharedValue(isLoading ? 1 : 0);
+
+  useEffect(() => {
+    loadingProgress.value = withTiming(isLoading ? 1 : 0, { duration: 220 });
+  }, [isLoading, loadingProgress]);
+
+  const playIconAnimatedProps = useAnimatedProps(() => ({
+    color: interpolateColor(loadingProgress.value, [0, 1], ["#fff", "#6b6b6b"]),
+  }));
+
   if (!currentSong) return null;
   const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
 
@@ -36,13 +48,11 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
           if (!isLoading) togglePlayPause();
         }}
       >
-        {isLoading ? (
-          <View style={{ marginRight: 10 }}>
-            <LoadingSpinner size={30} />
-          </View>
-        ) : (
-          <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={40} color="#fff" />
-        )}
+        <AnimatedIonicons
+          animatedProps={playIconAnimatedProps}
+          name={isLoading ? "play-circle" : (isPlaying ? "pause-circle" : "play-circle")}
+          size={40}
+        />
       </TouchableOpacity>
       <View style={styles.progressContainer}>
         <View style={[styles.bgBar, { width: '100%' }]} />
