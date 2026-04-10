@@ -251,7 +251,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                         source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
                         style={styles.cover}
                       />
-                      <Foundation name="play-video" size={30} color="#b3b3b3" style={styles.icon} />
+                      <Foundation name="play-video" size={30} color="#ffffffff" style={styles.icon} />
                     </Animated.View>
                   </View>
 
@@ -517,7 +517,6 @@ const styles = StyleSheet.create({
     right: 8,
     zIndex: 10,
     elevation: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: 12,
     padding: 4,
   },
