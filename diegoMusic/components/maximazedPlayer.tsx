@@ -65,8 +65,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const translateX = useSharedValue(0);
 
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
-  const nextSong = currentIndex !== -1 && currentIndex < queue.length - 1 ? queue[currentIndex + 1] : null;
-  const prevSong = currentIndex > 0 ? queue[currentIndex - 1] : null;
+  const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
+  const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
+  const prevSong = hasNextOrPrev ? queue[(currentIndex - 1 + queue.length) % queue.length] : null;
 
   const activeProgress = showVideo ? (isVideoReady ? videoProgress : progress) : progress;
   const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
@@ -202,14 +203,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   };
 
   const handleNext = () => {
-    if (!nextSong) return;
+    if (!hasNextOrPrev) return;
     translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
       if (finished) runOnJS(playNext)();
     });
   };
 
   const handlePrevious = () => {
-    if (!prevSong) return;
+    if (!hasNextOrPrev) return;
     translateX.value = withTiming(width, { duration: 300 }, (finished) => {
       if (finished) runOnJS(playPrevious)();
     });
@@ -234,13 +235,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       translateX.value = event.translationX;
     })
     .onEnd((event) => {
-      if (event.translationX < -SWIPE_THRESHOLD && nextSong) {
-        translateX.value = withSpring(-width, { velocity: event.velocityX }, (finished) => {
+      if (event.translationX < -SWIPE_THRESHOLD && hasNextOrPrev) {
+        translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
           if (finished) runOnJS(playNext)();
         });
       }
-      else if (event.translationX > SWIPE_THRESHOLD && prevSong) {
-        translateX.value = withSpring(width, { velocity: event.velocityX }, (finished) => {
+      else if (event.translationX > SWIPE_THRESHOLD && hasNextOrPrev) {
+        translateX.value = withTiming(width, { duration: 300 }, (finished) => {
           if (finished) runOnJS(playPrevious)();
         });
       }
