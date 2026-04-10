@@ -7,7 +7,7 @@ import { useRef } from 'react';
 export const usePreloader = () => {
   const preloadedSoundsRef = useRef<Map<string, Audio.Sound>>(new Map());
 
-  const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number) => {
+  const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number, isOnline: boolean = true) => {
     
     const currentSong = currentQueue[currentIndex];
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
@@ -19,7 +19,6 @@ export const usePreloader = () => {
       {
         await sound.unloadAsync();
         preloadedSoundsRef.current.delete(id);
-        
         const cacheUri = `${FileSystem.cacheDirectory}${id}.mp3`;
         const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
         if (cacheInfo.exists) {
@@ -40,6 +39,8 @@ export const usePreloader = () => {
         fileInfo = await FileSystem.getInfoAsync(localUri);
         
         if (!fileInfo.exists) {
+
+          if (!isOnline) continue;
           const downloadResumable = FileSystem.createDownloadResumable(
             youtubeService.getAudioDownloadUrl(song.url),
             localUri,

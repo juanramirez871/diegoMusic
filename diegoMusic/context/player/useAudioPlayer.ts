@@ -11,7 +11,8 @@ export const useAudioPlayer = (
   playNext: () => void,
   preloadedSoundsRef: React.MutableRefObject<Map<string, Audio.Sound>>,
   addRecentPlayed: (song: SongData) => Promise<void>,
-  addMostPlayed: (song: SongData) => Promise<void>
+  addMostPlayed: (song: SongData) => Promise<void>,
+  isOnline: boolean = true
 ) => {
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -94,28 +95,21 @@ export const useAudioPlayer = (
   
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
     await cancelDownload();
-    if (!preloadedSound) await cleanupLocalFile();
 
     setIsPlaying(false);
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
     seekOffsetRef.current = 0;
     isUsingLocalFileRef.current = false;
-    
-    if (preloadedSound) {
-      const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${song.id}.mp3`;
-      const fileInfo = await FileSystem.getInfoAsync(localUri);
-      if (fileInfo.exists) {
-        localFileUriRef.current = localUri;
-        isUsingLocalFileRef.current = true;
-      }
-    }
-
+    localFileUriRef.current = null;
+  
     if (!preloadedSound) setIsLoading(true);
     if (soundRef.current) {
       try {
         await soundRef.current.setOnPlaybackStatusUpdate(null);
-        await soundRef.current.unloadAsync();
+        const unloadPromise = soundRef.current.unloadAsync();
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Unload timeout')), 1000));
+        await Promise.race([unloadPromise, timeoutPromise]).catch(e => console.warn('Unload error/timeout:', e));
         soundRef.current = null;
       }
       catch (error) {
@@ -125,13 +119,22 @@ export const useAudioPlayer = (
 
     try {
       let sound: Audio.Sound;
-      const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-      const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
-      const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, localUri, {});
-      downloadResumableRef.current = downloadResumable;
-
-      const downloadPromise = downloadResumable.downloadAsync();
+      const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
+      const cacheUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
       
+      const persistentInfo = await FileSystem.getInfoAsync(persistentUri);
+      const hasPersistent = persistentInfo.exists && (persistentInfo as any).size > 5000;
+      
+      const cacheInfo = !hasPersistent ? await FileSystem.getInfoAsync(cacheUri) : { exists: false };
+      const hasCache = cacheInfo.exists && (cacheInfo as any).size > 5000;
+      const localUri = hasPersistent ? persistentUri : (hasCache ? cacheUri : null);
+      
+      if (!isOnline && !localUri) {
+        console.warn('[OFFLINE] Sin conexión y sin archivo local para:', song.id);
+        setIsLoading(false);
+        return;
+      }
+
       if (preloadedSound)
       {
         try {
@@ -142,31 +145,80 @@ export const useAudioPlayer = (
           let status = await sound.getStatusAsync();
           if (!status.isLoaded) {
             console.warn('[PRELOADED] El sound pre-cargado no está cargado. Recargando...', song.id);
-            await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
+            if (localUri) {
+              await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
+            }
+            else if (isOnline) {
+              const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+              await sound.loadAsync({ uri: downloadUrl }, { shouldPlay: false }, true);
+            }
+            else {
+              throw new Error('Offline and no local file');
+            }
           }
           
           await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
           await sound.playAsync();
           
-          downloadPromise.then(async (result: any) => {
-            if (result && result.uri && currentSongRef.current?.id === song.id) {
-              localFileUriRef.current = result.uri;
-              console.log('Descarga finalizada para', song.id, 'en', result.uri);
-            }
-          }).catch((err: any) => console.error('Download error:', err));
+          if (localUri) {
+            localFileUriRef.current = localUri;
+            isUsingLocalFileRef.current = true;
+          }
+          else if (isOnline) {
+            const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+            const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, cacheUri, {});
+            downloadResumableRef.current = downloadResumable;
+            downloadResumable.downloadAsync().then(async (result: any) => {
+              if (result && result.uri && currentSongRef.current?.id === song.id) {
+                localFileUriRef.current = result.uri;
+                isUsingLocalFileRef.current = true;
+                console.log('Descarga finalizada para', song.id, 'en', result.uri);
+              }
+            })
+            .catch((err: any) => console.error('Download error:', err));
+          }
           
         }
         catch (error) {
           console.error('[PRELOADED] Fallo al usar sound pre-cargado. Creando nuevo...', error);
-          const { sound: newSound } = await Audio.Sound.createAsync(
-            { uri: localUri },
-            { shouldPlay: true },
-            onPlaybackStatusUpdate
-          );
-          sound = newSound;
+          if (localUri) {
+            const { sound: newSound } = await Audio.Sound.createAsync(
+              { uri: localUri },
+              { shouldPlay: true },
+              onPlaybackStatusUpdate
+            );
+            sound = newSound;
+            isUsingLocalFileRef.current = true;
+            localFileUriRef.current = localUri;
+          }
+          else if (isOnline) {
+            const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+            const { sound: newSound } = await Audio.Sound.createAsync(
+              { uri: downloadUrl },
+              { shouldPlay: true },
+              onPlaybackStatusUpdate
+            );
+            sound = newSound;
+          }
+          else {
+            throw new Error('Offline and no local file');
+          }
         }
       }
-      else {
+      else if (localUri) {
+        console.log('[LOCAL] Reproduciendo desde archivo local:', localUri);
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: localUri },
+          { shouldPlay: true },
+          onPlaybackStatusUpdate
+        );
+        sound = newSound;
+        localFileUriRef.current = localUri;
+        isUsingLocalFileRef.current = true;
+      }
+      else if (isOnline) {
+        const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+        console.log('[NETWORK] Reproduciendo desde red:', downloadUrl);
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: downloadUrl },
           { shouldPlay: true },
@@ -174,13 +226,19 @@ export const useAudioPlayer = (
         );
 
         sound = newSound;
-        downloadPromise.then(async (result: any) => {
+        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, cacheUri, {});
+        downloadResumableRef.current = downloadResumable;
+        downloadResumable.downloadAsync().then(async (result: any) => {
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
+            isUsingLocalFileRef.current = true;
             console.log('Descarga finalizada para', song.id, 'en', result.uri);
           }
         })
         .catch((err: any) => console.error('Download error:', err));
+      }
+      else {
+        throw new Error('Offline and no local file');
       }
       
       soundRef.current = sound;

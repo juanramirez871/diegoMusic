@@ -9,11 +9,13 @@ import { usePlayerStorage } from './player/usePlayerStorage';
 import { usePreloader } from './player/usePreloader';
 import { useAudioPlayer } from './player/useAudioPlayer';
 import { usePlayerQueue } from './player/usePlayerQueue';
+import { useNetwork } from './NetworkContext';
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
+  const { isOnline } = useNetwork();
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const { 
@@ -89,7 +91,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     playNext,
     preloadedSoundsRef,
     addRecentPlayed,
-    addMostPlayed
+    addMostPlayed,
+    isOnline
   );
 
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
@@ -208,9 +211,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (currentSong && queue.length > 0) {
       const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-      if (currentIndex !== -1) preloadNextSongs(queue, currentIndex);
+      if (currentIndex !== -1) preloadNextSongs(queue, currentIndex, isOnline);
     }
-  }, [currentSong?.id, queue]);
+  }, [currentSong?.id, queue, isOnline]);
 
 
   useEffect(() => {

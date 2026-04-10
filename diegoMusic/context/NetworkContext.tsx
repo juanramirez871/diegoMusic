@@ -74,12 +74,9 @@ export function NetworkProvider({ children }: Props) {
       return;
     }
 
-    if (state.isInternetReachable === false) {
-      setIsOnline(false);
-      setIsNetworkChecked(true);
-      startRetryUntilReachable();
-      return;
-    }
+    setIsOnline(false);
+    setIsNetworkChecked(true);
+    startRetryUntilReachable();
 
   }, [stopRetry, startRetryUntilReachable]);
 
