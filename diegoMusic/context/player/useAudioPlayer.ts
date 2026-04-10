@@ -22,6 +22,7 @@ export const useAudioPlayer = (
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const currentSongRef = useRef<SongData | null>(null);
+  const playNextRef = useRef<() => void>(playNext);
   const downloadResumableRef = useRef<any>(null);
   const localFileUriRef = useRef<string | null>(null);
   const isUsingLocalFileRef = useRef<boolean>(false);
@@ -31,6 +32,10 @@ export const useAudioPlayer = (
   useEffect(() => {
     currentSongRef.current = currentSong;
   }, [currentSong]);
+
+  useEffect(() => {
+    playNextRef.current = playNext;
+  }, [playNext]);
 
   const cleanupLocalFile = async () => {
     if (localFileUriRef.current) {
@@ -82,7 +87,10 @@ export const useAudioPlayer = (
         setDuration(status.durationMillis);
       }
 
-      if (status.didJustFinish) playNext();
+      if (status.didJustFinish) {
+        console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
+        playNextRef.current();
+      }
       const state = status.isPlaying 
         ? PlaybackState.PLAYING 
         : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
