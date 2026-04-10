@@ -90,10 +90,109 @@ export const useAudioPlayer = (
     }
   };
 
+  const playSongLogic = async (song: SongData) => {
+  
+    const preloadedSound = preloadedSoundsRef.current.get(song.id);
+    await cancelDownload();
+    if (!preloadedSound) await cleanupLocalFile();
+
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(parseDuration(song.duration_formatted));
+    seekOffsetRef.current = 0;
+    isUsingLocalFileRef.current = false;
+    
+    if (preloadedSound) {
+      const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${song.id}.mp3`;
+      const fileInfo = await FileSystem.getInfoAsync(localUri);
+      if (fileInfo.exists) {
+        localFileUriRef.current = localUri;
+        isUsingLocalFileRef.current = true;
+      }
+    }
+
+    if (!preloadedSound) setIsLoading(true);
+    if (soundRef.current) {
+      try {
+        await soundRef.current.setOnPlaybackStatusUpdate(null);
+        await soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+      catch (error) {
+        console.error('Error unloading previous sound:', error);
+      }
+    }
+
+    try {
+      let sound: Audio.Sound;
+      const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+      const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
+      const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, localUri, {});
+      downloadResumableRef.current = downloadResumable;
+
+      const downloadPromise = downloadResumable.downloadAsync();
+      if (preloadedSound)
+      {
+        sound = preloadedSound;
+        preloadedSoundsRef.current.delete(song.id);
+        console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
+        await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+
+        let status = await sound.getStatusAsync();
+        if (!status.isLoaded)
+        {
+          const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
+          try {
+            await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
+            status = await sound.getStatusAsync();
+            console.warn('[PRELOADED] Fallback: recargado sound para', song.id, 'status:', status);
+          }
+          catch (e) {
+            console.error('[PRELOADED] Error recargando sound para', song.id, e);
+          }
+        }
+        if (status.isLoaded) await sound.playAsync();
+        downloadPromise.then(async (result: any) => {
+          if (result && result.uri && currentSongRef.current?.id === song.id) {
+            localFileUriRef.current = result.uri;
+            console.log('Descarga finalizada para', song.id, 'en', result.uri);
+          }
+        })
+        .catch((err: any) => console.error('Download error:', err));
+      }
+      else {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: downloadUrl },
+          { shouldPlay: true },
+          onPlaybackStatusUpdate
+        );
+
+        sound = newSound;
+        downloadPromise.then(async (result: any) => {
+          if (result && result.uri && currentSongRef.current?.id === song.id) {
+            localFileUriRef.current = result.uri;
+            console.log('Descarga finalizada para', song.id, 'en', result.uri);
+          }
+        })
+        .catch((err: any) => console.error('Download error:', err));
+      }
+      
+      soundRef.current = sound;
+      await addRecentPlayed(song);
+      await addMostPlayed(song);
+    }
+    catch (error) {
+      console.error('Error playing song:', error);
+    }
+    finally {
+      setIsLoading(false);
+    }
+  };
+
   const togglePlayPause = async () => {
     if (!soundRef.current) {
       if (currentSong) {
-        // playSong logic will be handled outside or passed in
+        await playSongLogic(currentSong);
       }
       return;
     }
@@ -201,105 +300,6 @@ export const useAudioPlayer = (
     }
     catch (error) {
       console.warn('Seek error:', error);
-      setIsLoading(false);
-    }
-  };
-
-  const playSongLogic = async (song: SongData) => {
-  
-    const preloadedSound = preloadedSoundsRef.current.get(song.id);
-    await cancelDownload();
-    if (!preloadedSound) await cleanupLocalFile();
-
-    setIsPlaying(false);
-    setProgress(0);
-    setDuration(parseDuration(song.duration_formatted));
-    seekOffsetRef.current = 0;
-    isUsingLocalFileRef.current = false;
-    
-    if (preloadedSound) {
-      const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${song.id}.mp3`;
-      const fileInfo = await FileSystem.getInfoAsync(localUri);
-      if (fileInfo.exists) {
-        localFileUriRef.current = localUri;
-        isUsingLocalFileRef.current = true;
-      }
-    }
-
-    if (!preloadedSound) setIsLoading(true);
-    if (soundRef.current) {
-      try {
-        await soundRef.current.setOnPlaybackStatusUpdate(null);
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-      catch (error) {
-        console.error('Error unloading previous sound:', error);
-      }
-    }
-
-    try {
-      let sound: Audio.Sound;
-      const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-      const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
-      const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, localUri, {});
-      downloadResumableRef.current = downloadResumable;
-
-      const downloadPromise = downloadResumable.downloadAsync();
-      if (preloadedSound)
-      {
-        sound = preloadedSound;
-        preloadedSoundsRef.current.delete(song.id);
-        console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
-        await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-
-        let status = await sound.getStatusAsync();
-        if (!status.isLoaded)
-        {
-          const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
-          try {
-            await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
-            status = await sound.getStatusAsync();
-            console.warn('[PRELOADED] Fallback: recargado sound para', song.id, 'status:', status);
-          }
-          catch (e) {
-            console.error('[PRELOADED] Error recargando sound para', song.id, e);
-          }
-        }
-        if (status.isLoaded) await sound.playAsync();
-        downloadPromise.then(async (result: any) => {
-          if (result && result.uri && currentSongRef.current?.id === song.id) {
-            localFileUriRef.current = result.uri;
-            console.log('Descarga finalizada para', song.id, 'en', result.uri);
-          }
-        })
-        .catch((err: any) => console.error('Download error:', err));
-      }
-      else {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: downloadUrl },
-          { shouldPlay: true },
-          onPlaybackStatusUpdate
-        );
-
-        sound = newSound;
-        downloadPromise.then(async (result: any) => {
-          if (result && result.uri && currentSongRef.current?.id === song.id) {
-            localFileUriRef.current = result.uri;
-            console.log('Descarga finalizada para', song.id, 'en', result.uri);
-          }
-        })
-        .catch((err: any) => console.error('Download error:', err));
-      }
-      
-      soundRef.current = sound;
-      await addRecentPlayed(song);
-      await addMostPlayed(song);
-    }
-    catch (error) {
-      console.error('Error playing song:', error);
-    }
-    finally {
       setIsLoading(false);
     }
   };
