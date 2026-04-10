@@ -142,6 +142,11 @@ export const useAudioPlayer = (
           preloadedSoundsRef.current.delete(song.id);
           console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
           
+          if (localUri) {
+            localFileUriRef.current = localUri;
+            isUsingLocalFileRef.current = true;
+          }
+
           let status = await sound.getStatusAsync();
           if (!status.isLoaded) {
             console.warn('[PRELOADED] El sound pre-cargado no está cargado. Recargando...', song.id);
@@ -160,11 +165,7 @@ export const useAudioPlayer = (
           await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
           await sound.playAsync();
           
-          if (localUri) {
-            localFileUriRef.current = localUri;
-            isUsingLocalFileRef.current = true;
-          }
-          else if (isOnline) {
+          if (!localUri && isOnline) {
             const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
             const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, cacheUri, {});
             downloadResumableRef.current = downloadResumable;
@@ -182,14 +183,14 @@ export const useAudioPlayer = (
         catch (error) {
           console.error('[PRELOADED] Fallo al usar sound pre-cargado. Creando nuevo...', error);
           if (localUri) {
+            localFileUriRef.current = localUri;
+            isUsingLocalFileRef.current = true;
             const { sound: newSound } = await Audio.Sound.createAsync(
               { uri: localUri },
               { shouldPlay: true },
               onPlaybackStatusUpdate
             );
             sound = newSound;
-            isUsingLocalFileRef.current = true;
-            localFileUriRef.current = localUri;
           }
           else if (isOnline) {
             const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
@@ -206,15 +207,15 @@ export const useAudioPlayer = (
         }
       }
       else if (localUri) {
-        console.log('[LOCAL] Reproduciendo desde archivo local:', localUri);
+        console.log('[LOCAL] Priorizando archivo guardado (favoritos/cache) aunque hay red:', localUri);
+        localFileUriRef.current = localUri;
+        isUsingLocalFileRef.current = true;
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: localUri },
           { shouldPlay: true },
           onPlaybackStatusUpdate
         );
         sound = newSound;
-        localFileUriRef.current = localUri;
-        isUsingLocalFileRef.current = true;
       }
       else if (isOnline) {
         const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
