@@ -38,6 +38,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [videoAutoPlay, setVideoAutoPlay] = useState(false);
   const videoRef = useRef<Video | null>(null);
+  const showVideoRef = useRef(false);
   const pendingVideoSeekRef = useRef<number | null>(null);
   const audioStateBeforeVideoRef = useRef<{ wasPlaying: boolean; position: number } | null>(null);
   const { 
@@ -72,19 +73,25 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
 
   useEffect(() => {
+    showVideoRef.current = showVideo;
+  }, [showVideo]);
+
+  useEffect(() => {
     translateX.value = 0;
     setSeekProgress(0);
-    if (showVideo) {
-      pause();
-      setIsVideoLoading(true);
+    if (showVideoRef.current) {
+      videoRef.current?.pauseAsync().catch(() => {});
+      setShowVideo(false);
+      setIsVideoLoading(false);
       setIsVideoReady(false);
-      setVideoAutoPlay(true);
-      pendingVideoSeekRef.current = 0;
+      setIsVideoPlaying(false);
+      setVideoAutoPlay(false);
+      pendingVideoSeekRef.current = null;
+      audioStateBeforeVideoRef.current = null;
       setVideoProgress(0);
       setVideoDuration(0);
-      setIsVideoPlaying(false);
     }
-  }, [currentSong?.id, pause, showVideo, translateX]);
+  }, [currentSong?.id, translateX]);
 
   useEffect(() => {
     if (!activeIsLoading && !isSeeking) {
