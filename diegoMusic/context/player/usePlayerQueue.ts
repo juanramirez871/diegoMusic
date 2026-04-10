@@ -149,20 +149,20 @@ export const usePlayerQueue = () => {
   };
 
   const getNextSong = (currentSong: SongData | null) => {
+
     if (queue.length === 0 || !currentSong) return null;
     const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-    if (currentIndex !== -1 && currentIndex < queue.length - 1) {
-      return queue[currentIndex + 1];
-    }
-    return null;
+    
+    if (currentIndex !== -1 && currentIndex < queue.length - 1) return queue[currentIndex + 1];
+    return queue[0];
   };
 
   const getPreviousSong = (currentSong: SongData | null) => {
     if (queue.length === 0 || !currentSong) return null;
     const currentIndex = queue.findIndex(s => s.id === currentSong.id);
+  
     if (currentIndex > 0) return queue[currentIndex - 1];
-    
-    return null;
+    return queue[queue.length - 1];
   };
 
   return {
