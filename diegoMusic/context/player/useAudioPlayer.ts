@@ -131,34 +131,40 @@ export const useAudioPlayer = (
       downloadResumableRef.current = downloadResumable;
 
       const downloadPromise = downloadResumable.downloadAsync();
+      
       if (preloadedSound)
       {
-        sound = preloadedSound;
-        preloadedSoundsRef.current.delete(song.id);
-        console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
-        await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-
-        let status = await sound.getStatusAsync();
-        if (!status.isLoaded)
-        {
-          const localUri = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}${song.id}.mp3`;
-          try {
+        try {
+          sound = preloadedSound;
+          preloadedSoundsRef.current.delete(song.id);
+          console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
+          
+          let status = await sound.getStatusAsync();
+          if (!status.isLoaded) {
+            console.warn('[PRELOADED] El sound pre-cargado no está cargado. Recargando...', song.id);
             await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
-            status = await sound.getStatusAsync();
-            console.warn('[PRELOADED] Fallback: recargado sound para', song.id, 'status:', status);
           }
-          catch (e) {
-            console.error('[PRELOADED] Error recargando sound para', song.id, e);
-          }
+          
+          await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
+          await sound.playAsync();
+          
+          downloadPromise.then(async (result: any) => {
+            if (result && result.uri && currentSongRef.current?.id === song.id) {
+              localFileUriRef.current = result.uri;
+              console.log('Descarga finalizada para', song.id, 'en', result.uri);
+            }
+          }).catch((err: any) => console.error('Download error:', err));
+          
         }
-        if (status.isLoaded) await sound.playAsync();
-        downloadPromise.then(async (result: any) => {
-          if (result && result.uri && currentSongRef.current?.id === song.id) {
-            localFileUriRef.current = result.uri;
-            console.log('Descarga finalizada para', song.id, 'en', result.uri);
-          }
-        })
-        .catch((err: any) => console.error('Download error:', err));
+        catch (error) {
+          console.error('[PRELOADED] Fallo al usar sound pre-cargado. Creando nuevo...', error);
+          const { sound: newSound } = await Audio.Sound.createAsync(
+            { uri: localUri },
+            { shouldPlay: true },
+            onPlaybackStatusUpdate
+          );
+          sound = newSound;
+        }
       }
       else {
         const { sound: newSound } = await Audio.Sound.createAsync(

@@ -9,86 +9,81 @@ export const usePreloader = () => {
 
   const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number) => {
     
+    const currentSong = currentQueue[currentIndex];
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
-    const nextSongIds = new Set(nextSongs.map(s => s.id));
+    const idsToKeep = new Set([currentSong.id, ...nextSongs.map(s => s.id)]);
+    
     for (const [id, sound] of preloadedSoundsRef.current.entries())
     {
-      if (!nextSongIds.has(id)) {
+      if (!idsToKeep.has(id))
+      {
         await sound.unloadAsync();
         preloadedSoundsRef.current.delete(id);
-        const localUri = `${(FileSystem as any).documentDirectory ?? (FileSystem as any).cacheDirectory}${id}.mp3`;
-        await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+        
+        const cacheUri = `${FileSystem.cacheDirectory}${id}.mp3`;
+        const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
+        if (cacheInfo.exists) {
+          await FileSystem.deleteAsync(cacheUri, { idempotent: true }).catch(() => {});
+        }
       }
     }
 
-    for (const song of nextSongs) {
-      // 1. Buscar primero en almacenamiento persistente (favoritos)
+    for (const song of nextSongs)
+    {
       const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
       let fileInfo = await FileSystem.getInfoAsync(persistentUri);
       let localUri = persistentUri;
+      
       if (!fileInfo.exists) {
-        // Si no está en persistente, usar temporal/cache
-        localUri = `${(FileSystem as any).cacheDirectory}${song.id}.mp3`;
+
+        localUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
         fileInfo = await FileSystem.getInfoAsync(localUri);
+        
         if (!fileInfo.exists) {
           const downloadResumable = FileSystem.createDownloadResumable(
             youtubeService.getAudioDownloadUrl(song.url),
             localUri,
             {}
           );
-          const downloadResult = await downloadResumable.downloadAsync().catch(err => {
-            console.error(`Error downloading preloaded song ${song.id}:`, err);
-            return null;
-          });
-          if (downloadResult && downloadResult.uri) {
-            console.log(`Descarga finalizada para preload ${song.id} en ${downloadResult.uri}`);
+          
+          try {
+            const downloadResult = await downloadResumable.downloadAsync();
+            if (downloadResult && downloadResult.uri) {
+              console.log(`[PRELOADED] Descarga finalizada para ${song.id} en ${downloadResult.uri}`);
+              fileInfo = await FileSystem.getInfoAsync(localUri);
+            }
           }
-          fileInfo = await FileSystem.getInfoAsync(localUri);
+          catch (err) {
+            console.error(`[PRELOADED] Error descargando song ${song.id}:`, err);
+            continue;
+          }
         }
       }
 
-      const MIN_FILE_SIZE = 10 * 1024;
-      let isValidMp3 = false;
-      if (fileInfo.exists && fileInfo.size !== undefined && fileInfo.size >= MIN_FILE_SIZE)
-      {
-        try {
-          const fileHandle = await FileSystem.readAsStringAsync(localUri, { encoding: FileSystem.EncodingType.Base64 });
-          const firstBytesString = atob(fileHandle.slice(0, 4));
-          const b0 = firstBytesString.charCodeAt(0);
-          const b1 = firstBytesString.charCodeAt(1);
-          const b2 = firstBytesString.charCodeAt(2);
-          if (
-            (b0 === 0x49 && b1 === 0x44 && b2 === 0x33) ||
-            (b0 === 0xFF && (b1 & 0xE0) === 0xE0)
-          ) {
-            isValidMp3 = true;
-          }
-        } catch (e) {
-          console.warn(`[PRELOADED] Error leyendo bytes para validar mp3: ${song.id}`, e);
-        }
-      }
-
-      if (!fileInfo.exists || (fileInfo.size !== undefined && fileInfo.size < MIN_FILE_SIZE) || !isValidMp3) {
-        console.warn(`Archivo preloaded corrupto ${song.id}, eliminando`);
+      const MIN_FILE_SIZE = 5 * 1024;
+      if (!fileInfo.exists || (fileInfo.size !== undefined && fileInfo.size < MIN_FILE_SIZE)) {
+        console.warn(`[PRELOADED] Archivo corrupto o demasiado pequeño ${song.id}, eliminando`);
         await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
         continue;
       }
 
       if (!preloadedSoundsRef.current.has(song.id)) {
-        const sourceUri = localUri;
-        console.log(`[PRELOADED] Creando sound pre-cargado para ${song.id} en ${sourceUri}`);
-        const { sound, status } = await Audio.Sound.createAsync(
-          { uri: sourceUri },
-          { shouldPlay: false }
-        );
+        try {
+          console.log(`[PRELOADED] Cargando sound para ${song.id} desde ${localUri}`);
+          const { sound, status } = await Audio.Sound.createAsync(
+            { uri: localUri },
+            { shouldPlay: false }
+          );
 
-        if (status.isLoaded) {
-          console.log(`[PRELOADED] Sound pre-cargado y guardado para ${song.id}`);
-          preloadedSoundsRef.current.set(song.id, sound);
+          if (status.isLoaded) preloadedSoundsRef.current.set(song.id, sound);
+          else await sound.unloadAsync();
+
         }
-        else {
-          console.warn(`[PRELOADED] No se pudo cargar el sound preloaded para ${song.id}`);
-          await sound.unloadAsync();
+        catch (error) {
+          console.warn(`[PRELOADED] Error al crear objeto de sonido para ${song.id}:`, error);
+          if (localUri.includes(FileSystem.cacheDirectory ?? '')) {
+            await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
+          }
         }
       }
     }
