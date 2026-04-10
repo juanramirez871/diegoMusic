@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Foundation from '@expo/vector-icons/Foundation';
@@ -13,6 +13,7 @@ import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
 import { Video, ResizeMode } from 'expo-av';
 import { youtubeService as apiYoutubeService } from '@/services/api';
+import { useNetwork } from '@/context/NetworkContext';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -25,6 +26,7 @@ interface MaximazedPlayerProps {
 
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
+  const { isOnline } = useNetwork();
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
@@ -131,6 +133,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     if (!currentSong) return;
 
     if (!showVideo) {
+      if (!isOnline) {
+        Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
+        return;
+      }
       audioStateBeforeVideoRef.current = { wasPlaying: isPlaying, position: progress };
       pendingVideoSeekRef.current = progress;
       setVideoAutoPlay(true);
