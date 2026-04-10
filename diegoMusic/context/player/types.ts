@@ -34,6 +34,7 @@ export interface PlayerContextType {
   toggleShuffle: () => void;
   isPlaying: boolean;
   togglePlayPause: () => void;
+  pause: () => Promise<void>;
   progress: number;
   duration: number;
   seekTo: (position: number) => void;

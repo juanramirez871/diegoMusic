@@ -2,7 +2,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -31,6 +31,15 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoAutoPlay, setVideoAutoPlay] = useState(false);
+  const videoRef = useRef<Video | null>(null);
+  const pendingVideoSeekRef = useRef<number | null>(null);
+  const audioStateBeforeVideoRef = useRef<{ wasPlaying: boolean; position: number } | null>(null);
   const { 
     currentSong, 
     queue, 
@@ -42,6 +51,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     toggleShuffle,
     isPlaying,
     togglePlayPause,
+    pause,
     progress,
     duration,
     seekTo,
@@ -54,21 +64,36 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const nextSong = currentIndex !== -1 && currentIndex < queue.length - 1 ? queue[currentIndex + 1] : null;
   const prevSong = currentIndex > 0 ? queue[currentIndex - 1] : null;
 
-  const currentDisplayProgress = (isSeeking || isLoading) ? seekProgress : progress;
+  const activeProgress = showVideo ? (isVideoReady ? videoProgress : progress) : progress;
+  const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
+  const activeIsPlaying = showVideo ? (isVideoReady ? isVideoPlaying : false) : isPlaying;
+  const activeIsLoading = showVideo ? isVideoLoading : isLoading;
+
+  const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
 
   useEffect(() => {
     translateX.value = 0;
     setSeekProgress(0);
-    setShowVideo(false);
-  }, [currentSong?.id]);
+    if (showVideo) {
+      pause();
+      setIsVideoLoading(true);
+      setIsVideoReady(false);
+      setVideoAutoPlay(true);
+      pendingVideoSeekRef.current = 0;
+      setVideoProgress(0);
+      setVideoDuration(0);
+      setIsVideoPlaying(false);
+    }
+  }, [currentSong?.id, pause, showVideo, translateX]);
 
   useEffect(() => {
-    if (!isLoading && !isSeeking) {
-      setSeekProgress(progress);
+    if (!activeIsLoading && !isSeeking) {
+      setSeekProgress(activeProgress);
     }
-  }, [isLoading, isSeeking, progress]);
+  }, [activeIsLoading, isSeeking, activeProgress]);
 
   const formatTime = (millis: number) => {
+
     if (millis === undefined || millis === null || isNaN(millis)) return "00:00";
     const totalSeconds = Math.floor(millis / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -81,7 +106,63 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const progressPercentage = duration > 0 ? Math.min(Math.max((currentDisplayProgress / duration) * 100, 0), 100) : 0;
+  const progressPercentage = activeDuration > 0 ? Math.min(Math.max((currentDisplayProgress / activeDuration) * 100, 0), 100) : 0;
+
+  const handleSeek = (position: number) => {
+    if (showVideo) {
+      if (!isVideoReady) {
+        pendingVideoSeekRef.current = position;
+        return;
+      }
+      videoRef.current?.setPositionAsync(position).catch(() => {});
+      return;
+    }
+    seekTo(position);
+  };
+
+  const handleToggleVideo = async () => {
+    if (!currentSong) return;
+
+    if (!showVideo) {
+      audioStateBeforeVideoRef.current = { wasPlaying: isPlaying, position: progress };
+      pendingVideoSeekRef.current = progress;
+      setVideoAutoPlay(true);
+      setIsVideoLoading(true);
+      setIsVideoReady(false);
+      setIsVideoPlaying(false);
+      await pause();
+      setShowVideo(true);
+      return;
+    }
+
+    const status = await videoRef.current?.getStatusAsync();
+    const isLoaded = Boolean(status && (status as any).isLoaded);
+    const position = isLoaded
+      ? (status as any).positionMillis
+      : (pendingVideoSeekRef.current ?? audioStateBeforeVideoRef.current?.position ?? 0);
+    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying);
+    await videoRef.current?.pauseAsync().catch(() => {});
+    setVideoAutoPlay(false);
+    setShowVideo(false);
+    setIsVideoLoading(false);
+    setIsVideoReady(false);
+    setIsVideoPlaying(false);
+    seekTo(position);
+
+    if (shouldResumeAudio) togglePlayPause();
+  };
+
+  const handlePlayPausePress = async () => {
+    if (showVideo) {
+      if (!isVideoReady) return;
+      const status = await videoRef.current?.getStatusAsync();
+      if (!status || !(status as any).isLoaded) return;
+      if ((status as any).isPlaying) await videoRef.current?.pauseAsync();
+      else await videoRef.current?.playAsync();
+      return;
+    }
+    if (!isLoading) togglePlayPause();
+  };
 
   const handleNext = () => {
     if (!nextSong) return;
@@ -175,16 +256,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const progressGesture = Gesture.Pan()
     .onUpdate((event) => {
-      if (duration > 0) {
+      if (activeDuration > 0) {
         if (!isSeeking) runOnJS(setIsSeeking)(true);
-        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
         runOnJS(setSeekProgress)(newProgress);
       }
     })
     .onEnd((event) => {
-      if (duration > 0) {
-        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
-        runOnJS(seekTo)(newProgress);
+      if (activeDuration > 0) {
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
+        runOnJS(handleSeek)(newProgress);
         setTimeout(() => {
           runOnJS(setIsSeeking)(false);
         }, 1500);
@@ -195,11 +276,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const progressTap = Gesture.Tap()
     .onEnd((event) => {
-      if (duration > 0) {
-        const newProgress = Math.min(Math.max((event.x / (width - 48)) * duration, 0), duration);
+      if (activeDuration > 0) {
+        const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
         runOnJS(setSeekProgress)(newProgress);
         runOnJS(setIsSeeking)(true);
-        runOnJS(seekTo)(newProgress);
+        runOnJS(handleSeek)(newProgress);
         setTimeout(() => {
           runOnJS(setIsSeeking)(false);
         }, 1500);
@@ -251,23 +332,62 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
                   <View style={styles.imageContainerWrapper}>
                     <Animated.View style={[styles.imageContainer, mainImageStyle]}>
-                      {showVideo ? (
+                      {showVideo && (
                         <Video
+                          ref={videoRef}
                           source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
-                          style={styles.cover}
+                          style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
                           resizeMode={ResizeMode.COVER}
-                          shouldPlay
                           isLooping
-                          isMuted
+                          shouldPlay={false}
+                          onLoad={(status) => {
+                            if (!(status as any).isLoaded) return;
+                            setIsVideoLoading(false);
+                            setIsVideoReady(true);
+                            const durationMillis = (status as any).durationMillis ?? 0;
+                            if (durationMillis > 0) setVideoDuration(durationMillis);
+                            const pending = pendingVideoSeekRef.current;
+                            if (pending !== null) {
+                              pendingVideoSeekRef.current = null;
+                              setVideoProgress(pending);
+                              videoRef.current?.setPositionAsync(pending).catch(() => {});
+                            }
+                            if (videoAutoPlay) {
+                              videoRef.current?.playAsync().catch(() => {});
+                            }
+                          }}
+                          onError={() => {
+                            setIsVideoLoading(false);
+                            setIsVideoReady(false);
+                            setShowVideo(false);
+                            setVideoAutoPlay(false);
+                            const restore = audioStateBeforeVideoRef.current;
+                            if (restore) {
+                              seekTo(restore.position);
+                              if (restore.wasPlaying) togglePlayPause();
+                            }
+                          }}
+                          onPlaybackStatusUpdate={(status) => {
+                            if (!(status as any).isLoaded) return;
+                            setIsVideoPlaying(Boolean((status as any).isPlaying));
+                            setVideoProgress(Number((status as any).positionMillis || 0));
+                            const durationMillis = Number((status as any).durationMillis || 0);
+                            if (durationMillis > 0) setVideoDuration(durationMillis);
+                          }}
                         />
-                      ) : (
+                      )}
+                      {(!showVideo || !isVideoReady) && (
                         <Image
                           source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
                           style={styles.cover}
                         />
                       )}
-                      <TouchableOpacity onPress={() => setShowVideo((v) => !v)} style={styles.icon}>
-                        <Foundation name="play-video" size={30} color="#ffffffff" />
+                      <TouchableOpacity onPress={handleToggleVideo} style={styles.icon}>
+                        {showVideo && isVideoLoading ? (
+                          <LoadingSpinner size={22} />
+                        ) : (
+                          <Foundation name="play-video" size={30} color="#ffffffff" />
+                        )}
                       </TouchableOpacity>
                     </Animated.View>
                   </View>
@@ -312,7 +432,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               </GestureDetector>
               <View style={styles.timeRow}>
                 <Text style={styles.timeText}>{formatTime(currentDisplayProgress)}</Text>
-                <Text style={styles.timeText}>{formatTime(duration)}</Text>
+                <Text style={styles.timeText}>{formatTime(activeDuration)}</Text>
               </View>
             </View>
 
@@ -323,13 +443,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity onPress={handlePrevious}>
                 <Ionicons name="play-skip-back" size={36} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.playButton} onPress={() => !isLoading && togglePlayPause()}>
-                {isLoading ? (
+              <TouchableOpacity style={styles.playButton} onPress={handlePlayPausePress}>
+                {!showVideo && isLoading ? (
                   <View style={{ width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
                     <LoadingSpinner size={60} />
                   </View>
                 ) : (
-                  <Ionicons name={isPlaying ? "pause-circle" : "play-circle"} size={80} color="#fff" />
+                  <Ionicons name={activeIsPlaying ? "pause-circle" : "play-circle"} size={80} color="#fff" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={handleNext}>
@@ -443,6 +563,11 @@ const styles = StyleSheet.create({
      width: IMAGE_SIZE,
      height: IMAGE_SIZE,
      borderRadius: 12,
+   },
+   videoLayer: {
+     position: 'absolute',
+     top: 0,
+     left: 0,
    },
   infoContainer: {
     marginTop: 40,

@@ -282,6 +282,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       toggleShuffle: onToggleShuffle,
       isPlaying,
       togglePlayPause,
+      pause,
       progress,
       duration,
       seekTo,
