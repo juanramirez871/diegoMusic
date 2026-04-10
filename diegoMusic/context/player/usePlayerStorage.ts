@@ -45,16 +45,28 @@ export const usePlayerStorage = () => {
   const toggleFavorite = async (song: SongData) => {
     const isFav = favorites.some(f => f.id === song.id);
     const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
+    
+    // Optimistic Update: Update state immediately
     let newFavorites;
     if (isFav) {
       newFavorites = favorites.filter(f => f.id !== song.id);
-      try {
-        await FileSystem.deleteAsync(persistentUri, { idempotent: true });
-      } catch (e) {}
+    } else {
+      newFavorites = [...favorites, song].sort((a, b) => a.id.localeCompare(b.id));
     }
-    else {
-      newFavorites = [...favorites, song];
-      try {
+    
+    setFavorites(newFavorites);
+
+    try {
+      if (isFav)
+      {
+        try {
+          await FileSystem.deleteAsync(persistentUri, { idempotent: true });
+        }
+        catch (e) {
+          console.warn('Error deleting favorite file:', e);
+        }
+      }
+      else {
         const fileInfo = await FileSystem.getInfoAsync(persistentUri);
         if (!fileInfo.exists) {
           const downloadResumable = FileSystem.createDownloadResumable(
@@ -62,19 +74,16 @@ export const usePlayerStorage = () => {
             persistentUri,
             {}
           );
+
           await downloadResumable.downloadAsync();
         }
       }
-      catch (e) {
-        console.warn('Error guardando canción favorita en almacenamiento:', e);
-      }
-    }
-    setFavorites(newFavorites);
-    try {
+      
       await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
     }
     catch (error) {
-      console.error('Error persisting favorites:', error);
+      console.error('Error in toggleFavorite process:', error);
+      setFavorites(favorites);
     }
   };
 
