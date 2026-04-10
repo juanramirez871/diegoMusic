@@ -5,6 +5,7 @@ import { existsSync } from "fs";
 import { unlink } from "fs/promises";
 import os from "os";
 import path from "path";
+import fetch from "node-fetch";
 
 let innertube = null;
 const downloadCache = new Map();
@@ -183,6 +184,75 @@ export const downloadAudio = (url, startSeconds = 0) => {
 
   downloadCache.set(cacheKey, promise);
   return promise;
+};
+
+export const getVideoDirectSource = async (url) => {
+  
+  const videoId = extractVideoId(url);
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+  const args = [
+    "-f",
+    "18/22/best[ext=mp4][vcodec^=avc1][acodec!=none]/best",
+    "-g",
+    videoUrl,
+  ];
+
+  const directUrl = await new Promise((resolve, reject) => {
+    let stdout = "";
+    let stderr = "";
+    const proc = spawn("yt-dlp", args, { stdio: ["ignore", "pipe", "pipe"] });
+    proc.stdout.on("data", (d) => (stdout += d.toString()));
+    proc.stderr.on("data", (d) => (stderr += d.toString()));
+    proc.on("close", (code) => {
+      if (code === 0) {
+        const lines = stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const firstUrl = lines.find((l) => /^https?:\/\//i.test(l));
+        if (!firstUrl) return reject(new Error("No se obtuvo URL directa del video"));
+        resolve(firstUrl);
+      } else {
+        reject(new Error(stderr || `yt-dlp salió con código ${code}`));
+      }
+    });
+    proc.on("error", (err) => reject(err));
+  });
+
+  const lower = String(directUrl).toLowerCase();
+  const mimeType =
+    lower.includes(".webm") || lower.includes("mime=video%2Fwebm")
+      ? "video/webm"
+      : "video/mp4";
+
+  return { directUrl, mimeType };
+};
+
+export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
+  const headers = {};
+  if (rangeHeader) headers.Range = rangeHeader;
+  const upstream = await fetch(sourceUrl, { headers });
+
+  const status = upstream.status === 206 ? 206 : upstream.status;
+  const upstreamHeaders = {
+    "Content-Type": mimeType,
+    "Accept-Ranges": upstream.headers.get("accept-ranges") || "bytes",
+    "Content-Length": upstream.headers.get("content-length") || undefined,
+    "Content-Range": upstream.headers.get("content-range") || undefined,
+    "Cache-Control": "no-store",
+  };
+
+  Object.entries(upstreamHeaders).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) res.setHeader(k, v);
+  });
+  res.statusCode = status;
+
+  if (!upstream.body) {
+    res.end();
+    return;
+  }
+  upstream.body.on("error", () => {
+    try { res.end(); } catch {}
+  });
+  upstream.body.pipe(res);
 };
 
 export { searchVideo, searchChannelVideos };

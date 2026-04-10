@@ -67,4 +67,17 @@ const downloadAudio = async (req, res) => {
   }
 };
 
-export { searchVideo, searchChannelVideos, downloadAudio };
+const streamVideo = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) return res.status(400).json({ error: "url es requerido" });
+    const rangeHeader = req.headers.range;
+    const { directUrl, mimeType } = await youtubeService.getVideoDirectSource(url);
+    await youtubeService.proxyVideoStream(res, directUrl, mimeType, rangeHeader);
+  } catch (error) {
+    console.error("Error in streamVideo:", error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+  }
+};
+
+export { searchVideo, searchChannelVideos, downloadAudio, streamVideo };

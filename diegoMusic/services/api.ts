@@ -97,6 +97,9 @@ export const youtubeService = {
   getAudioDownloadUrl: (url: string, startSeconds: number = 0) => {
     return `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}&start=${startSeconds}`;
   },
+  getVideoStreamUrl: (url: string) => {
+    return `${BASE_URL}/youtube/video/stream?url=${encodeURIComponent(url)}`;
+  },
 };
 
 export default apiFetch;

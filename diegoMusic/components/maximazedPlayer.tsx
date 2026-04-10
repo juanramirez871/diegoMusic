@@ -11,6 +11,8 @@ import { LoadingSpinner } from './LoadingSpinner';
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
+import { Video, ResizeMode } from 'expo-av';
+import { youtubeService as apiYoutubeService } from '@/services/api';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -28,6 +30,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
+  const [showVideo, setShowVideo] = useState(false);
   const { 
     currentSong, 
     queue, 
@@ -56,6 +59,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   useEffect(() => {
     translateX.value = 0;
     setSeekProgress(0);
+    setShowVideo(false);
   }, [currentSong?.id]);
 
   useEffect(() => {
@@ -149,7 +153,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     return { opacity, transform: [{ scale }] };
   });
 
-  const sideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
+  const useSideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
     const targetValue = isNext ? -width : width;
     const opacity = interpolate(
       translateX.value,
@@ -166,8 +170,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     return { opacity, transform: [{ scale }] };
   });
 
-  const nextImageStyle = sideImageStyle(true);
-  const prevImageStyle = sideImageStyle(false);
+  const nextImageStyle = useSideImageStyle(true);
+  const prevImageStyle = useSideImageStyle(false);
 
   const progressGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -247,11 +251,24 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
                   <View style={styles.imageContainerWrapper}>
                     <Animated.View style={[styles.imageContainer, mainImageStyle]}>
-                      <Image
-                        source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
-                        style={styles.cover}
-                      />
-                      <Foundation name="play-video" size={30} color="#ffffffff" style={styles.icon} />
+                      {showVideo ? (
+                        <Video
+                          source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
+                          style={styles.cover}
+                          resizeMode={ResizeMode.COVER}
+                          shouldPlay
+                          isLooping
+                          isMuted
+                        />
+                      ) : (
+                        <Image
+                          source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          style={styles.cover}
+                        />
+                      )}
+                      <TouchableOpacity onPress={() => setShowVideo((v) => !v)} style={styles.icon}>
+                        <Foundation name="play-video" size={30} color="#ffffffff" />
+                      </TouchableOpacity>
                     </Animated.View>
                   </View>
 

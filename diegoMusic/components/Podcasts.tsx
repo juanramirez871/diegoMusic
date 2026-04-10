@@ -21,7 +21,7 @@ export default function Podcasts() {
                         />
                         <View style={styles.titleContainer}>
                             <Text style={styles.title} numberOfLines={2}>
-                                Psychology of people Who Don't post their Photos on Social Media
+                                Psychology of people Who Don’t post their Photos on Social Media
                             </Text>
                         </View>
                     </View>
