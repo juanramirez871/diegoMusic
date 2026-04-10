@@ -500,7 +500,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity style={styles.playButton} onPress={handlePlayPausePress}>
                 <AnimatedIonicons
                   animatedProps={playIconAnimatedProps}
-                  name={!showVideo && isLoading ? "play-circle" : (activeIsPlaying ? "pause-circle" : "play-circle")}
+                  name={(!showVideo && isLoading) || activeIsPlaying ? "pause-circle" : "play-circle"}
                   size={80}
                 />
               </TouchableOpacity>

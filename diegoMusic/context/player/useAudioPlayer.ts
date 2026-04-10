@@ -23,6 +23,7 @@ export const useAudioPlayer = (
   const [duration, setDuration] = useState(0);
 
   const soundRef = useRef<Audio.Sound | null>(null);
+  const isPlayingRef = useRef(false);
   const currentSongRef = useRef<SongData | null>(null);
   const playNextRef = useRef<() => void>(playNext);
   const playSequenceRef = useRef<number>(0);
@@ -31,6 +32,11 @@ export const useAudioPlayer = (
   const isUsingLocalFileRef = useRef<boolean>(false);
   const lastSeekTimeRef = useRef<number>(0);
   const seekOffsetRef = useRef(0);
+
+  const stableSetIsPlaying = (value: boolean) => {
+    setIsPlaying(value);
+    isPlayingRef.current = value;
+  };
 
   useEffect(() => {
     currentSongRef.current = currentSong;
@@ -43,7 +49,6 @@ export const useAudioPlayer = (
   const cleanupLocalFile = async () => {
     if (localFileUriRef.current) {
       try {
-
         const cacheDir = FileSystem.cacheDirectory ?? 'cache';
         const isCacheFile = localFileUriRef.current.includes(cacheDir);
         
@@ -53,8 +58,7 @@ export const useAudioPlayer = (
             console.log('[CLEANUP] Eliminando archivo temporal:', localFileUriRef.current);
             await FileSystem.deleteAsync(localFileUriRef.current, { idempotent: true });
           }
-        }
-        else {
+        } else {
           console.log('[CLEANUP] Omitiendo eliminación de archivo persistente:', localFileUriRef.current);
         }
       }
@@ -83,8 +87,13 @@ export const useAudioPlayer = (
     {
       const now = Date.now();
       if (now - lastSeekTimeRef.current < 800) return;
+      if (status.isPlaying) {
+        stableSetIsPlaying(true);
+      }
+      else if (!isLoading && isPlayingRef.current) {
+        stableSetIsPlaying(false);
+      }
 
-      setIsPlaying(status.isPlaying);
       const actualPosition = isUsingLocalFileRef.current 
         ? status.positionMillis 
         : status.positionMillis + seekOffsetRef.current;
@@ -118,14 +127,13 @@ export const useAudioPlayer = (
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
     await cancelDownload();
 
-    setIsPlaying(false);
+    stableSetIsPlaying(true);
+    setIsLoading(true);
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
     seekOffsetRef.current = 0;
     isUsingLocalFileRef.current = false;
     localFileUriRef.current = null;
-  
-    if (!preloadedSound) setIsLoading(true);
     
     if (soundRef.current) {
       try {
@@ -162,6 +170,7 @@ export const useAudioPlayer = (
           'Esta canción no está disponible sin internet. Guárdala en favoritos para escucharla offline.'
         );
         setIsLoading(false);
+        stableSetIsPlaying(false);
         return;
       }
 
@@ -293,6 +302,7 @@ export const useAudioPlayer = (
     }
     catch (error) {
       console.error('Error playing song:', error);
+      stableSetIsPlaying(false);
     }
     finally {
       if (currentSequence === playSequenceRef.current) {
@@ -309,13 +319,19 @@ export const useAudioPlayer = (
       return;
     }
     
-    if (isPlaying) await soundRef.current.pauseAsync();
-    else await soundRef.current.playAsync();
+    if (isPlaying) {
+      await soundRef.current.pauseAsync();
+      stableSetIsPlaying(false);
+    } else {
+      await soundRef.current.playAsync();
+      stableSetIsPlaying(true);
+    }
   };
 
   const pause = async () => {
     if (soundRef.current && isPlaying) {
       await soundRef.current.pauseAsync();
+      stableSetIsPlaying(false);
     }
   };
 

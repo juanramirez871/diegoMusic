@@ -50,7 +50,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
       >
         <AnimatedIonicons
           animatedProps={playIconAnimatedProps}
-          name={isLoading ? "play-circle" : (isPlaying ? "pause-circle" : "play-circle")}
+          name={(isLoading || isPlaying) ? "pause-circle" : "play-circle"}
           size={40}
         />
       </TouchableOpacity>
