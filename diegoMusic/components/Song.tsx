@@ -62,7 +62,7 @@ export default function Song({ data, onPress }: SongProps) {
             source={{ uri: thumbnail }}
             style={[styles.image, isCurrentSong && { opacity: 0.6 }]}
           />
-          {isCurrentSong && (
+          {/* {isCurrentSong && (
             <View style={styles.playingOverlay}>
               {isLoading ? (
                 <LoadingSpinner size={20} color="#2c5af3" />
@@ -74,7 +74,7 @@ export default function Song({ data, onPress }: SongProps) {
                 />
               )}
             </View>
-          )}
+          )} */}
         </View>
         <View style={styles.infoContainer}>
           <Text 

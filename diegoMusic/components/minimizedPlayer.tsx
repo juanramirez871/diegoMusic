@@ -20,7 +20,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
   }, [isLoading, loadingProgress]);
 
   const playIconAnimatedProps = useAnimatedProps(() => ({
-    color: interpolateColor(loadingProgress.value, [0, 1], ["#fff", "#6b6b6b"]),
+    color: interpolateColor(loadingProgress.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
   }));
 
   if (!currentSong) return null;

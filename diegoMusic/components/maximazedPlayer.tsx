@@ -126,7 +126,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const progressPercentage = activeDuration > 0 ? Math.min(Math.max((currentDisplayProgress / activeDuration) * 100, 0), 100) : 0;
   const playIconAnimatedProps = useAnimatedProps(() => ({
-    color: interpolateColor(playTint.value, [0, 1], ["#fff", "#6b6b6b"]),
+    color: interpolateColor(playTint.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
   }));
 
   const handleSeek = (position: number) => {

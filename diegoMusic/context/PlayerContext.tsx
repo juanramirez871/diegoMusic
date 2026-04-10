@@ -51,8 +51,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     setCurrentSong(song);
     
-    const { newSource } = await updateQueueAndSource(song, initialQueue, source);
-    await playSongLogic(song);
+    const playPromise = playSongLogic(song);
+    const queueUpdatePromise = updateQueueAndSource(song, initialQueue, source);
+    const [{ newSource }] = await Promise.all([queueUpdatePromise, playPromise]);
+    
     try {
       await Promise.all([
         storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song)),

@@ -125,8 +125,7 @@ export const useAudioPlayer = (
   
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
-    await cancelDownload();
-
+    
     stableSetIsPlaying(true);
     setIsLoading(true);
     setProgress(0);
@@ -134,6 +133,8 @@ export const useAudioPlayer = (
     seekOffsetRef.current = 0;
     isUsingLocalFileRef.current = false;
     localFileUriRef.current = null;
+
+    await cancelDownload();
     
     if (soundRef.current) {
       try {
