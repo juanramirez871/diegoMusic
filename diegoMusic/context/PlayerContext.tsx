@@ -1,9 +1,9 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import storage from '@/services/storage';
 import { SongData } from '@/components/Song';
 import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
-import { SafeMediaControl, Command } from './player/mediaControls';
+import { SafeMediaControl, Command, PlaybackState } from './player/mediaControls';
 import { parseDuration } from './player/utils';
 import { usePlayerStorage } from './player/usePlayerStorage';
 import { usePreloader } from './player/usePreloader';
@@ -95,6 +95,27 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isOnline
   );
 
+  const togglePlayPauseRef = useRef(togglePlayPause);
+  const playNextRef = useRef(playNext);
+  const playPreviousRef = useRef(playPrevious);
+  const seekToRef = useRef(seekTo);
+
+  useEffect(() => {
+    togglePlayPauseRef.current = togglePlayPause;
+  }, [togglePlayPause]);
+
+  useEffect(() => {
+    playNextRef.current = playNext;
+  }, [playNext]);
+
+  useEffect(() => {
+    playPreviousRef.current = playPrevious;
+  }, [playPrevious]);
+
+  useEffect(() => {
+    seekToRef.current = seekTo;
+  }, [seekTo]);
+
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
   const sleepTimerRef = React.useRef<any>(null);
 
@@ -144,19 +165,24 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           playThroughEarpieceAndroid: false,
         });
 
-        const isMediaControlEnabled = await SafeMediaControl.isEnabled();
-        if (isMediaControlEnabled) {
+        if (SafeMediaControl.isAvailable()) {
           await SafeMediaControl.enableMediaControls({
             capabilities: [
-              Command.PLAY, Command.PAUSE, Command.NEXT_TRACK, 
-              Command.PREVIOUS_TRACK, Command.STOP, Command.SEEK,
-            ],
+              Command.PLAY,
+              Command.PAUSE,
+              Command.NEXT_TRACK,
+              Command.PREVIOUS_TRACK,
+              Command.STOP,
+              Command.SEEK,
+            ].filter(Boolean),
             compactCapabilities: [
-              Command.PREVIOUS_TRACK, Command.PLAY, 
-              Command.PAUSE, Command.NEXT_TRACK,
-            ],
+              Command.PREVIOUS_TRACK,
+              Command.PLAY,
+              Command.NEXT_TRACK,
+            ].filter(Boolean),
             notification: { color: '#2c5af3' },
           });
+          await SafeMediaControl.updatePlaybackState(PlaybackState.STOPPED, 0);
         }
       }
       catch (error) {
@@ -165,45 +191,52 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
     setupAudio();
 
-    let removeListener: (() => void) | undefined;
-    SafeMediaControl.isEnabled().then(enabled => {
-      if (enabled) {
-        removeListener = SafeMediaControl.addListener((event: any) => {
-          switch (event.command) {
-            case Command.PLAY:
-            case Command.PAUSE:
-              togglePlayPause();
-              break;
-            case Command.NEXT_TRACK:
-              playNext();
-              break;
-            case Command.PREVIOUS_TRACK:
-              playPrevious();
-              break;
-            case Command.SEEK:
-              if (event.data?.position !== undefined) {
-                seekTo(event.data.position * 1000);
-              }
-              break;
+    const removeListener = SafeMediaControl.addListener((event: any) => {
+      switch (event.command) {
+        case Command.PLAY:
+        case Command.PAUSE:
+          togglePlayPauseRef.current();
+          break;
+        case Command.NEXT_TRACK:
+          playNextRef.current();
+          break;
+        case Command.PREVIOUS_TRACK:
+          playPreviousRef.current();
+          break;
+        case Command.SEEK:
+          if (event.data?.position !== undefined) {
+            seekToRef.current(event.data.position * 1000);
           }
-        });
+          break;
       }
-    }).catch(() => {});
+    });
 
     return () => {
-      if (removeListener) removeListener();
+      removeListener();
+      SafeMediaControl.disableMediaControls().catch(() => {});
     };
-  }, [togglePlayPause]);
+  }, []);
 
 
   useEffect(() => {
     if (currentSong) {
-      SafeMediaControl.updateMetadata({
+      const rawArtworkUri = currentSong.thumbnail?.url;
+      const normalizedArtworkUri =
+        typeof rawArtworkUri === 'string' && rawArtworkUri.length > 0
+          ? rawArtworkUri.replace(/^http:\/\//, 'https://')
+          : undefined;
+
+      const metadata: any = {
         title: currentSong.title,
         artist: currentSong.channel?.name || 'Unknown Artist',
-        artwork: { uri: currentSong.thumbnail.url },
         duration: parseDuration(currentSong.duration_formatted) / 1000,
-      }).catch(() => {});
+      };
+
+      if (normalizedArtworkUri) {
+        metadata.artwork = { uri: normalizedArtworkUri };
+      }
+
+      SafeMediaControl.updateMetadata(metadata).catch(() => {});
     }
   }, [currentSong]);
 

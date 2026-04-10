@@ -16,6 +16,9 @@ if (Constants.executionEnvironment !== ExecutionEnvironment.StoreClient) {
 }
 
 export const SafeMediaControl = {
+  isAvailable: () => {
+    return Boolean(MediaControl);
+  },
   isEnabled: async () => {
     try {
       if (!MediaControl) return false;
@@ -27,24 +30,35 @@ export const SafeMediaControl = {
   },
   enableMediaControls: async (options: any) => {
     try {
-      if (MediaControl && await SafeMediaControl.isEnabled()) {
-        return await MediaControl.enableMediaControls(options);
-      }
-    } catch (e) {}
+      if (!MediaControl) return;
+      return await MediaControl.enableMediaControls(options);
+    } catch (e: any) {
+      console.warn('[MediaControl] enableMediaControls failed:', e?.message ?? e);
+    }
+  },
+  disableMediaControls: async () => {
+    try {
+      if (!MediaControl) return;
+      return await MediaControl.disableMediaControls();
+    } catch (e: any) {
+      console.warn('[MediaControl] disableMediaControls failed:', e?.message ?? e);
+    }
   },
   updateMetadata: async (metadata: any) => {
     try {
-      if (MediaControl && await SafeMediaControl.isEnabled()) {
-        return await MediaControl.updateMetadata(metadata);
-      }
-    } catch (e) {}
+      if (!MediaControl) return;
+      return await MediaControl.updateMetadata(metadata);
+    } catch (e: any) {
+      console.warn('[MediaControl] updateMetadata failed:', e?.message ?? e);
+    }
   },
   updatePlaybackState: async (state: any, position?: number) => {
     try {
-      if (MediaControl && await SafeMediaControl.isEnabled()) {
-        return await MediaControl.updatePlaybackState(state, position);
-      }
-    } catch (e) {}
+      if (!MediaControl) return;
+      return await MediaControl.updatePlaybackState(state, position);
+    } catch (e: any) {
+      console.warn('[MediaControl] updatePlaybackState failed:', e?.message ?? e);
+    }
   },
   addListener: (listener: (event: any) => void) => {
     try {

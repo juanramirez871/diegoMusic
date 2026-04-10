@@ -28,6 +28,7 @@
       "permissions": [
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_AUDIO_PLAYBACK",
+        "POST_NOTIFICATIONS",
         "WAKE_LOCK"
       ],
       "edgeToEdgeEnabled": true,
