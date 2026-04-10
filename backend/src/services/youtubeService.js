@@ -4,8 +4,15 @@ import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { unlink } from "fs/promises";
 import os from "os";
-import path from "path";
 import fetch from "node-fetch";
+import path from "path";
+import {
+  extractVideoId,
+  pickPopularSortFilter,
+  mapInnertubeVideoToChannelItem,
+  resolveChannelId
+} from "../utils/youtubeUtils.js";
+
 
 let innertube = null;
 const downloadCache = new Map();
@@ -15,71 +22,9 @@ const getInnertube = async () => {
   return innertube;
 };
 
-const extractChannelIdFromInput = (input) => {
-  const raw = String(input ?? "").trim();
-  if (!raw) return "";
-
-  const ucMatch = raw.match(/UC[a-zA-Z0-9_-]{22}/);
-  if (ucMatch) return ucMatch[0];
-
-  return "";
-};
-
-const extractHandleFromInput = (input) => {
-  const raw = String(input ?? "").trim();
-  if (!raw) return "";
-
-  const handleMatch = raw.match(/@[\w.-]+/);
-  if (handleMatch) return handleMatch[0];
-
-  return "";
-};
-
-const resolveChannelId = async (input) => {
-  const directId = extractChannelIdFromInput(input);
-  if (directId) return directId;
-
-  const yt = await getInnertube();
-  const raw = String(input ?? "").trim();
-  if (!raw) throw new Error("channelId es requerido");
-
-  const handle = extractHandleFromInput(raw);
-  let urlToResolve = raw;
-
-  if (handle) urlToResolve = `https://www.youtube.com/${handle}`;
-  else if (!/^https?:\/\//i.test(urlToResolve)) urlToResolve = `https://www.youtube.com/${urlToResolve}`;
-
-  const endpoint = await yt.resolveURL(urlToResolve);
-  const browseId = endpoint?.payload?.browseId;
-
-  if (typeof browseId === "string" && browseId.startsWith("UC")) return browseId;
-
-  throw new Error("No se pudo resolver el channelId");
-};
-
-const pickPopularSortFilter = (sortFilters) => {
-  if (!Array.isArray(sortFilters)) return undefined;
-  return sortFilters.find((f) => String(f).toLowerCase().includes("popular"));
-};
-
-const mapInnertubeVideoToChannelItem = (video) => {
-  const thumbs = Array.isArray(video?.thumbnails) ? video.thumbnails : [];
-
-  return {
-    videoId: video?.id ?? "",
-    title: video?.title?.text ?? "",
-    author: video?.author?.name ?? "",
-    authorId: video?.author?.id ?? "",
-    durationText: video?.duration?.text ?? "",
-    videoThumbnails: thumbs.map((t) => ({
-      url: t?.url ?? "",
-      width: t?.width ?? 0,
-      height: t?.height ?? 0,
-    })),
-  };
-};
 
 const searchVideo = async (search, limit) => {
+
   const yt = await getInnertube();
   const results = await yt.search(search, { type: "video" });
 
@@ -100,8 +45,8 @@ const searchVideo = async (search, limit) => {
 
 
 const searchChannelVideos = async (channelId) => {
-  const resolvedChannelId = await resolveChannelId(channelId);
 
+  const resolvedChannelId = await resolveChannelId(channelId);
   try {
     const yt = await getInnertube();
     const channel = await yt.getChannel(resolvedChannelId);
@@ -112,17 +57,11 @@ const searchChannelVideos = async (channelId) => {
 
     const items = sortedFeed.videos.slice(0, 40).map(mapInnertubeVideoToChannelItem);
     if (items.length) return items;
-  } catch {}
+  }
+  catch {}
 
   const videos = await ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy: "popular" });
   return videos.items;
-};
-
-
-const extractVideoId = (url) => {
-  if (url.includes("v="))        return url.split("v=")[1].split("&")[0];
-  if (url.includes("youtu.be/")) return url.split("youtu.be/")[1].split("?")[0];
-  return url;
 };
 
 
@@ -186,6 +125,7 @@ export const downloadAudio = (url, startSeconds = 0) => {
   return promise;
 };
 
+
 export const getVideoDirectSource = async (url) => {
   
   const videoId = extractVideoId(url);
@@ -227,6 +167,7 @@ export const getVideoDirectSource = async (url) => {
 };
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
+
   const headers = {};
   if (rangeHeader) headers.Range = rangeHeader;
   const upstream = await fetch(sourceUrl, { headers });
@@ -243,8 +184,8 @@ export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) =>
   Object.entries(upstreamHeaders).forEach(([k, v]) => {
     if (v !== undefined && v !== null) res.setHeader(k, v);
   });
-  res.statusCode = status;
 
+  res.statusCode = status;
   if (!upstream.body) {
     res.end();
     return;
@@ -252,6 +193,7 @@ export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) =>
   upstream.body.on("error", () => {
     try { res.end(); } catch {}
   });
+
   upstream.body.pipe(res);
 };
 
