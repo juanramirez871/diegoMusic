@@ -166,11 +166,10 @@ const Carousel = ({
                     style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
                     resizeMode={ResizeMode.COVER}
                     isLooping={false}
-                    shouldPlay={false}
+                    shouldPlay={videoAutoPlay}
                     onLoad={(status) => {
                       if (!(status as any).isLoaded) return;
-                      runOnJS(setIsVideoLoading)(false);
-                      runOnJS(setIsVideoReady)(true);
+                      console.log("[Video] Metadata cargada:", (status as any).uri);
                       videoDidFinishHandledRef.current = false;
                       const durationMillis = (status as any).durationMillis ?? 0;
                       if (durationMillis > 0) runOnJS(setVideoDuration)(durationMillis);
@@ -180,11 +179,14 @@ const Carousel = ({
                         runOnJS(setVideoProgress)(pending);
                         videoRef.current?.setPositionAsync(pending).catch(() => {});
                       }
-                      if (videoAutoPlay) {
-                        videoRef.current?.playAsync().catch(() => {});
-                      }
                     }}
-                    onError={() => {
+                    onReadyForDisplay={() => {
+                      console.log("[Video] Listo para mostrar");
+                      runOnJS(setIsVideoLoading)(false);
+                      runOnJS(setIsVideoReady)(true);
+                    }}
+                    onError={(error) => {
+                      console.error("[Video] Error de carga/reproducción:", error);
                       runOnJS(setIsVideoLoading)(false);
                       runOnJS(setIsVideoReady)(false);
                       runOnJS(setShowVideo)(false);
