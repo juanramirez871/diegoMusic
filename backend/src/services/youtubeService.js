@@ -17,13 +17,29 @@ import {
 let innertube = null;
 const downloadCache = new Map();
 
+const parseNetscapeCookies = (raw) => {
+  return raw
+    .split("\n")
+    .filter(line => line && !line.startsWith("#"))
+    .map(line => {
+      const parts = line.split("\t");
+      if (parts.length < 7) return null;
+      const name = parts[5];
+      const value = parts[6].trim();
+      return `${name}=${value}`;
+    })
+    .filter(Boolean)
+    .join("; ");
+};
+
 const getInnertube = async () => {
   if (!innertube) {
     const cookiesPath = path.join(process.cwd(), "cookies.txt");
     if (existsSync(cookiesPath)) {
       try {
-        const cookies = readFileSync(cookiesPath, "utf-8");
-        innertube = await Innertube.create({ cookie: cookies });
+        const rawCookies = readFileSync(cookiesPath, "utf-8");
+        const cookie = parseNetscapeCookies(rawCookies);
+        innertube = await Innertube.create({ cookie });
       } catch (err) {
         console.error("[Innertube] Error cargando cookies:", err.message);
         innertube = await Innertube.create();
