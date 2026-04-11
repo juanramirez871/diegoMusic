@@ -12,6 +12,9 @@
       "bundleIdentifier": "com.juandiego.diegomusic",
       "supportsTablet": true,
       "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
         "UIBackgroundModes": [
           "audio"
         ]
@@ -19,6 +22,7 @@
     },
     "android": {
       "package": "com.juandiego.diegomusic",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
