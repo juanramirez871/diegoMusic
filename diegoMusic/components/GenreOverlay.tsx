@@ -85,7 +85,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
       }
     }
     else {
-      playSong(song);
+      playSong(song, results);
     }
   };
 

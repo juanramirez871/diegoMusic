@@ -160,7 +160,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
       }
     }
     else {
-      playSong(song);
+      playSong(song, results);
     }
     
   };

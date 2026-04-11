@@ -23,7 +23,7 @@ export default function RecentPlayed() {
       <TouchableOpacity 
         style={styles.containerItem} 
         key={item.id}
-        onPress={() => playSong(item)}
+        onPress={() => playSong(item, recentPlayed)}
         activeOpacity={0.7}
       >
         <Image
