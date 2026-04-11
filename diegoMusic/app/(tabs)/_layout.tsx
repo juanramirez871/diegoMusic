@@ -3,7 +3,6 @@ import React from 'react';
 import { BlurView } from 'expo-blur';
 import { StyleSheet, Platform } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
-import { HapticTab } from '@/components/HapticTab';
 
 export default function TabLayout() {
 
@@ -13,7 +12,6 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: '#888888',
         headerShown: false,
-        tabBarButton: HapticTab,
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: 'transparent',

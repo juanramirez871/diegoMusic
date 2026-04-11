@@ -23,6 +23,25 @@ const getInnertube = async () => {
 };
 
 
+const getYtdlpBaseArgs = () => {
+  const cookiesPath = path.join(process.cwd(), "cookies.txt");
+  console.log(cookiesPath)
+  const args = [
+    "--no-playlist",
+    "--no-part",
+    "--extractor-args", "youtube:player_client=android,web",
+    "--js-runtimes", "node",
+  ];
+
+  if (existsSync(cookiesPath)) {
+    console.log("[yt-dlp] Usando archivo de cookies detectado");
+    args.push("--cookies", cookiesPath);
+  }
+
+  return args;
+};
+
+
 const searchVideo = async (search, limit) => {
 
   const yt = await getInnertube();
@@ -84,11 +103,10 @@ export const downloadAudio = (url, startSeconds = 0) => {
 
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const args = [
+      ...getYtdlpBaseArgs(),
       videoUrl,
       "-f", "bestaudio[ext=m4a]/bestaudio",
       "-o", tempFile,
-      "--no-playlist",
-      "--no-part",
       ...(startSeconds > 0 ? ["--download-sections", `*${startSeconds}-inf`] : []),
     ];
 
@@ -132,6 +150,7 @@ export const getVideoDirectSource = async (url) => {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   const args = [
+    ...getYtdlpBaseArgs(),
     "-f",
     "18/22/best[ext=mp4][vcodec^=avc1][acodec!=none]/best",
     "-g",
