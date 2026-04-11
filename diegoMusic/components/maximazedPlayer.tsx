@@ -2,7 +2,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming, cancelAnimation, withDelay } from 'react-native-reanimated';
@@ -18,6 +18,222 @@ import { useNetwork } from '@/context/NetworkContext';
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
 const SWIPE_THRESHOLD = 80;
+
+interface CarouselProps {
+  currentSong: any;
+  prevSong: any;
+  nextSong: any;
+  showVideo: boolean;
+  videoRef: any;
+  isVideoReady: boolean;
+  isVideoLoading: boolean;
+  isVideoPlaying: boolean;
+  setIsVideoLoading: (val: boolean) => void;
+  setIsVideoReady: (val: boolean) => void;
+  setIsVideoPlaying: (val: boolean) => void;
+  setVideoProgress: (val: number) => void;
+  setVideoDuration: (val: number) => void;
+  videoDidFinishHandledRef: any;
+  pendingVideoSeekRef: any;
+  videoAutoPlay: boolean;
+  setVideoAutoPlay: (val: boolean) => void;
+  audioStateBeforeVideoRef: any;
+  setShowVideo: (val: boolean) => void;
+  handleToggleVideo: () => void;
+  playNext: () => void;
+  playPrevious: () => void;
+  seekTo: (pos: number) => void;
+  togglePlayPause: () => void;
+}
+
+const Carousel = ({
+  currentSong,
+  prevSong,
+  nextSong,
+  showVideo,
+  videoRef,
+  isVideoReady,
+  isVideoLoading,
+  isVideoPlaying,
+  setIsVideoLoading,
+  setIsVideoReady,
+  setIsVideoPlaying,
+  setVideoProgress,
+  setVideoDuration,
+  videoDidFinishHandledRef,
+  pendingVideoSeekRef,
+  videoAutoPlay,
+  setVideoAutoPlay,
+  audioStateBeforeVideoRef,
+  setShowVideo,
+  handleToggleVideo,
+  playNext,
+  playPrevious,
+  seekTo,
+  togglePlayPause
+}: CarouselProps) => {
+
+  const translateX = useSharedValue(0);
+  const getThumbnailSource = (song: any) => {
+    if (song?.thumbnail?.url) {
+      return { uri: song.thumbnail.url };
+    }
+    return require("@/assets/images/cover.jpg");
+  };
+
+  const prevThumbnailSource = getThumbnailSource(prevSong);
+  const currentThumbnailSource = getThumbnailSource(currentSong);
+  const nextThumbnailSource = getThumbnailSource(nextSong);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (event.translationX < -SWIPE_THRESHOLD && (nextSong || prevSong)) {
+        translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
+          if (finished) runOnJS(playNext)();
+        });
+      }
+      else if (event.translationX > SWIPE_THRESHOLD && (nextSong || prevSong)) {
+        translateX.value = withTiming(width, { duration: 300 }, (finished) => {
+          if (finished) runOnJS(playPrevious)();
+        });
+      }
+      else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const mainImageStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(Math.abs(translateX.value), [0, width], [1, 0.5], Extrapolation.CLAMP);
+    const scale = interpolate(Math.abs(translateX.value), [0, width], [1, 0.8], Extrapolation.CLAMP);
+    return { opacity, transform: [{ scale }] };
+  });
+
+  const useSideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
+    const targetValue = isNext ? -width : width;
+    const opacity = interpolate(translateX.value, [0, targetValue], [0.5, 1], Extrapolation.CLAMP);
+    const scale = interpolate(translateX.value, [0, targetValue], [0.8, 1], Extrapolation.CLAMP);
+    return { opacity, transform: [{ scale }] };
+  });
+
+  const nextImageStyle = useSideImageStyle(true);
+  const prevImageStyle = useSideImageStyle(false);
+  const presentVideoFullscreen = async () => {
+    if (!showVideo || !isVideoReady) return;
+    const player: any = videoRef.current;
+    if (typeof player?.presentFullscreenPlayer === 'function') {
+      player.presentFullscreenPlayer();
+      return;
+    }
+    if (typeof player?.presentFullscreenPlayerAsync === 'function') {
+      await player.presentFullscreenPlayerAsync();
+    }
+  };
+
+  const videoLongPressGesture = Gesture.LongPress()
+    .minDuration(450)
+    .onStart(() => {
+      if (showVideo && isVideoReady) {
+        runOnJS(presentVideoFullscreen)();
+      }
+    });
+
+  return (
+    <View style={styles.carouselContainer}>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={[styles.imagesWrapper, animatedStyle]}>
+          <View style={styles.imageContainerWrapper}>
+            {prevSong && (
+              <Animated.View style={[prevImageStyle, styles.imageWrapper]}>
+                <Image key={prevSong.id} source={prevThumbnailSource} style={styles.cover} />
+              </Animated.View>
+            )}
+          </View>
+
+          <View style={styles.imageContainerWrapper}>
+            <GestureDetector gesture={videoLongPressGesture}>
+              <Animated.View style={[styles.imageContainer, mainImageStyle]}>
+                {showVideo && (
+                  <Video
+                    ref={videoRef}
+                    source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
+                    style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
+                    resizeMode={ResizeMode.COVER}
+                    isLooping={false}
+                    shouldPlay={false}
+                    onLoad={(status) => {
+                      if (!(status as any).isLoaded) return;
+                      runOnJS(setIsVideoLoading)(false);
+                      runOnJS(setIsVideoReady)(true);
+                      videoDidFinishHandledRef.current = false;
+                      const durationMillis = (status as any).durationMillis ?? 0;
+                      if (durationMillis > 0) runOnJS(setVideoDuration)(durationMillis);
+                      const pending = pendingVideoSeekRef.current;
+                      if (pending !== null) {
+                        pendingVideoSeekRef.current = null;
+                        runOnJS(setVideoProgress)(pending);
+                        videoRef.current?.setPositionAsync(pending).catch(() => {});
+                      }
+                      if (videoAutoPlay) {
+                        videoRef.current?.playAsync().catch(() => {});
+                      }
+                    }}
+                    onError={() => {
+                      runOnJS(setIsVideoLoading)(false);
+                      runOnJS(setIsVideoReady)(false);
+                      runOnJS(setShowVideo)(false);
+                      runOnJS(setVideoAutoPlay)(false);
+                      const restore = audioStateBeforeVideoRef.current;
+                      if (restore) {
+                        runOnJS(seekTo)(restore.position);
+                        if (restore.wasPlaying) runOnJS(togglePlayPause)();
+                      }
+                    }}
+                    onPlaybackStatusUpdate={(status) => {
+                      if (!(status as any).isLoaded) return;
+                      runOnJS(setIsVideoPlaying)(Boolean((status as any).isPlaying));
+                      runOnJS(setVideoProgress)(Number((status as any).positionMillis || 0));
+                      const durationMillis = Number((status as any).durationMillis || 0);
+                      if (durationMillis > 0) runOnJS(setVideoDuration)(durationMillis);
+                      if ((status as any).didJustFinish && !videoDidFinishHandledRef.current) {
+                        videoDidFinishHandledRef.current = true;
+                        runOnJS(playNext)();
+                      }
+                    }}
+                  />
+                )}
+                {(!showVideo || !isVideoReady) && (
+                  <Image key={currentSong.id} source={currentThumbnailSource} style={styles.cover} />
+                )}
+                <TouchableOpacity onPress={handleToggleVideo} style={styles.icon}>
+                  {showVideo && isVideoLoading ? (
+                    <LoadingSpinner size={22} />
+                  ) : (
+                    <Foundation name="play-video" size={30} color="#ffffffff" />
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            </GestureDetector>
+          </View>
+
+          <View style={styles.imageContainerWrapper}>
+            {nextSong && (
+              <Animated.View style={nextImageStyle}>
+                <Image key={nextSong.id} source={nextThumbnailSource} style={styles.cover} />
+              </Animated.View>
+            )}
+          </View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+};
 
 interface MaximazedPlayerProps {
   visible: boolean;
@@ -77,22 +293,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     sleepTimer
   } = usePlayer();
 
-  const translateX = useSharedValue(0);
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
   const prevSong = hasNextOrPrev ? queue[(currentIndex - 1 + queue.length) % queue.length] : null;
-
-  const getThumbnailSource = (song: any) => {
-    if (song?.thumbnail?.url) {
-      return { uri: song.thumbnail.url };
-    }
-    return require("@/assets/images/cover.jpg");
-  };
-
-  const prevThumbnailSource = getThumbnailSource(prevSong);
-  const currentThumbnailSource = getThumbnailSource(currentSong);
-  const nextThumbnailSource = getThumbnailSource(nextSong);
 
   const activeProgress = showVideo ? (isVideoReady ? videoProgress : progress) : progress;
   const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
@@ -112,7 +316,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   }, [showVideo, isLoading, playTint]);
 
   useEffect(() => {
-    translateX.value = 0;
     setSeekProgress(0);
     if (showVideoRef.current) {
       videoRef.current?.pauseAsync().catch(() => {});
@@ -127,7 +330,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       setVideoDuration(0);
     }
     videoDidFinishHandledRef.current = false;
-  }, [currentSong?.id, translateX]);
+  }, [currentSong?.id]);
 
   useEffect(() => {
     if (!activeIsLoading && !isSeeking) {
@@ -244,17 +447,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   };
 
   const handleNext = () => {
-    if (!hasNextOrPrev) return;
-    translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
-      if (finished) runOnJS(playNext)();
-    });
+    if (hasNextOrPrev) playNext();
   };
 
   const handlePrevious = () => {
-    if (!hasNextOrPrev) return;
-    translateX.value = withTiming(width, { duration: 300 }, (finished) => {
-      if (finished) runOnJS(playPrevious)();
-    });
+    if (hasNextOrPrev) playPrevious();
   };
 
   const handleShare = async () => {
@@ -270,68 +467,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       console.error(error.message);
     }
   };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-    })
-    .onEnd((event) => {
-      if (event.translationX < -SWIPE_THRESHOLD && hasNextOrPrev) {
-        translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(playNext)();
-        });
-      }
-      else if (event.translationX > SWIPE_THRESHOLD && hasNextOrPrev) {
-        translateX.value = withTiming(width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(playPrevious)();
-        });
-      }
-      else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const mainImageStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      Math.abs(translateX.value),
-      [0, width],
-      [1, 0.5],
-      Extrapolation.CLAMP
-    );
-
-    const scale = interpolate(
-      Math.abs(translateX.value),
-      [0, width],
-      [1, 0.8],
-      Extrapolation.CLAMP
-    );
-
-    return { opacity, transform: [{ scale }] };
-  });
-
-  const useSideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
-    const targetValue = isNext ? -width : width;
-    const opacity = interpolate(
-      translateX.value,
-      [0, targetValue],
-      [0.5, 1],
-      Extrapolation.CLAMP
-    );
-    const scale = interpolate(
-      translateX.value,
-      [0, targetValue],
-      [0.8, 1],
-      Extrapolation.CLAMP
-    );
-    return { opacity, transform: [{ scale }] };
-  });
-
-  const nextImageStyle = useSideImageStyle(true);
-  const prevImageStyle = useSideImageStyle(false);
 
   const progressGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -395,102 +530,33 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           </View>
 
           <View style={styles.content}>
-            <View style={styles.carouselContainer}>
-              <GestureDetector gesture={panGesture}>
-                <Animated.View style={[styles.imagesWrapper, animatedStyle]}>
-                  <View style={styles.imageContainerWrapper}>
-                    {prevSong && (
-                      <Animated.View style={[prevImageStyle, styles.imageWrapper]}>
-                        <Image
-                          source={prevThumbnailSource}
-                          style={styles.cover}
-                        />
-                      </Animated.View>
-                    )}
-                  </View>
-
-                  <View style={styles.imageContainerWrapper}>
-                    <GestureDetector gesture={videoLongPressGesture}>
-                      <Animated.View style={[styles.imageContainer, mainImageStyle]}>
-                      {showVideo && (
-                        <Video
-                          ref={videoRef}
-                          source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
-                          style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
-                          resizeMode={ResizeMode.COVER}
-                          isLooping={false}
-                          shouldPlay={false}
-                          onLoad={(status) => {
-                            if (!(status as any).isLoaded) return;
-                            setIsVideoLoading(false);
-                            setIsVideoReady(true);
-                            videoDidFinishHandledRef.current = false;
-                            const durationMillis = (status as any).durationMillis ?? 0;
-                            if (durationMillis > 0) setVideoDuration(durationMillis);
-                            const pending = pendingVideoSeekRef.current;
-                            if (pending !== null) {
-                              pendingVideoSeekRef.current = null;
-                              setVideoProgress(pending);
-                              videoRef.current?.setPositionAsync(pending).catch(() => {});
-                            }
-                            if (videoAutoPlay) {
-                              videoRef.current?.playAsync().catch(() => {});
-                            }
-                          }}
-                          onError={() => {
-                            setIsVideoLoading(false);
-                            setIsVideoReady(false);
-                            setShowVideo(false);
-                            setVideoAutoPlay(false);
-                            const restore = audioStateBeforeVideoRef.current;
-                            if (restore) {
-                              seekTo(restore.position);
-                              if (restore.wasPlaying) togglePlayPause();
-                            }
-                          }}
-                          onPlaybackStatusUpdate={(status) => {
-                            if (!(status as any).isLoaded) return;
-                            setIsVideoPlaying(Boolean((status as any).isPlaying));
-                            setVideoProgress(Number((status as any).positionMillis || 0));
-                            const durationMillis = Number((status as any).durationMillis || 0);
-                            if (durationMillis > 0) setVideoDuration(durationMillis);
-                            if ((status as any).didJustFinish && !videoDidFinishHandledRef.current) {
-                              videoDidFinishHandledRef.current = true;
-                              runOnJS(playNext)();
-                            }
-                          }}
-                        />
-                      )}
-                      {(!showVideo || !isVideoReady) && (
-                        <Image
-                          source={currentThumbnailSource}
-                          style={styles.cover}
-                        />
-                      )}
-                      <TouchableOpacity onPress={handleToggleVideo} style={styles.icon}>
-                        {showVideo && isVideoLoading ? (
-                          <LoadingSpinner size={22} />
-                        ) : (
-                          <Foundation name="play-video" size={30} color="#ffffffff" />
-                        )}
-                      </TouchableOpacity>
-                      </Animated.View>
-                    </GestureDetector>
-                  </View>
-
-                  <View style={styles.imageContainerWrapper}>
-                    {nextSong && (
-                      <Animated.View style={nextImageStyle}>
-                        <Image
-                          source={nextThumbnailSource}
-                          style={styles.cover}
-                        />
-                      </Animated.View>
-                    )}
-                  </View>
-                </Animated.View>
-              </GestureDetector>
-            </View>
+            <Carousel
+              key={currentSong.id}
+              currentSong={currentSong}
+              prevSong={prevSong}
+              nextSong={nextSong}
+              showVideo={showVideo}
+              videoRef={videoRef}
+              isVideoReady={isVideoReady}
+              isVideoLoading={isVideoLoading}
+              isVideoPlaying={isVideoPlaying}
+              setIsVideoLoading={setIsVideoLoading}
+              setIsVideoReady={setIsVideoReady}
+              setIsVideoPlaying={setIsVideoPlaying}
+              setVideoProgress={setVideoProgress}
+              setVideoDuration={setVideoDuration}
+              videoDidFinishHandledRef={videoDidFinishHandledRef}
+              pendingVideoSeekRef={pendingVideoSeekRef}
+              videoAutoPlay={videoAutoPlay}
+              setVideoAutoPlay={setVideoAutoPlay}
+              audioStateBeforeVideoRef={audioStateBeforeVideoRef}
+              setShowVideo={setShowVideo}
+              handleToggleVideo={handleToggleVideo}
+              playNext={playNext}
+              playPrevious={playPrevious}
+              seekTo={seekTo}
+              togglePlayPause={togglePlayPause}
+            />
 
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
