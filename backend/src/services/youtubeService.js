@@ -32,8 +32,8 @@ const getYtdlpBaseArgs = () => {
     "--no-part",
     "--js-runtimes", "node",
     "--extractor-args", hasCookies 
-      ? "youtube:player_client=web,ios" 
-      : "youtube:player_client=android,web",
+      ? "youtube:player_client=mweb,web,ios" 
+      : "youtube:player_client=android,mweb,web",
   ];
 
   if (hasCookies) {
