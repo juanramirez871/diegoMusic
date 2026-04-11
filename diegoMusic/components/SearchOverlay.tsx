@@ -311,6 +311,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: "80%",
   },
   emptyStateTitle: {
     color: "#fff",
