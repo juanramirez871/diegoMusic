@@ -72,21 +72,37 @@ const searchVideo = async (search, limit) => {
 const searchChannelVideos = async (channelId) => {
 
   const resolvedChannelId = await resolveChannelId(channelId);
+  let channelInfo = { name: "N/A", id: resolvedChannelId };
+
   try {
     const yt = await getInnertube();
     const channel = await yt.getChannel(resolvedChannelId);
-    const videosTab = channel.has_videos ? await channel.getVideos() : channel;
+    channelInfo.name = channel.metadata?.title || channel.header?.author?.name || "N/A";
+    channelInfo.id = channel.metadata?.id || resolvedChannelId;
 
+    const videosTab = channel.has_videos ? await channel.getVideos() : channel;
     const popularFilter = pickPopularSortFilter(videosTab.sort_filters);
     const sortedFeed = popularFilter ? await videosTab.applySort(popularFilter) : videosTab;
 
-    const items = sortedFeed.videos.slice(0, 40).map(mapInnertubeVideoToChannelItem);
+    const items = sortedFeed.videos.slice(0, 40).map((video) => {
+      const mapped = mapInnertubeVideoToChannelItem(video);
+      if (!mapped.author || mapped.author === "N/A") mapped.author = channelInfo.name;
+      if (!mapped.authorId || mapped.authorId === "N/A") mapped.authorId = channelInfo.id;
+      return mapped;
+    });
+
     if (items.length) return items;
   }
-  catch {}
+  catch (error) {
+    console.warn("[searchChannelVideos] Falló Innertube:", error.message);
+  }
 
   const videos = await ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy: "popular" });
-  return videos.items;
+  return (videos.items || []).map(v => ({
+    ...v,
+    author: (!v.author || v.author === "N/A") ? channelInfo.name : v.author,
+    authorId: (!v.authorId || v.authorId === "N/A") ? channelInfo.id : v.authorId
+  }));
 };
 
 
