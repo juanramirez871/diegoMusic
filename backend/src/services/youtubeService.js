@@ -1,7 +1,6 @@
 import ytch from "yt-channel-info";
 import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
-import { existsSync, readFileSync } from "fs";
 import { unlink } from "fs/promises";
 import os from "os";
 import fetch from "node-fetch";
@@ -12,64 +11,28 @@ import {
   mapInnertubeVideoToChannelItem,
   resolveChannelId
 } from "../utils/youtubeUtils.js";
+import { existsSync, readFileSync } from "fs";
 
 
 let innertube = null;
 const downloadCache = new Map();
 
-const parseNetscapeCookies = (raw) => {
-  return raw
-    .split("\n")
-    .filter(line => line && !line.startsWith("#"))
-    .map(line => {
-      const parts = line.split("\t");
-      if (parts.length < 7) return null;
-      const name = parts[5];
-      const value = parts[6].trim();
-      return `${name}=${value}`;
-    })
-    .filter(Boolean)
-    .join("; ");
-};
-
 const getInnertube = async () => {
   if (!innertube) {
-    const cookiesPath = path.join(process.cwd(), "cookies.txt");
-    if (existsSync(cookiesPath)) {
-      try {
-        const rawCookies = readFileSync(cookiesPath, "utf-8");
-        const cookie = parseNetscapeCookies(rawCookies);
-        innertube = await Innertube.create({ cookie });
-      } catch (err) {
-        console.error("[Innertube] Error cargando cookies:", err.message);
-        innertube = await Innertube.create();
-      }
-    } else {
-      innertube = await Innertube.create();
-    }
+    innertube = await Innertube.create();
   }
   return innertube;
 };
 
 
 const getYtdlpBaseArgs = () => {
-  const cookiesPath = path.join(process.cwd(), "cookies.txt");
-  const hasCookies = existsSync(cookiesPath);
-  
-  const args = [
+  return [
     "--no-playlist",
     "--no-part",
-    "--js-runtimes", "node",
+    "--js-runtimes", `node:${process.execPath}`,
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "--extractor-args", "youtube:player_client=mweb,ios,android",
+    "--extractor-args", "youtube:player_client=web",
   ];
-
-  if (hasCookies) {
-    console.log("[yt-dlp] Usando archivo de cookies detectado");
-    args.push("--cookies", cookiesPath);
-  }
-
-  return args;
 };
 
 
@@ -176,14 +139,13 @@ export const downloadAudio = (url, startSeconds = 0) => {
 
 
 export const getVideoDirectSource = async (url) => {
-  
+
   const videoId = extractVideoId(url);
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   const args = [
     ...getYtdlpBaseArgs(),
-    "-f",
-    "18/22/best[ext=mp4]/best",
+    "-f", "18/22/best[ext=mp4]/best",
     "-g",
     videoUrl,
   ];
@@ -218,7 +180,7 @@ export const getVideoDirectSource = async (url) => {
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
 
-  console.log("iniciando video")
+  console.log("iniciando video");
   const headers = {};
   if (rangeHeader) headers.Range = rangeHeader;
   const upstream = await fetch(sourceUrl, { headers });
