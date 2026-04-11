@@ -174,6 +174,8 @@ export const getVideoDirectSource = async (url) => {
   const videoId = extractVideoId(url);
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
+  console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId}`);
+
   const args = [
     ...getYtdlpBaseArgs(),
     "-f", "18/22/best[ext=mp4]/best",
@@ -195,15 +197,22 @@ export const getVideoDirectSource = async (url) => {
       if (code === 0) {
         const lines = stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
         const firstUrl = lines.find((l) => /^https?:\/\//i.test(l));
-        if (!firstUrl) return reject(new Error("No se obtuvo URL directa del video"));
+        if (!firstUrl) {
+          console.error(`[getVideoDirectSource] Error: No se obtuvo URL directa del video. stdout: ${stdout}, stderr: ${stderr}`);
+          return reject(new Error("No se obtuvo URL directa del video"));
+        }
         resolve(firstUrl);
       }
       else {
+        console.error(`[getVideoDirectSource] Error (código ${code}): ${stderr}`);
         reject(new Error(stderr || `yt-dlp salió con código ${code}`));
       }
     });
 
-    proc.on("error", (err) => reject(err));
+    proc.on("error", (err) => {
+      console.error(`[getVideoDirectSource] Error de proceso: ${err.message}`);
+      reject(err);
+    });
   });
 
   const lower = String(directUrl).toLowerCase();
@@ -212,14 +221,25 @@ export const getVideoDirectSource = async (url) => {
       ? "video/webm"
       : "video/mp4";
 
+  console.log(`[getVideoDirectSource] URL obtenida correctamente (mime: ${mimeType})`);
   return { directUrl, mimeType };
 };
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
 
-  const headers = {};
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+  };
+
   if (rangeHeader) headers.Range = rangeHeader;
+  console.log(`[proxyVideoStream] Iniciando stream. Range: ${rangeHeader || "N/A"}`);
   const upstream = await fetch(sourceUrl, { headers });
+
+  if (!upstream.ok) {
+    console.error(`[proxyVideoStream] Error al obtener stream de YouTube: ${upstream.status} ${upstream.statusText}`);
+    res.status(upstream.status).end();
+    return;
+  }
 
   const status = upstream.status === 206 ? 206 : upstream.status;
   const upstreamHeaders = {
@@ -236,10 +256,12 @@ export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) =>
 
   res.statusCode = status;
   if (!upstream.body) {
+    console.error("[proxyVideoStream] El cuerpo de la respuesta upstream es nulo");
     res.end();
     return;
   }
-  upstream.body.on("error", () => {
+  upstream.body.on("error", (err) => {
+    console.error("[proxyVideoStream] Error en el stream body:", err.message);
     try { res.end(); } catch {}
   });
 
