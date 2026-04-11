@@ -26,15 +26,24 @@ const getInnertube = async () => {
 
 
 const getYtdlpBaseArgs = () => {
-  return [
+  const cookiesPath = path.join(process.cwd(), "cookies.txt");
+  const hasCookies = existsSync(cookiesPath);
+
+  const args = [
     "--no-playlist",
     "--no-part",
     "--js-runtimes", `node:${process.execPath}`,
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "--extractor-args", "youtube:player_client=web_safari,tv_embedded,web",
   ];
-};
 
+  if (hasCookies) {
+    console.log("[yt-dlp] Usando cookies");
+    args.push("--cookies", cookiesPath);
+  }
+
+  return args;
+};
 
 const searchVideo = async (search, limit) => {
 
@@ -104,7 +113,10 @@ export const downloadAudio = (url, startSeconds = 0) => {
       ...(startSeconds > 0 ? ["--download-sections", `*${startSeconds}-inf`] : []),
     ];
 
-    const proc = spawn("yt-dlp", args, { stdio: ["ignore", "pipe", "pipe"] });
+    const proc = spawn("yt-dlp", args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, PATH: process.env.PATH }
+    });
 
     proc.stdout.on("data", (d) => console.log("[yt-dlp]", d.toString().trim()));
     proc.stderr.on("data", (d) => console.log("[yt-dlp]", d.toString().trim()));
@@ -153,7 +165,10 @@ export const getVideoDirectSource = async (url) => {
   const directUrl = await new Promise((resolve, reject) => {
     let stdout = "";
     let stderr = "";
-    const proc = spawn("yt-dlp", args, { stdio: ["ignore", "pipe", "pipe"] });
+    const proc = spawn("yt-dlp", args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, PATH: process.env.PATH }
+    });
     proc.stdout.on("data", (d) => (stdout += d.toString()));
     proc.stderr.on("data", (d) => (stderr += d.toString()));
     proc.on("close", (code) => {
