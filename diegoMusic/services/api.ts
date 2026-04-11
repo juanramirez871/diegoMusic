@@ -1,5 +1,4 @@
-const BASE_URL = 'http://192.168.1.37:3000/api';
-
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
 const searchCache = new Map<string, any[]>();
 
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
