@@ -218,6 +218,7 @@ export const getVideoDirectSource = async (url) => {
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
 
+  console.log("iniciando video")
   const headers = {};
   if (rangeHeader) headers.Range = rangeHeader;
   const upstream = await fetch(sourceUrl, { headers });
