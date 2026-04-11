@@ -304,6 +304,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
   const activeIsPlaying = showVideo ? (isVideoReady ? isVideoPlaying : false) : isPlaying;
   const activeIsLoading = showVideo ? isVideoLoading : isLoading;
+  const isSeekEnabled = !activeIsLoading;
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
@@ -471,6 +472,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   };
 
   const progressGesture = Gesture.Pan()
+    .enabled(isSeekEnabled)
     .onUpdate((event) => {
       if (activeDuration > 0) {
         if (!isSeeking) runOnJS(setIsSeeking)(true);
@@ -491,6 +493,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     })
 
   const progressTap = Gesture.Tap()
+    .enabled(isSeekEnabled)
     .onEnd((event) => {
       if (activeDuration > 0) {
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
@@ -578,7 +581,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
             <View style={styles.progressSection}>
               <GestureDetector gesture={Gesture.Exclusive(progressGesture, progressTap)}>
-                <View style={styles.progressContainer}>
+                <View style={[styles.progressContainer, { opacity: isSeekEnabled ? 1 : 0.5 }]}>
                   <View style={styles.bgBar} />
                   <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
                   <View style={[styles.progressDot, { left: `${progressPercentage}%` }]} />
