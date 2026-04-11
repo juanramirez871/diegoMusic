@@ -17,26 +17,27 @@ export default function RecentPlayed() {
     </View>
   );
 
-  const renderItem = (item: SongData) => (
-    <TouchableOpacity 
-      style={styles.containerItem} 
-      key={item.id}
-      onPress={() => playSong(item)}
-      activeOpacity={0.7}
-    >
-      <Image
-        source={{
-          uri: item.thumbnail.url,
-        }}
-        style={styles.image}
-      />
-      <View style={styles.textContainer}>
-        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
-          {item.title}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItem = (item: SongData) => {
+    const thumbnailSource = item.thumbnail?.url ? { uri: item.thumbnail.url } : require("@/assets/images/cover.jpg");
+    return (
+      <TouchableOpacity 
+        style={styles.containerItem} 
+        key={item.id}
+        onPress={() => playSong(item)}
+        activeOpacity={0.7}
+      >
+        <Image
+          source={thumbnailSource}
+          style={styles.image}
+        />
+        <View style={styles.textContainer}>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+            {item.title}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderColumn = (items: SongData[], startIndex: number) => {
 

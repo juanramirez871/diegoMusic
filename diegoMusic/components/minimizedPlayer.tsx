@@ -25,6 +25,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   if (!currentSong) return null;
   const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
+  const thumbnailSource = currentSong.thumbnail?.url ? { uri: currentSong.thumbnail.url } : require("@/assets/images/cover.jpg");
 
   return (
     <TouchableOpacity 
@@ -33,7 +34,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
       style={[styles.container, style]}
     >
       <Image
-        source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+        source={thumbnailSource}
         style={styles.cover}
       />
       <View style={styles.info}>

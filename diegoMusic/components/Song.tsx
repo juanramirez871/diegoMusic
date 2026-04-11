@@ -42,7 +42,7 @@ export default function Song({ data, onPress }: SongProps) {
   const isCurrentSong = currentSong?.id === data?.id;
   const title = data?.title || "Sin título";
   const artist = data?.channel?.name || "Sin artista";
-  const thumbnail = data?.thumbnail?.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg";
+  const thumbnailSource = data?.thumbnail?.url ? { uri: data.thumbnail.url } : require("@/assets/images/cover.jpg");
 
   const handlePress = () => {
     if (onPress && data) {
@@ -59,7 +59,7 @@ export default function Song({ data, onPress }: SongProps) {
       >
         <View style={styles.imageWrapper}>
           <Image
-            source={{ uri: thumbnail }}
+            source={thumbnailSource}
             style={[styles.image, isCurrentSong && { opacity: 0.6 }]}
           />
           {/* {isCurrentSong && (

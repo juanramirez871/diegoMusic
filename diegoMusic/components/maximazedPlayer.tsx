@@ -69,6 +69,17 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
   const prevSong = hasNextOrPrev ? queue[(currentIndex - 1 + queue.length) % queue.length] : null;
 
+  const getThumbnailSource = (song: any) => {
+    if (song?.thumbnail?.url) {
+      return { uri: song.thumbnail.url };
+    }
+    return require("@/assets/images/cover.jpg");
+  };
+
+  const prevThumbnailSource = getThumbnailSource(prevSong);
+  const currentThumbnailSource = getThumbnailSource(currentSong);
+  const nextThumbnailSource = getThumbnailSource(nextSong);
+
   const activeProgress = showVideo ? (isVideoReady ? videoProgress : progress) : progress;
   const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
   const activeIsPlaying = showVideo ? (isVideoReady ? isVideoPlaying : false) : isPlaying;
@@ -370,7 +381,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                     {prevSong && (
                       <Animated.View style={[prevImageStyle, styles.imageWrapper]}>
                         <Image
-                          source={{ uri: prevSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          source={prevThumbnailSource}
                           style={styles.cover}
                         />
                       </Animated.View>
@@ -431,7 +442,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                       )}
                       {(!showVideo || !isVideoReady) && (
                         <Image
-                          source={{ uri: currentSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          source={currentThumbnailSource}
                           style={styles.cover}
                         />
                       )}
@@ -450,7 +461,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                     {nextSong && (
                       <Animated.View style={nextImageStyle}>
                         <Image
-                          source={{ uri: nextSong.thumbnail.url || "https://cdn.rafled.com/anime-icons/images/0c4ea0cc5346ae427bd7ce86928f0faefa0f07c373a110bb080c0a81ce8efa1a.jpg" }}
+                          source={nextThumbnailSource}
                           style={styles.cover}
                         />
                       </Animated.View>

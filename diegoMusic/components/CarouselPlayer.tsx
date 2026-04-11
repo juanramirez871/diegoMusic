@@ -69,29 +69,30 @@ export default function CarouselPlayer({ channelId, query, data }: CarouselPlaye
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {songs.map((item, index) => (
-          <TouchableOpacity 
-            key={item.id + index} 
-            style={styles.songItem}
-            onPress={() => playSong(item, songs)}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={{
-                uri: item.thumbnail.url,
-              }}
-              style={styles.image}
-            />
-            <View style={styles.infoContainer}>
-              <Text style={styles.titleSong} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.subtitleSong} numberOfLines={1}>
-                {item.channel.name}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {songs.map((item, index) => {
+          const thumbnailSource = item.thumbnail?.url ? { uri: item.thumbnail.url } : require("@/assets/images/cover.jpg");
+          return (
+            <TouchableOpacity 
+              key={item.id + index} 
+              style={styles.songItem}
+              onPress={() => playSong(item, songs)}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={thumbnailSource}
+                style={styles.image}
+              />
+              <View style={styles.infoContainer}>
+                <Text style={styles.titleSong} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={styles.subtitleSong} numberOfLines={1}>
+                  {item.channel.name}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );

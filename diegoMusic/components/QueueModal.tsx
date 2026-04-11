@@ -71,6 +71,7 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<SongData>) => {
     const isCurrent = currentSong?.id === item.id;
+    const thumbnailSource = item.thumbnail?.url ? { uri: item.thumbnail.url } : require("@/assets/images/cover.jpg");
 
     return (
       <ScaleDecorator>
@@ -84,7 +85,7 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
             isCurrent && styles.currentSongItem,
           ]}
         >
-          <Image source={{ uri: item.thumbnail.url }} style={styles.thumbnail} />
+          <Image source={thumbnailSource} style={styles.thumbnail} />
           <View style={styles.songInfo}>
             <Text
               style={[styles.songTitle, isCurrent && styles.currentSongTitle]}
