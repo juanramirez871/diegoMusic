@@ -169,6 +169,7 @@ export const getVideoDirectSource = async (url) => {
       stdio: ["ignore", "pipe", "pipe"],
       env: { ...process.env, PATH: process.env.PATH }
     });
+
     proc.stdout.on("data", (d) => (stdout += d.toString()));
     proc.stderr.on("data", (d) => (stderr += d.toString()));
     proc.on("close", (code) => {
@@ -177,10 +178,12 @@ export const getVideoDirectSource = async (url) => {
         const firstUrl = lines.find((l) => /^https?:\/\//i.test(l));
         if (!firstUrl) return reject(new Error("No se obtuvo URL directa del video"));
         resolve(firstUrl);
-      } else {
+      }
+      else {
         reject(new Error(stderr || `yt-dlp salió con código ${code}`));
       }
     });
+
     proc.on("error", (err) => reject(err));
   });
 
@@ -195,7 +198,6 @@ export const getVideoDirectSource = async (url) => {
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
 
-  console.log("iniciando video");
   const headers = {};
   if (rangeHeader) headers.Range = rangeHeader;
   const upstream = await fetch(sourceUrl, { headers });

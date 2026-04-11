@@ -76,7 +76,6 @@ const streamVideo = async (req, res) => {
     const rangeHeader = req.headers.range;
 
     const { directUrl, mimeType } = await youtubeService.getVideoDirectSource(url);
-    console.log("finalizando video")
     await youtubeService.proxyVideoStream(res, directUrl, mimeType, rangeHeader);
   }
   catch (error) {
