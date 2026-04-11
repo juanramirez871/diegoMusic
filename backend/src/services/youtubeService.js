@@ -1,7 +1,7 @@
 import ytch from "yt-channel-info";
 import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { unlink } from "fs/promises";
 import os from "os";
 import fetch from "node-fetch";
@@ -18,7 +18,20 @@ let innertube = null;
 const downloadCache = new Map();
 
 const getInnertube = async () => {
-  if (!innertube) innertube = await Innertube.create();
+  if (!innertube) {
+    const cookiesPath = path.join(process.cwd(), "cookies.txt");
+    if (existsSync(cookiesPath)) {
+      try {
+        const cookies = readFileSync(cookiesPath, "utf-8");
+        innertube = await Innertube.create({ cookie: cookies });
+      } catch (err) {
+        console.error("[Innertube] Error cargando cookies:", err.message);
+        innertube = await Innertube.create();
+      }
+    } else {
+      innertube = await Innertube.create();
+    }
+  }
   return innertube;
 };
 
@@ -31,9 +44,7 @@ const getYtdlpBaseArgs = () => {
     "--no-playlist",
     "--no-part",
     "--js-runtimes", "node",
-    "--extractor-args", hasCookies 
-      ? "youtube:player_client=mweb,web,ios" 
-      : "youtube:player_client=android,mweb,web",
+    "--extractor-args", "youtube:player_client=android,mweb,web,ios",
   ];
 
   if (hasCookies) {
