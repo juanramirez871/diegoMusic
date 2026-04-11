@@ -4,8 +4,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
+import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming, cancelAnimation, withDelay } from 'react-native-reanimated';
 import Foundation from '@expo/vector-icons/Foundation';
 import { LoadingSpinner } from './LoadingSpinner';
 import QueueModal from './QueueModal';
@@ -23,6 +23,20 @@ interface MaximazedPlayerProps {
   visible: boolean;
   onClose: () => void;
 }
+
+const MarqueeText = ({ text, style }: { text: string; style: any }) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      bounces={false}
+    >
+      <Text style={style} numberOfLines={1}>
+        {text}
+      </Text>
+    </ScrollView>
+  );
+};
 
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
@@ -62,8 +76,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     isLoading,
     sleepTimer
   } = usePlayer();
-  const translateX = useSharedValue(0);
 
+  const translateX = useSharedValue(0);
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
@@ -481,8 +495,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
                 <View style={styles.textWrapper}>
-                  <Text style={styles.title} numberOfLines={1}>{currentSong.title}</Text>
-                  <Text style={styles.artist} numberOfLines={1}>{currentSong.channel.name}</Text>
+                  <MarqueeText key={`title-${currentSong.id}`} text={currentSong.title} style={styles.title} />
+                  <MarqueeText key={`artist-${currentSong.id}`} text={currentSong.channel.name} style={styles.artist} />
                 </View>
                 <TouchableOpacity onPress={() => toggleFavorite(currentSong)}>
                   <Ionicons 
@@ -665,9 +679,11 @@ const styles = StyleSheet.create({
   scrollingTextContainer: {
     width: '100%',
     overflow: 'hidden',
+    alignItems: 'flex-start',
   },
   scrollingTextWrapper: {
     flexDirection: 'row',
+    alignSelf: 'flex-start',
   },
   progressSection: {
     marginTop: 30,
