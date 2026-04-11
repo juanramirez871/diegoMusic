@@ -177,7 +177,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     const position = isLoaded
       ? (status as any).positionMillis
       : (pendingVideoSeekRef.current ?? audioStateBeforeVideoRef.current?.position ?? 0);
-    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying);
+    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying || isVideoPlaying);
     await videoRef.current?.pauseAsync().catch(() => {});
     setVideoAutoPlay(false);
     setShowVideo(false);
@@ -209,6 +209,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
         runOnJS(presentVideoFullscreen)();
       }
     });
+
+  const handleClose = async () => {
+    if (showVideo) {
+      await handleToggleVideo();
+    }
+    onClose();
+  };
 
   const handlePlayPausePress = async () => {
     if (showVideo) {
@@ -353,7 +360,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.modalContainer}>
         <LinearGradient
@@ -361,7 +368,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           style={styles.gradient}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="chevron-down" size={32} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>REPRODUCIENDO</Text>
