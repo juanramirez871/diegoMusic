@@ -12,6 +12,7 @@ import {
   resolveChannelId
 } from "../utils/youtubeUtils.js";
 import { existsSync, readFileSync } from "fs";
+import { execSync } from "child_process";
 
 
 let innertube = null;
@@ -26,13 +27,15 @@ const getInnertube = async () => {
 
 
 const getYtdlpBaseArgs = () => {
+
   const cookiesPath = path.join(process.cwd(), "cookies.txt");
   const hasCookies = existsSync(cookiesPath);
+  const denoPath = execSync("which deno").toString().trim();
 
   const args = [
     "--no-playlist",
     "--no-part",
-    "--js-runtimes", `node:${process.execPath}`,
+    "--js-runtimes", `deno:${denoPath}`,
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
     "--extractor-args", "youtube:player_client=web_safari,tv_embedded,web",
   ];
