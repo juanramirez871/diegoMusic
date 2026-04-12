@@ -43,22 +43,19 @@ export const usePlayerStorage = () => {
   }, []);
 
   const toggleFavorite = async (song: SongData) => {
+
     const isFav = favorites.some(f => f.id === song.id);
     const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
-    
-    // Optimistic Update: Update state immediately
     let newFavorites;
-    if (isFav) {
-      newFavorites = favorites.filter(f => f.id !== song.id);
-    } else {
-      newFavorites = [...favorites, song].sort((a, b) => a.id.localeCompare(b.id));
-    }
+    if (isFav) newFavorites = favorites.filter(f => f.id !== song.id);
+    else newFavorites = [...favorites, song].sort((a, b) => a.id.localeCompare(b.id));
     
     setFavorites(newFavorites);
 
     try {
-      if (isFav)
-      {
+
+      await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
+      if (isFav) {
         try {
           await FileSystem.deleteAsync(persistentUri, { idempotent: true });
         }
@@ -74,14 +71,17 @@ export const usePlayerStorage = () => {
             persistentUri,
             {}
           );
-
-          await downloadResumable.downloadAsync();
+          
+          console.log(`[FAVORITE] Iniciando descarga de: ${song.title}`);
+          downloadResumable.downloadAsync().then(() => {
+            console.log(`[FAVORITE] Descarga completada: ${song.title}`);
+          })
+          .catch(err => {
+            console.error(`[FAVORITE] Error descargando ${song.title}:`, err);
+          });
         }
       }
-      
-      await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error in toggleFavorite process:', error);
       setFavorites(favorites);
     }
