@@ -14,6 +14,7 @@ import SongOptionsModal from './SongOptionsModal';
 import { Video, ResizeMode } from 'expo-av';
 import { youtubeService as apiYoutubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
+import { useThumbnail } from '@/hooks/useThumbnail';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -74,16 +75,10 @@ const Carousel = ({
 }: CarouselProps) => {
 
   const translateX = useSharedValue(0);
-  const getThumbnailSource = (song: any) => {
-    if (song?.thumbnail?.url) {
-      return { uri: song.thumbnail.url };
-    }
-    return require("@/assets/images/cover.jpg");
-  };
-
-  const prevThumbnailSource = getThumbnailSource(prevSong);
-  const currentThumbnailSource = getThumbnailSource(currentSong);
-  const nextThumbnailSource = getThumbnailSource(nextSong);
+  
+  const prevThumbnailSource = useThumbnail(prevSong?.id, prevSong?.thumbnail?.url);
+  const currentThumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
+  const nextThumbnailSource = useThumbnail(nextSong?.id, nextSong?.thumbnail?.url);
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {

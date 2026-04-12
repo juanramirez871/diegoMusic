@@ -5,6 +5,7 @@ import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 import { usePlayer } from "@/context/PlayerContext";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { useThumbnail } from "@/hooks/useThumbnail";
 
 export interface ArtistData {
   id: string;
@@ -38,11 +39,11 @@ export default function Song({ data, onPress }: SongProps) {
 
   const { currentSong, isPlaying, isLoading } = usePlayer();
   const [modalVisible, setModalVisible] = useState(false);
+  const thumbnailSource = useThumbnail(data?.id, data?.thumbnail?.url);
   
   const isCurrentSong = currentSong?.id === data?.id;
   const title = data?.title || "Sin título";
   const artist = data?.channel?.name || "Sin artista";
-  const thumbnailSource = data?.thumbnail?.url ? { uri: data.thumbnail.url } : require("@/assets/images/cover.jpg");
 
   const handlePress = () => {
     if (onPress && data) {

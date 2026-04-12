@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
 import storage from '@/services/storage';
 import { SongData } from '@/components/Song';
 import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
@@ -222,26 +223,43 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 
   useEffect(() => {
-    if (currentSong) {
-      const rawArtworkUri = currentSong.thumbnail?.url;
-      const normalizedArtworkUri =
-        typeof rawArtworkUri === 'string' && rawArtworkUri.length > 0
-          ? rawArtworkUri.replace(/^http:\/\//, 'https://')
-          : undefined;
+    const updateMetadata = async () => {
+      if (currentSong) {
+        let artworkUri = currentSong.thumbnail?.url;
+        
+        if (isFavorite(currentSong.id)) {
+          const localThumbUri = `${FileSystem.documentDirectory}${currentSong.id}_thumb.jpg`;
+          try {
+            const info = await FileSystem.getInfoAsync(localThumbUri);
+            if (info.exists) {
+              artworkUri = localThumbUri;
+            }
+          } catch (e) {
+            console.warn('Error checking local thumbnail for metadata:', e);
+          }
+        }
 
-      const metadata: any = {
-        title: currentSong.title,
-        artist: currentSong.channel?.name || 'Unknown Artist',
-        duration: parseDuration(currentSong.duration_formatted) / 1000,
-      };
+        const normalizedArtworkUri =
+          typeof artworkUri === 'string' && artworkUri.length > 0
+            ? artworkUri.replace(/^http:\/\//, 'https://')
+            : undefined;
 
-      if (normalizedArtworkUri) {
-        metadata.artwork = { uri: normalizedArtworkUri };
+        const metadata: any = {
+          title: currentSong.title,
+          artist: currentSong.channel?.name || 'Unknown Artist',
+          duration: parseDuration(currentSong.duration_formatted) / 1000,
+        };
+
+        if (normalizedArtworkUri) {
+          metadata.artwork = { uri: normalizedArtworkUri };
+        }
+
+        SafeMediaControl.updateMetadata(metadata).catch(() => {});
       }
+    };
 
-      SafeMediaControl.updateMetadata(metadata).catch(() => {});
-    }
-  }, [currentSong]);
+    updateMetadata();
+  }, [currentSong, favorites]);
 
 
   useEffect(() => {

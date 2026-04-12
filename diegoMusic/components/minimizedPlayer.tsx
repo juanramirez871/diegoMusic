@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
 import { useEffect } from "react";
 import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
+import { useThumbnail } from "@/hooks/useThumbnail";
 
 interface MinimizedPlayerProps {
   onPress: () => void;
@@ -14,6 +15,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
   const { currentSong, isPlaying, togglePlayPause, progress, duration, isLoading } = usePlayer();
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
   const loadingProgress = useSharedValue(isLoading ? 1 : 0);
+  const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
 
   useEffect(() => {
     loadingProgress.value = withTiming(isLoading ? 1 : 0, { duration: 220 });
@@ -25,7 +27,6 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   if (!currentSong) return null;
   const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
-  const thumbnailSource = currentSong.thumbnail?.url ? { uri: currentSong.thumbnail.url } : require("@/assets/images/cover.jpg");
 
   return (
     <TouchableOpacity 

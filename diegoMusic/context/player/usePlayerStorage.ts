@@ -17,6 +17,29 @@ export const usePlayerStorage = () => {
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [mostPlayed, setMostPlayed] = useState<SongData[]>([]);
 
+  const syncThumbnails = async (favoritesList: SongData[]) => {
+    console.log(`[SYNC] Revisando ${favoritesList.length} favoritos para portadas faltantes...`);
+    for (const song of favoritesList) {
+      if (!song.thumbnail?.url) continue;
+      
+      const thumbnailUri = `${FileSystem.documentDirectory}${song.id}_thumb.jpg`;
+      try {
+        const info = await FileSystem.getInfoAsync(thumbnailUri);
+        if (!info.exists) {
+          console.log(`[SYNC] Descargando portada faltante para: ${song.title}`);
+          const thumbDownload = FileSystem.createDownloadResumable(
+            song.thumbnail.url,
+            thumbnailUri,
+            {}
+          );
+          await thumbDownload.downloadAsync();
+        }
+      } catch (e) {
+        console.warn(`[SYNC] Error sincronizando portada de ${song.title}:`, e);
+      }
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -29,7 +52,11 @@ export const usePlayerStorage = () => {
 
         if (savedFavorites) {
           const parsedFavorites = JSON.parse(savedFavorites);
-          setFavorites(parsedFavorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id)));
+          const sorted = parsedFavorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id));
+          setFavorites(sorted);
+          
+          // Trigger thumbnail sync in background
+          syncThumbnails(sorted);
         }
         if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
         if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
@@ -46,6 +73,8 @@ export const usePlayerStorage = () => {
 
     const isFav = favorites.some(f => f.id === song.id);
     const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
+    const thumbnailUri = `${FileSystem.documentDirectory}${song.id}_thumb.jpg`;
+    
     let newFavorites;
     if (isFav) newFavorites = favorites.filter(f => f.id !== song.id);
     else newFavorites = [...favorites, song].sort((a, b) => a.id.localeCompare(b.id));
@@ -57,10 +86,13 @@ export const usePlayerStorage = () => {
       await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
       if (isFav) {
         try {
-          await FileSystem.deleteAsync(persistentUri, { idempotent: true });
+          await Promise.all([
+            FileSystem.deleteAsync(persistentUri, { idempotent: true }),
+            FileSystem.deleteAsync(thumbnailUri, { idempotent: true })
+          ]);
         }
         catch (e) {
-          console.warn('Error deleting favorite file:', e);
+          console.warn('Error deleting favorite files:', e);
         }
       }
       else {
@@ -72,13 +104,31 @@ export const usePlayerStorage = () => {
             {}
           );
           
-          console.log(`[FAVORITE] Iniciando descarga de: ${song.title}`);
+          console.log(`[FAVORITE] Iniciando descarga de audio: ${song.title}`);
           downloadResumable.downloadAsync().then(() => {
-            console.log(`[FAVORITE] Descarga completada: ${song.title}`);
+            console.log(`[FAVORITE] Descarga de audio completada: ${song.title}`);
           })
           .catch(err => {
-            console.error(`[FAVORITE] Error descargando ${song.title}:`, err);
+            console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
           });
+        }
+
+        if (song.thumbnail?.url) {
+          const thumbInfo = await FileSystem.getInfoAsync(thumbnailUri);
+          if (!thumbInfo.exists) {
+            const thumbDownload = FileSystem.createDownloadResumable(
+              song.thumbnail.url,
+              thumbnailUri,
+              {}
+            );
+            
+            console.log(`[FAVORITE] Iniciando descarga de portada: ${song.title}`);
+            thumbDownload.downloadAsync().then(() => {
+              console.log(`[FAVORITE] Descarga de portada completada: ${song.title}`);
+            }).catch(err => {
+              console.error(`[FAVORITE] Error descargando portada ${song.title}:`, err);
+            });
+          }
         }
       }
     } catch (error) {
