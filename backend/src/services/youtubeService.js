@@ -30,7 +30,13 @@ const getYtdlpBaseArgs = () => {
 
   const cookiesPath = path.join(process.cwd(), "cookies.txt");
   const hasCookies = existsSync(cookiesPath);
-  const denoPath = "/home/ubuntu/.deno/bin/deno";
+  
+  let denoPath = "/usr/bin/deno";
+  try {
+    denoPath = execSync("which deno").toString().trim();
+  } catch (e) {
+    console.warn("[yt-dlp] Deno no encontrado, se intentará usar el valor por defecto");
+  }
 
   const args = [
     "--no-playlist",
