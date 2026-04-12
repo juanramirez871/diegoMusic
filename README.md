@@ -9,7 +9,7 @@
 ## Home
 
 <p align="center">
-  <img src="/assets/home.png" width="300">
+  <img src="/assets/home.PNG" width="300">
 </p>
 
 La pantalla principal está diseñada para ofrecer acceso rápido a tu contenido más relevante:
@@ -18,7 +18,7 @@ La pantalla principal está diseñada para ofrecer acceso rápido a tu contenido
 * **Artistas favoritos**: lista de artistas guardados por el usuario junto con recomendaciones de sus canciones.
 
 <p align="center">
-  <img src="/assets/home2.png" width="300">
+  <img src="/assets/home2.PNG" width="300">
 </p>
 
 Además, incluye:
@@ -29,7 +29,7 @@ Además, incluye:
 ## Favoritos
 
 <p align="center">
-  <img src="/assets/favorites.png" width="300">
+  <img src="/assets/favorites.PNG" width="300">
 </p>
 
 En esta sección encontrarás todas las canciones marcadas como favoritas.
@@ -41,7 +41,7 @@ En esta sección encontrarás todas las canciones marcadas como favoritas.
 ## Reproductor
 
 <p align="center">
-  <img src="/assets/player.png" width="300">
+  <img src="/assets/player.PNG" width="300">
 </p>
 
 Al expandir el reproductor, tendrás acceso a múltiples funcionalidades:
@@ -58,15 +58,15 @@ Al expandir el reproductor, tendrás acceso a múltiples funcionalidades:
 10. Abrir el video original en YouTube
 
 <p align="center">
-  <img src="/assets/optionsPlayer.png" width="250">
-  <img src="/assets/queueSongs.png" width="250">
-  <img src="/assets/temporizador.png" width="250">
+  <img src="/assets/optionsPlayer.PNG" width="250">
+  <img src="/assets/queueSongs.PNG" width="250">
+  <img src="/assets/temporizador.PNG" width="250">
 </p>
 
 ## Búsqueda
 
 <p align="center">
-  <img src="/assets/search.png" width="300">
+  <img src="/assets/search.PNG" width="300">
 </p>
 
 La pantalla de búsqueda permite:
@@ -75,14 +75,14 @@ La pantalla de búsqueda permite:
 * Buscar **canciones o artistas específicos**
 
 <p align="center">
-  <img src="/assets/resultSearch2.png" width="300">
-  <img src="/assets/resultSearch.png" width="300">
+  <img src="/assets/resultSearch2.PNG" width="300">
+  <img src="/assets/resultSearch.PNG" width="300">
 </p>
 
 ## Pantalla de bloqueo
 
 <p align="center">
-  <img src="/assets/lockScreen.png" width="300">
+  <img src="/assets/lockScreen.PNG" width="300">
 </p>
 
 El reproductor se integra con la pantalla de bloqueo del dispositivo, permitiendo:
