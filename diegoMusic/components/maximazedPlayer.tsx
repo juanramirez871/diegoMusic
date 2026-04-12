@@ -520,7 +520,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="chevron-down" size={32} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>REPRODUCIENDO</Text>
+            <Text style={styles.headerTitle}>NOW PLAYING</Text>
             <TouchableOpacity 
               style={styles.menuButton}
               onPress={() => setIsOptionsVisible(true)}
