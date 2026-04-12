@@ -371,42 +371,24 @@ export const useAudioPlayer = (
     lastSeekTimeRef.current = Date.now();
     
     try {
-      const diff = Math.abs(position - progress);
-      
-      if (localFileUriRef.current) {
-        if (isUsingLocalFileRef.current) {
-          setProgress(position);
-          try {
-            await soundRef.current.setPositionAsync(position);
-          }
-          catch (e: any) {
-            if (e.message?.includes('interrupted')) {
-              setTimeout(async () => {
-                lastSeekTimeRef.current = Date.now();
-                await soundRef.current?.setPositionAsync(position).catch(() => {});
-              }, 100);
-            }
-          }
-          return;
-        }
-        else {
-          const success = await switchToLocalFile(position);
-          if (success) return;
-        }
+
+      if (isUsingLocalFileRef.current) {
+        setProgress(position);
+        await soundRef.current.setPositionAsync(position);
+        return;
       }
 
-      if (diff > 30000 || position < seekOffsetRef.current) {
+      if (localFileUriRef.current) {
+        const success = await switchToLocalFile(position);
+        if (success) return;
+      }
+
+      const diff = Math.abs(position - progress);
+       if (diff > 120000 || position < seekOffsetRef.current) {
+
         setIsLoading(true);
         setProgress(position);
-        
-        if (localFileUriRef.current) {
-          const success = await switchToLocalFile(position);
-          if (success) {
-            setIsLoading(false);
-            return;
-          }
-        }
-
+      
         await soundRef.current.unloadAsync();
         seekOffsetRef.current = position;
         const startSeconds = Math.floor(position / 1000);
@@ -421,7 +403,8 @@ export const useAudioPlayer = (
         setProgress(position);
         setIsLoading(false);
       }
-      else {
+      else
+      {
         const relativePosition = position - seekOffsetRef.current;
         setProgress(position);
         await soundRef.current.setPositionAsync(relativePosition);

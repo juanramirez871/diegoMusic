@@ -304,7 +304,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
   const activeIsPlaying = showVideo ? (isVideoReady ? isVideoPlaying : false) : isPlaying;
   const activeIsLoading = showVideo ? isVideoLoading : isLoading;
-  const isSeekEnabled = !activeIsLoading;
+  const isSeekEnabled = true;
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
