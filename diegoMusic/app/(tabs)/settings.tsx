@@ -1,4 +1,4 @@
-import { Text, StyleSheet, View, ScrollView } from "react-native";
+import { Text, StyleSheet, View, ScrollView, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
@@ -9,7 +9,8 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContainer}
       >
         <View style={styles.container}>
-          <Text style={styles.text}>Coming soon :)</Text>
+          <Text style={styles.text}>I'm working on it!</Text>
+          <Image source={require("@/assets/images/l.png")} style={styles.logo} resizeMode="contain" />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -34,5 +35,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
+  },
+  logo: {
+    width: 200,
+    marginTop: 50,
+    height: 200,
   },
 });
