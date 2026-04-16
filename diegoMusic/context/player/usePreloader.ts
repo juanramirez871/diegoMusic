@@ -4,6 +4,7 @@ import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRef } from 'react';
 
+
 export const usePreloader = () => {
   const preloadedSoundsRef = useRef<Map<string, AudioPlayer>>(new Map());
 
@@ -31,51 +32,25 @@ export const usePreloader = () => {
       let localUri = persistentUri;
 
       if (!fileInfo.exists) {
-
         localUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
         fileInfo = await FileSystem.getInfoAsync(localUri);
-
-        if (!fileInfo.exists) {
-
-          if (!isOnline) continue;
-          const downloadResumable = FileSystem.createDownloadResumable(
-            youtubeService.getAudioDownloadUrl(song.url),
-            localUri,
-            {}
-          );
-
-          try {
-            const downloadResult = await downloadResumable.downloadAsync();
-            if (downloadResult && downloadResult.uri) {
-              console.log(`[PRELOADED] Descarga finalizada para ${song.id} en ${downloadResult.uri}`);
-              fileInfo = await FileSystem.getInfoAsync(localUri);
-            }
-          }
-          catch (err) {
-            console.error(`[PRELOADED] Error descargando song ${song.id}:`, err);
-            continue;
-          }
-        }
-      }
-
-      const MIN_FILE_SIZE = 5 * 1024;
-      if (!fileInfo.exists || (fileInfo.size !== undefined && fileInfo.size < MIN_FILE_SIZE)) {
-        console.warn(`[PRELOADED] Archivo corrupto o demasiado pequeño ${song.id}, eliminando`);
-        await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
-        continue;
       }
 
       if (!preloadedSoundsRef.current.has(song.id)) {
         try {
-          console.log(`[PRELOADED] Cargando player para ${song.id} desde ${localUri}`);
-          const player = createAudioPlayer({ uri: localUri });
-          preloadedSoundsRef.current.set(song.id, player);
+          if (fileInfo.exists && (fileInfo.size === undefined || fileInfo.size >= 5 * 1024)) {
+            console.log(`[PRELOADED] Cargando player para ${song.id} desde archivo local`);
+            const player = createAudioPlayer({ uri: localUri });
+            preloadedSoundsRef.current.set(song.id, player);
+          } else if (isOnline) {
+            console.log(`[PRELOADED] Cargando player para ${song.id} desde URL directa`);
+            const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
+            const player = createAudioPlayer({ uri: directUrl });
+            preloadedSoundsRef.current.set(song.id, player);
+          }
         }
         catch (error) {
           console.warn(`[PRELOADED] Error al crear player para ${song.id}:`, error);
-          if (localUri.includes(FileSystem.cacheDirectory ?? '')) {
-            await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
-          }
         }
       }
     }

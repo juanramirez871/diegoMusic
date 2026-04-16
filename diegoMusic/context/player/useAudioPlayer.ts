@@ -107,9 +107,7 @@ export const useAudioPlayer = (
     }
 
     const currentTimeMs = (status.currentTime ?? 0) * 1000;
-    const actualPosition = isUsingLocalFileRef.current
-      ? currentTimeMs
-      : currentTimeMs + seekOffsetRef.current;
+    const actualPosition = currentTimeMs;
 
     setProgress(actualPosition);
     const song = currentSongRef.current;
@@ -149,10 +147,12 @@ export const useAudioPlayer = (
 
   const playSongLogic = async (song: SongData) => {
 
+    soundRef.current?.pause();
+
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
 
-    stableSetIsPlaying(true);
+    stableSetIsPlaying(false);
     setIsLoading(true);
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
@@ -207,10 +207,10 @@ export const useAudioPlayer = (
           sound.play();
 
           if (!localUri && isOnline) {
-            const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+            const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
             const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
             console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
-            const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, targetUri, {});
+            const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
             downloadResumableRef.current = downloadResumable;
             downloadResumable.downloadAsync().then(async (result: any) => {
               if (result && result.uri && currentSongRef.current?.id === song.id) {
@@ -232,8 +232,8 @@ export const useAudioPlayer = (
             attachStatusListener(sound);
             sound.play();
           } else if (isOnline) {
-            const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-            sound = createAudioPlayer({ uri: downloadUrl });
+            const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
+            sound = createAudioPlayer({ uri: directUrl });
             attachStatusListener(sound);
             sound.play();
           } else {
@@ -252,17 +252,17 @@ export const useAudioPlayer = (
         sound.play();
       }
       else if (isOnline) {
-        const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-        console.log('[NETWORK] Reproduciendo desde red:', downloadUrl);
+        const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
+        console.log('[NETWORK] Reproduciendo desde URL directa:', song.id);
         if (currentSequence !== playSequenceRef.current) return;
 
-        sound = createAudioPlayer({ uri: downloadUrl });
+        sound = createAudioPlayer({ uri: directUrl });
         attachStatusListener(sound);
         sound.play();
 
         const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
         console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
-        const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, targetUri, {});
+        const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
         downloadResumableRef.current = downloadResumable;
         downloadResumable.downloadAsync().then(async (result: any) => {
           if (result && result.uri && currentSongRef.current?.id === song.id) {
@@ -349,45 +349,16 @@ export const useAudioPlayer = (
     lastSeekTimeRef.current = Date.now();
 
     try {
-
-      if (isUsingLocalFileRef.current) {
-        setProgress(position);
-        soundRef.current.seekTo(position / 1000);
-        return;
-      }
-
-      if (localFileUriRef.current) {
+      if (localFileUriRef.current && !isUsingLocalFileRef.current) {
         const success = await switchToLocalFile(position);
         if (success) return;
       }
 
-      const diff = Math.abs(position - progress);
-      if (diff > 120000 || position < seekOffsetRef.current) {
-
-        setIsLoading(true);
-        setProgress(position);
-
-        unloadCurrentSound();
-        seekOffsetRef.current = position;
-        const startSeconds = Math.floor(position / 1000);
-
-        const sound = createAudioPlayer({ uri: youtubeService.getAudioDownloadUrl(currentSong.url, startSeconds) });
-        attachStatusListener(sound);
-        sound.play();
-
-        soundRef.current = sound;
-        setProgress(position);
-        setIsLoading(false);
-      }
-      else {
-        const relativePosition = position - seekOffsetRef.current;
-        setProgress(position);
-        soundRef.current.seekTo(relativePosition / 1000);
-      }
+      setProgress(position);
+      soundRef.current.seekTo(position / 1000);
     }
     catch (error) {
       console.warn('Seek error:', error);
-      setIsLoading(false);
     }
   };
 

@@ -96,6 +96,12 @@ export const youtubeService = {
   getAudioDownloadUrl: (url: string, startSeconds: number = 0) => {
     return `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}&start=${startSeconds}`;
   },
+  getAudioDirectUrl: async (url: string): Promise<{ url: string; mimeType: string }> => {
+    return apiFetch<{ url: string; mimeType: string }>(`/youtube/audio/url?url=${encodeURIComponent(url)}`);
+  },
+  prefetchAudio: (url: string): void => {
+    fetch(`${BASE_URL}/youtube/audio/prefetch?url=${encodeURIComponent(url)}`).catch(() => {});
+  },
   getVideoStreamUrl: (url: string) => {
     return `${BASE_URL}/youtube/video/stream?url=${encodeURIComponent(url)}`;
   },

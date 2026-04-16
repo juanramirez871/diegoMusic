@@ -17,6 +17,8 @@ import { execSync } from "child_process";
 
 let innertube = null;
 const downloadCache = new Map();
+const urlCache = new Map();
+const URL_CACHE_TTL = 4 * 60 * 60 * 1000;
 
 const getInnertube = async () => {
   if (!innertube) {
@@ -112,6 +114,54 @@ const searchChannelVideos = async (channelId) => {
 };
 
 
+export const getAudioDirectUrl = async (url) => {
+  const videoId = extractVideoId(url);
+  const cacheKey = `audio:${videoId}`;
+
+  const cached = urlCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < URL_CACHE_TTL) {
+    console.log(`[getAudioDirectUrl] Cache hit: ${videoId}`);
+    return cached.data;
+  }
+
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const args = [
+    ...getYtdlpBaseArgs(),
+    '-f', 'ba[ext=m4a]/ba/best',
+    '-g',
+    videoUrl,
+  ];
+
+  const directUrl = await new Promise((resolve, reject) => {
+    let stdout = '';
+    let stderr = '';
+    const proc = spawn('yt-dlp', args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: process.env.PATH }
+    });
+
+    proc.stdout.on('data', (d) => (stdout += d.toString()));
+    proc.stderr.on('data', (d) => (stderr += d.toString()));
+    proc.on('close', (code) => {
+      if (code === 0) {
+        const lines = stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const firstUrl = lines.find(l => /^https?:\/\//i.test(l));
+        if (!firstUrl) return reject(new Error('No direct URL obtained'));
+        resolve(firstUrl);
+      } else {
+        reject(new Error(stderr || `yt-dlp exited with code ${code}`));
+      }
+    });
+    proc.on('error', reject);
+  });
+
+  const result = { url: directUrl, mimeType: 'audio/mp4' };
+  urlCache.set(cacheKey, { data: result, timestamp: Date.now() });
+  console.log(`[getAudioDirectUrl] URL obtenida para ${videoId}`);
+  return result;
+};
+
+
 export const downloadAudio = (url, startSeconds = 0) => {
 
   const videoId = extractVideoId(url);
@@ -178,6 +228,14 @@ export const downloadAudio = (url, startSeconds = 0) => {
 export const getVideoDirectSource = async (url) => {
 
   const videoId = extractVideoId(url);
+  const cacheKey = `video:${videoId}`;
+
+  const cached = urlCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < URL_CACHE_TTL) {
+    console.log(`[getVideoDirectSource] Cache hit: ${videoId}`);
+    return cached.data;
+  }
+
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId}`);
@@ -228,6 +286,7 @@ export const getVideoDirectSource = async (url) => {
       : "video/mp4";
 
   console.log(`[getVideoDirectSource] URL obtenida correctamente (mime: ${mimeType})`);
+  urlCache.set(cacheKey, { data: { directUrl, mimeType }, timestamp: Date.now() });
   return { directUrl, mimeType };
 };
 

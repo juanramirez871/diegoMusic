@@ -1,4 +1,3 @@
-import { ArtistData, SongData } from '@/components/Song';
 import { youtubeService } from '@/services/api';
 import storage from '@/services/storage';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -9,6 +8,7 @@ import {
     MOST_PLAYED_KEY,
     RECENT_PLAYED_KEY
 } from './types';
+import { ArtistData, SongData } from '@/interfaces/Song';
 
 export const usePlayerStorage = () => {
 
@@ -98,17 +98,13 @@ export const usePlayerStorage = () => {
       else {
         const fileInfo = await FileSystem.getInfoAsync(persistentUri);
         if (!fileInfo.exists) {
-          const downloadResumable = FileSystem.createDownloadResumable(
-            youtubeService.getAudioDownloadUrl(song.url),
-            persistentUri,
-            {}
-          );
-          
           console.log(`[FAVORITE] Iniciando descarga de audio: ${song.title}`);
-          downloadResumable.downloadAsync().then(() => {
+          youtubeService.getAudioDirectUrl(song.url).then(({ url: directUrl }) => {
+            const downloadResumable = FileSystem.createDownloadResumable(directUrl, persistentUri, {});
+            return downloadResumable.downloadAsync();
+          }).then(() => {
             console.log(`[FAVORITE] Descarga de audio completada: ${song.title}`);
-          })
-          .catch(err => {
+          }).catch(err => {
             console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
           });
         }

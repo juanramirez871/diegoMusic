@@ -84,4 +84,25 @@ const streamVideo = async (req, res) => {
   }
 };
 
-export { searchVideo, searchChannelVideos, downloadAudio, streamVideo };
+const getAudioUrl = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) return res.status(400).json({ error: 'url is required' });
+    const result = await youtubeService.getAudioDirectUrl(url);
+    res.json(result);
+  } catch (error) {
+    console.error('Error in getAudioUrl:', error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+  }
+};
+
+const prefetchAudio = (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'url is required' });
+  res.status(202).end();
+  youtubeService.getAudioDirectUrl(url).catch((err) =>
+    console.warn('[prefetch] Error warming audio cache:', err.message)
+  );
+};
+
+export { searchVideo, searchChannelVideos, downloadAudio, streamVideo, getAudioUrl, prefetchAudio };
