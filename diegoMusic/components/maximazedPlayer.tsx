@@ -42,6 +42,7 @@ type UseVideoPlaybackArgs = {
     pause: () => Promise<void>;
     seekTo: (pos: number) => void;
     togglePlayPause: () => void;
+    playNext: () => void;
   };
 };
 
@@ -235,6 +236,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       pause,
       seekTo,
       togglePlayPause,
+      playNext,
     },
   });
 

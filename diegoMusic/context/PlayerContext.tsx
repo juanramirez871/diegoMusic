@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
-import { setAudioModeAsync, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-audio';
+import { setAudioModeAsync } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import storage from '@/services/storage';
 import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
@@ -161,12 +161,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const setupAudio = async () => {
       try {
         await setAudioModeAsync({
-          staysActiveInBackground: true,
           playsInSilentMode: true,
-          shouldDuckAndroid: true,
-          interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-          interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-          playThroughEarpieceAndroid: false,
+          interruptionMode: 'doNotMix',
+          allowsRecording: false,
         });
 
         if (SafeMediaControl.isAvailable()) {

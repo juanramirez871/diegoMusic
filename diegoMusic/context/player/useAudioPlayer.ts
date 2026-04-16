@@ -136,6 +136,7 @@ export const useAudioPlayer = (
   const attachStatusListener = (player: AudioPlayer) => {
     statusSubscriptionRef.current?.remove();
     statusSubscriptionRef.current = player.addListener('playbackStatusUpdate', onPlaybackStatusUpdate);
+    (player as any).staysActiveInBackground = true;
   };
 
   const unloadCurrentSound = () => {
