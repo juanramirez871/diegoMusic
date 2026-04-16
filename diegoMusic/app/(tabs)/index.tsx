@@ -1,10 +1,8 @@
 import CarouselPlayer from "@/components/CarouselPlayer";
 import FavoriteArtists from "@/components/FavoriteArtists";
-import FavoritePodcasts from "@/components/FavoritePodcasts";
 import { GenreOverlay } from "@/components/GenreOverlay";
 import MusicArtist from "@/components/MusicArtist";
 import { OfflineView } from "@/components/OfflineView";
-import Podcasts from "@/components/Podcasts";
 import RecentPlayed from "@/components/RecentPlayed";
 import { ArtistData } from "@/components/Song";
 import { useNetwork } from "@/context/NetworkContext";
@@ -93,24 +91,6 @@ export default function HomeScreen() {
                   Music
                 </Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.tag,
-                  selectedTag === "Podcasts" && styles.selectedTag,
-                ]}
-                onPress={() => setSelectedTag("Podcasts")}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.tagText,
-                    selectedTag === "Podcasts" && styles.selectedTagText,
-                  ]}
-                >
-                  Podcasts
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -157,18 +137,6 @@ export default function HomeScreen() {
                       transform: [{ translateY: 35 }],
                     }}
                   />
-                </View>
-              </View>
-            )}
-
-            {selectedTag === "Podcasts" && (
-              <View style={styles.podcastsWrapper}>
-                <View>
-                  <FavoritePodcasts />
-                </View>
-                
-                <View>
-                  <Podcasts />
                 </View>
               </View>
             )}
