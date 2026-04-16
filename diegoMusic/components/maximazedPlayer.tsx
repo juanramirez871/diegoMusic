@@ -2,10 +2,10 @@ import { usePlayer } from '@/context/PlayerContext';
 import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming, cancelAnimation, withDelay } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import Foundation from '@expo/vector-icons/Foundation';
 import { LoadingSpinner } from './LoadingSpinner';
 import QueueModal from './QueueModal';
@@ -15,37 +15,11 @@ import { Video, ResizeMode } from 'expo-av';
 import { youtubeService as apiYoutubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
 import { useThumbnail } from '@/hooks/useThumbnail';
+import { CarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
 const SWIPE_THRESHOLD = 80;
-
-interface CarouselProps {
-  currentSong: any;
-  prevSong: any;
-  nextSong: any;
-  showVideo: boolean;
-  videoRef: any;
-  isVideoReady: boolean;
-  isVideoLoading: boolean;
-  isVideoPlaying: boolean;
-  setIsVideoLoading: (val: boolean) => void;
-  setIsVideoReady: (val: boolean) => void;
-  setIsVideoPlaying: (val: boolean) => void;
-  setVideoProgress: (val: number) => void;
-  setVideoDuration: (val: number) => void;
-  videoDidFinishHandledRef: any;
-  pendingVideoSeekRef: any;
-  videoAutoPlay: boolean;
-  setVideoAutoPlay: (val: boolean) => void;
-  audioStateBeforeVideoRef: any;
-  setShowVideo: (val: boolean) => void;
-  handleToggleVideo: () => void;
-  playNext: () => void;
-  playPrevious: () => void;
-  seekTo: (pos: number) => void;
-  togglePlayPause: () => void;
-}
 
 const Carousel = ({
   currentSong,

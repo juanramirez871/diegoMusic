@@ -1,14 +1,11 @@
-import { View, StyleSheet, Image, Text, Platform, TouchableOpacity, ViewStyle } from "react-native";
+import { View, StyleSheet, Image, Text, Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
 import { useEffect } from "react";
 import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThumbnail } from "@/hooks/useThumbnail";
+import { MinimizedPlayerProps } from "@/interfaces/player";
 
-interface MinimizedPlayerProps {
-  onPress: () => void;
-  style?: ViewStyle;
-}
 
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 

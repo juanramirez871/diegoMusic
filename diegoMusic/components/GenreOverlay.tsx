@@ -9,18 +9,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import Song, { SongData } from "./Song";
+import Song from "./Song";
 import { youtubeService } from "../services/api";
 import { usePlayer } from "../context/PlayerContext";
 import { Skeleton } from "./Skeleton";
+import { GenreOverlayProps, SongData } from "@/interfaces/Song";
 
-interface GenreOverlayProps {
-  isVisible: boolean;
-  onClose: () => void;
-  genreTitle: string;
-  channelId?: string;
-  fadeAnim: Animated.Value;
-}
 
 const SongSkeleton = () => (
   <View style={styles.skeletonContainer}>

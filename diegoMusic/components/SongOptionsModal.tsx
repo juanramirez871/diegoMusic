@@ -18,15 +18,10 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { usePlayer } from "@/context/PlayerContext";
-import { SongData } from "./Song";
+import { SongOptionsModalProps } from "@/interfaces/Song";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-interface SongOptionsModalProps {
-  visible: boolean;
-  onClose: () => void;
-  song?: SongData;
-}
 
 export default function SongOptionsModal({
   visible,

@@ -1,10 +1,7 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import CarouselPlayer from "./CarouselPlayer";
-import { ArtistData } from "./Song";
+import { MusicArtistProps } from "@/interfaces/artists";
 
-interface MusicArtistProps {
-  artist: ArtistData;
-}
 
 export default function MusicArtist({ artist }: MusicArtistProps) {
   return (

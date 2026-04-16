@@ -15,7 +15,6 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
 import { usePlayer } from "@/context/PlayerContext";
-import { SongData } from "@/components/Song";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
@@ -24,13 +23,11 @@ import Animated, {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
+import { QueueModalProps } from "@/interfaces/player";
+import { SongData } from "@/interfaces/Song";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-interface QueueModalProps {
-  visible: boolean;
-  onClose: () => void;
-}
 
 export default function QueueModal({ visible, onClose }: QueueModalProps) {
 

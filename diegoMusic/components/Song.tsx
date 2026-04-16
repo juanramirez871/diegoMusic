@@ -5,34 +5,8 @@ import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 import { usePlayer } from "@/context/PlayerContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
+import { SongProps } from "@/interfaces/Song";
 
-export interface ArtistData {
-  id: string;
-  name: string;
-  avatar: string;
-}
-
-export interface SongData {
-  id: string;
-  url: string;
-  title: string;
-  thumbnail: {
-    url: string;
-  };
-  channel: {
-    name: string;
-    id?: string;
-    avatar?: string;
-    icon?: string;
-  };
-  duration_formatted: string;
-  timesPlayed?: number;
-}
-
-interface SongProps {
-  data?: SongData;
-  onPress?: (song: SongData) => void;
-}
 
 export default function Song({ data, onPress }: SongProps) {
 

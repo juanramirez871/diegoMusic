@@ -1,10 +1,7 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { usePlayer } from "@/context/PlayerContext";
-import { ArtistData } from "./Song";
+import { FavoriteArtistsProps } from "@/interfaces/artists";
 
-interface FavoriteArtistsProps {
-  onArtistPress?: (artist: ArtistData) => void;
-}
 
 export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps) {
   const { favoriteArtists } = usePlayer();

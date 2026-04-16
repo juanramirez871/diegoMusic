@@ -10,10 +10,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import Song, { SongData } from "./Song";
+import Song from "./Song";
 import { youtubeService } from "../services/api";
 import { Skeleton } from "./Skeleton";
 import { usePlayer } from "../context/PlayerContext";
+import { SongData } from "@/interfaces/Song";
 
 export interface HistoryItem {
   id: string;

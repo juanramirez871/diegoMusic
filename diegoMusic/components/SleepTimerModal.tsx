@@ -17,22 +17,19 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { usePlayer } from "@/context/PlayerContext";
+import { SleepTimerModalProps } from "@/interfaces/player";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-interface SleepTimerModalProps {
-  visible: boolean;
-  onClose: () => void;
-}
 
 export default function SleepTimerModal({
   visible,
   onClose,
 }: SleepTimerModalProps) {
+
   const { sleepTimer, setSleepTimer } = usePlayer();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.5);
-
   const startOpenAnimation = () => {
     overlayOpacity.value = withTiming(1, { duration: 300 });
     contentTranslateY.value = withTiming(0, {

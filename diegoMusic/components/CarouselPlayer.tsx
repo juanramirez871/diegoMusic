@@ -1,15 +1,11 @@
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { youtubeService } from "@/services/api";
-import { SongData } from "./Song";
 import { usePlayer } from "@/context/PlayerContext";
 import { Skeleton } from "./Skeleton";
+import { CarouselPlayerProps } from "@/interfaces/player";
+import { SongData } from "@/interfaces/Song";
 
-interface CarouselPlayerProps {
-  channelId?: string;
-  query?: string;
-  data?: SongData[];
-}
 
 export default function CarouselPlayer({ channelId, query, data }: CarouselPlayerProps) {
 

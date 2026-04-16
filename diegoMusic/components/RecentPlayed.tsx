@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { usePlayer } from "@/context/PlayerContext";
-import { SongData } from "./Song";
+import { SongData } from "@/interfaces/Song";
 
 export default function RecentPlayed() {
 
