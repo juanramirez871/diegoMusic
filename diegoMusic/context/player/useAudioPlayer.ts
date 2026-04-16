@@ -1,16 +1,16 @@
-import { SongData } from '@/components/Song';
 import { youtubeService } from '@/services/api';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { PlaybackState, SafeMediaControl } from './mediaControls';
 import { parseDuration } from './utils';
+import { SongData } from '@/interfaces/Song';
 
 export const useAudioPlayer = (
   currentSong: SongData | null,
   playNext: () => void,
-  preloadedSoundsRef: React.MutableRefObject<Map<string, Audio.Sound>>,
+  preloadedSoundsRef: React.MutableRefObject<Map<string, AudioPlayer>>,
   addRecentPlayed: (song: SongData) => Promise<void>,
   addMostPlayed: (song: SongData) => Promise<void>,
   isOnline: boolean = true,
@@ -22,7 +22,8 @@ export const useAudioPlayer = (
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<AudioPlayer | null>(null);
+  const statusSubscriptionRef = useRef<any>(null);
   const isPlayingRef = useRef(false);
   const currentSongRef = useRef<SongData | null>(null);
   const playNextRef = useRef<() => void>(playNext);
@@ -46,12 +47,38 @@ export const useAudioPlayer = (
     playNextRef.current = playNext;
   }, [playNext]);
 
+  const cancelDownload = async () => {
+    if (downloadResumableRef.current) {
+      try {
+        await downloadResumableRef.current.cancelAsync();
+      }
+      catch (error) {
+        console.warn('Error cancelling download:', error);
+      }
+      downloadResumableRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background' || nextState === 'inactive') {
+        cancelDownload();
+      }
+    });
+    return () => {
+      subscription.remove();
+      cancelDownload();
+      statusSubscriptionRef.current?.remove();
+      soundRef.current?.remove();
+    };
+  }, []);
+
   const cleanupLocalFile = async () => {
     if (localFileUriRef.current) {
       try {
         const cacheDir = FileSystem.cacheDirectory ?? 'cache';
         const isCacheFile = localFileUriRef.current.includes(cacheDir);
-        
+
         if (isCacheFile) {
           const fileInfo = await FileSystem.getInfoAsync(localFileUriRef.current);
           if (fileInfo.exists) {
@@ -69,63 +96,61 @@ export const useAudioPlayer = (
     }
   };
 
-  const cancelDownload = async () => {
-    if (downloadResumableRef.current) {
-      try {
-        await downloadResumableRef.current.cancelAsync();
-      }
-      catch (error) {
-        console.warn('Error cancelling download:', error);
-      }
-      downloadResumableRef.current = null;
+  const onPlaybackStatusUpdate = (status: any) => {
+    const now = Date.now();
+    if (now - lastSeekTimeRef.current < 800) return;
+
+    if (status.playing) {
+      stableSetIsPlaying(true);
+    } else if (!isLoading && isPlayingRef.current) {
+      stableSetIsPlaying(false);
     }
+
+    const currentTimeMs = (status.currentTime ?? 0) * 1000;
+    const actualPosition = isUsingLocalFileRef.current
+      ? currentTimeMs
+      : currentTimeMs + seekOffsetRef.current;
+
+    setProgress(actualPosition);
+    const song = currentSongRef.current;
+
+    if (song?.duration_formatted && song.duration_formatted !== "00:00") {
+      const parsed = parseDuration(song.duration_formatted);
+      if (parsed > 0) setDuration(parsed);
+    } else {
+      const durationMs = (status.duration ?? 0) * 1000;
+      if (durationMs > 0) setDuration(durationMs);
+    }
+
+    if (status.didJustFinish) {
+      console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
+      playNextRef.current();
+    }
+
+    const state = status.playing
+      ? PlaybackState.PLAYING
+      : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
+    SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
   };
 
-  const onPlaybackStatusUpdate = (status: any) => {
+  const attachStatusListener = (player: AudioPlayer) => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = player.addListener('playbackStatusUpdate', onPlaybackStatusUpdate);
+  };
 
-    if (status.isLoaded)
-    {
-      const now = Date.now();
-      if (now - lastSeekTimeRef.current < 800) return;
-      if (status.isPlaying) {
-        stableSetIsPlaying(true);
-      }
-      else if (!isLoading && isPlayingRef.current) {
-        stableSetIsPlaying(false);
-      }
-
-      const actualPosition = isUsingLocalFileRef.current 
-        ? status.positionMillis 
-        : status.positionMillis + seekOffsetRef.current;
-
-      setProgress(actualPosition);
-      const song = currentSongRef.current;
-
-      if (song?.duration_formatted && song.duration_formatted !== "00:00") {
-        const parsed = parseDuration(song.duration_formatted);
-        if (parsed > 0) setDuration(parsed);
-      }
-      else if (status.durationMillis && status.durationMillis > 0) {
-        setDuration(status.durationMillis);
-      }
-
-      if (status.didJustFinish) {
-        console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
-        playNextRef.current();
-      }
-      const state = status.isPlaying 
-        ? PlaybackState.PLAYING 
-        : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
-
-      SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
-    }
+  const unloadCurrentSound = () => {
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
+    const prev = soundRef.current;
+    soundRef.current = null;
+    prev?.remove();
   };
 
   const playSongLogic = async (song: SongData) => {
-  
+
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
-    
+
     stableSetIsPlaying(true);
     setIsLoading(true);
     setProgress(0);
@@ -135,35 +160,21 @@ export const useAudioPlayer = (
     localFileUriRef.current = null;
 
     await cancelDownload();
-    
-    if (soundRef.current) {
-      try {
-        const soundToUnload = soundRef.current;
-        soundRef.current = null;
-        await soundToUnload.setOnPlaybackStatusUpdate(null);
-        
-        const unloadPromise = soundToUnload.unloadAsync();
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Unload timeout')), 1000));
-        await Promise.race([unloadPromise, timeoutPromise]).catch(e => console.warn('Unload error/timeout:', e));
-      }
-      catch (error) {
-        console.error('Error unloading previous sound:', error);
-      }
-    }
+    unloadCurrentSound();
 
     try {
-      let sound: Audio.Sound;
+      let sound: AudioPlayer;
       const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
       const cacheUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
-      
+
       if (currentSequence !== playSequenceRef.current) return;
       const persistentInfo = await FileSystem.getInfoAsync(persistentUri);
       const hasPersistent = persistentInfo.exists && (persistentInfo as any).size > 5000;
-      
+
       const cacheInfo = !hasPersistent ? await FileSystem.getInfoAsync(cacheUri) : { exists: false };
       const hasCache = cacheInfo.exists && (cacheInfo as any).size > 5000;
       const localUri = hasPersistent ? persistentUri : (hasCache ? cacheUri : null);
-      
+
       if (!isOnline && !localUri) {
         console.warn('[OFFLINE] Sin conexión y sin archivo local para:', song.id);
         Alert.alert(
@@ -175,41 +186,25 @@ export const useAudioPlayer = (
         return;
       }
 
-      if (preloadedSound)
-      {
+      if (preloadedSound) {
         try {
           sound = preloadedSound;
           preloadedSoundsRef.current.delete(song.id);
           console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
-          
+
           if (localUri) {
             localFileUriRef.current = localUri;
             isUsingLocalFileRef.current = true;
           }
 
-          let status = await sound.getStatusAsync();
-          if (!status.isLoaded) {
-            console.warn('[PRELOADED] El sound pre-cargado no está cargado. Recargando...', song.id);
-            if (localUri) {
-              await sound.loadAsync({ uri: localUri }, { shouldPlay: false }, true);
-            }
-            else if (isOnline) {
-              const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-              await sound.loadAsync({ uri: downloadUrl }, { shouldPlay: false }, true);
-            }
-            else {
-              throw new Error('Offline and no local file');
-            }
-          }
-          
           if (currentSequence !== playSequenceRef.current) {
-            await sound.unloadAsync().catch(() => {});
+            sound.remove();
             return;
           }
 
-          await sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate);
-          await sound.playAsync();
-          
+          attachStatusListener(sound);
+          sound.play();
+
           if (!localUri && isOnline) {
             const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
             const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
@@ -224,7 +219,7 @@ export const useAudioPlayer = (
               }
             }).catch((err: any) => console.error('Download error:', err));
           }
-          
+
         } catch (error) {
           console.error('[PRELOADED] Fallo al usar sound pre-cargado. Creando nuevo...', error);
           if (currentSequence !== playSequenceRef.current) return;
@@ -232,20 +227,14 @@ export const useAudioPlayer = (
           if (localUri) {
             localFileUriRef.current = localUri;
             isUsingLocalFileRef.current = true;
-            const { sound: newSound } = await Audio.Sound.createAsync(
-              { uri: localUri },
-              { shouldPlay: true },
-              onPlaybackStatusUpdate
-            );
-            sound = newSound;
+            sound = createAudioPlayer({ uri: localUri });
+            attachStatusListener(sound);
+            sound.play();
           } else if (isOnline) {
             const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-            const { sound: newSound } = await Audio.Sound.createAsync(
-              { uri: downloadUrl },
-              { shouldPlay: true },
-              onPlaybackStatusUpdate
-            );
-            sound = newSound;
+            sound = createAudioPlayer({ uri: downloadUrl });
+            attachStatusListener(sound);
+            sound.play();
           } else {
             throw new Error('Offline and no local file');
           }
@@ -257,26 +246,19 @@ export const useAudioPlayer = (
 
         localFileUriRef.current = localUri;
         isUsingLocalFileRef.current = true;
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: localUri },
-          { shouldPlay: true },
-          onPlaybackStatusUpdate
-        );
-        sound = newSound;
+        sound = createAudioPlayer({ uri: localUri });
+        attachStatusListener(sound);
+        sound.play();
       }
       else if (isOnline) {
         const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
         console.log('[NETWORK] Reproduciendo desde red:', downloadUrl);
         if (currentSequence !== playSequenceRef.current) return;
 
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: downloadUrl },
-          { shouldPlay: true },
-          onPlaybackStatusUpdate
-        );
+        sound = createAudioPlayer({ uri: downloadUrl });
+        attachStatusListener(sound);
+        sound.play();
 
-        sound = newSound;
-        
         const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
         console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
         const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, targetUri, {});
@@ -291,9 +273,9 @@ export const useAudioPlayer = (
       } else {
         throw new Error('Offline and no local file');
       }
-      
+
       if (currentSequence !== playSequenceRef.current) {
-        await sound.unloadAsync().catch(() => {});
+        sound.remove();
         return;
       }
 
@@ -319,40 +301,35 @@ export const useAudioPlayer = (
       }
       return;
     }
-    
+
     if (isPlaying) {
-      await soundRef.current.pauseAsync();
+      soundRef.current.pause();
       stableSetIsPlaying(false);
     } else {
-      await soundRef.current.playAsync();
+      soundRef.current.play();
       stableSetIsPlaying(true);
     }
   };
 
   const pause = async () => {
     if (soundRef.current && isPlaying) {
-      await soundRef.current.pauseAsync();
+      soundRef.current.pause();
       stableSetIsPlaying(false);
     }
   };
 
   const switchToLocalFile = async (position: number) => {
     if (!soundRef.current || !localFileUriRef.current) return false;
-    
+
     try {
       lastSeekTimeRef.current = Date.now();
-      const status = await soundRef.current.getStatusAsync() as any;
-      const isPlayingNow = status.isPlaying;
-      
-      await soundRef.current.unloadAsync();
-      const { sound: localSound } = await Audio.Sound.createAsync(
-        { uri: localFileUriRef.current },
-        { 
-          shouldPlay: isPlayingNow,
-          positionMillis: position
-        },
-        onPlaybackStatusUpdate
-      );
+      const isPlayingNow = isPlayingRef.current;
+
+      unloadCurrentSound();
+      const localSound = createAudioPlayer({ uri: localFileUriRef.current });
+      attachStatusListener(localSound);
+      localSound.seekTo(position / 1000);
+      if (isPlayingNow) localSound.play();
 
       soundRef.current = localSound;
       isUsingLocalFileRef.current = true;
@@ -369,12 +346,12 @@ export const useAudioPlayer = (
   const seekTo = async (position: number) => {
     if (!soundRef.current || !currentSong) return;
     lastSeekTimeRef.current = Date.now();
-    
+
     try {
 
       if (isUsingLocalFileRef.current) {
         setProgress(position);
-        await soundRef.current.setPositionAsync(position);
+        soundRef.current.seekTo(position / 1000);
         return;
       }
 
@@ -384,30 +361,27 @@ export const useAudioPlayer = (
       }
 
       const diff = Math.abs(position - progress);
-       if (diff > 120000 || position < seekOffsetRef.current) {
+      if (diff > 120000 || position < seekOffsetRef.current) {
 
         setIsLoading(true);
         setProgress(position);
-      
-        await soundRef.current.unloadAsync();
+
+        unloadCurrentSound();
         seekOffsetRef.current = position;
         const startSeconds = Math.floor(position / 1000);
-        
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: youtubeService.getAudioDownloadUrl(currentSong.url, startSeconds) },
-          { shouldPlay: true },
-          onPlaybackStatusUpdate
-        );
-        
+
+        const sound = createAudioPlayer({ uri: youtubeService.getAudioDownloadUrl(currentSong.url, startSeconds) });
+        attachStatusListener(sound);
+        sound.play();
+
         soundRef.current = sound;
         setProgress(position);
         setIsLoading(false);
       }
-      else
-      {
+      else {
         const relativePosition = position - seekOffsetRef.current;
         setProgress(position);
-        await soundRef.current.setPositionAsync(relativePosition);
+        soundRef.current.seekTo(relativePosition / 1000);
       }
     }
     catch (error) {

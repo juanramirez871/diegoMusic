@@ -1,8 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+import { setAudioModeAsync, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import storage from '@/services/storage';
-import { SongData } from '@/components/Song';
 import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
 import { SafeMediaControl, Command, PlaybackState } from './player/mediaControls';
 import { parseDuration } from './player/utils';
@@ -11,6 +10,7 @@ import { usePreloader } from './player/usePreloader';
 import { useAudioPlayer } from './player/useAudioPlayer';
 import { usePlayerQueue } from './player/usePlayerQueue';
 import { useNetwork } from './NetworkContext';
+import { SongData } from '@/interfaces/Song';
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
@@ -160,9 +160,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const setupAudio = async () => {
       try {
-        await Audio.setAudioModeAsync({
+        await setAudioModeAsync({
           staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
+          playsInSilentMode: true,
           shouldDuckAndroid: true,
           interruptionModeIOS: InterruptionModeIOS.DoNotMix,
           interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,

@@ -9,7 +9,9 @@ import Animated, { interpolateColor, runOnJS, useAnimatedProps, useSharedValue, 
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
-import { Video } from 'expo-av';
+import { useVideoPlayer } from 'expo-video';
+import { useEventListener } from 'expo';
+import { youtubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
 import { SongData } from '@/interfaces/Song';
 import { PlayerCarousel } from './PlayerCarousel';
@@ -51,20 +53,72 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [videoAutoPlay, setVideoAutoPlay] = useState(false);
-  const videoRef = useRef<Video | null>(null);
   const videoDidFinishHandledRef = useRef(false);
   const pendingVideoSeekRef = useRef<number | null>(null);
   const audioStateBeforeVideoRef = useRef<AudioStateBeforeVideo | null>(null);
+  const showVideoRef = useRef(false);
+  const isVideoReadyRef = useRef(false);
+  const isVideoPlayingRef = useRef(false);
+
+  const player = useVideoPlayer(null, (p) => {
+    p.loop = false;
+  });
+
+  useEventListener(player, 'statusChange', ({ status, error }: any) => {
+    if (status === 'readyToPlay') {
+      setIsVideoLoading(false);
+      setIsVideoReady(true);
+      isVideoReadyRef.current = true;
+      if (player.duration) setVideoDuration(player.duration * 1000);
+      const pending = pendingVideoSeekRef.current;
+      if (pending !== null) {
+        pendingVideoSeekRef.current = null;
+        player.currentTime = pending / 1000;
+        setVideoProgress(pending);
+      }
+    } else if (status === 'error') {
+      console.error('[Video] Error de carga/reproducción:', error);
+      setIsVideoLoading(false);
+      setIsVideoReady(false);
+      isVideoReadyRef.current = false;
+      setShowVideo(false);
+      showVideoRef.current = false;
+      const restore = audioStateBeforeVideoRef.current;
+      if (restore) {
+        audio.seekTo(restore.position);
+        if (restore.wasPlaying) audio.togglePlayPause();
+      }
+    }
+  });
+
+  useEventListener(player, 'playingChange', ({ isPlaying }: any) => {
+    setIsVideoPlaying(isPlaying);
+    isVideoPlayingRef.current = isPlaying;
+  });
+
+  useEventListener(player, 'timeUpdate', ({ currentTime }: any) => {
+    if (!showVideoRef.current) return;
+    setVideoProgress(currentTime * 1000);
+    if (player.duration) setVideoDuration(player.duration * 1000);
+  });
+
+  useEventListener(player, 'playToEnd', () => {
+    if (!videoDidFinishHandledRef.current) {
+      videoDidFinishHandledRef.current = true;
+      audio.playNext();
+    }
+  });
 
   useEffect(() => {
     setVideoProgress(0);
-    videoRef.current?.pauseAsync().catch(() => {});
+    player.pause();
     setShowVideo(false);
+    showVideoRef.current = false;
     setIsVideoLoading(false);
     setIsVideoReady(false);
+    isVideoReadyRef.current = false;
     setIsVideoPlaying(false);
-    setVideoAutoPlay(false);
+    isVideoPlayingRef.current = false;
     pendingVideoSeekRef.current = null;
     audioStateBeforeVideoRef.current = null;
     setVideoDuration(0);
@@ -72,12 +126,12 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
   }, [currentSong?.id]);
 
   const seek = (position: number) => {
-    if (showVideo) {
-      if (!isVideoReady) {
+    if (showVideoRef.current) {
+      if (!isVideoReadyRef.current) {
         pendingVideoSeekRef.current = position;
         return;
       }
-      videoRef.current?.setPositionAsync(position).catch(() => {});
+      player.currentTime = position / 1000;
       return;
     }
     audio.seekTo(position);
@@ -86,7 +140,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
   const toggle = async () => {
     if (!currentSong) return;
 
-    if (!showVideo) {
+    if (!showVideoRef.current) {
       if (!isOnline) {
         Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
         return;
@@ -95,28 +149,32 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
       videoDidFinishHandledRef.current = false;
       audioStateBeforeVideoRef.current = { wasPlaying: audio.isPlaying, position: audio.progress };
       pendingVideoSeekRef.current = audio.progress;
-      setVideoAutoPlay(true);
       setIsVideoLoading(true);
       setIsVideoReady(false);
+      isVideoReadyRef.current = false;
       setIsVideoPlaying(false);
+      isVideoPlayingRef.current = false;
       await audio.pause();
+      player.replace({ uri: youtubeService.getVideoStreamUrl(currentSong.url) });
+      player.play();
       setShowVideo(true);
+      showVideoRef.current = true;
       return;
     }
 
-    const status = await videoRef.current?.getStatusAsync();
-    const isLoaded = Boolean(status && (status as any).isLoaded);
-    const position = isLoaded
-      ? (status as any).positionMillis
+    const position = isVideoReadyRef.current
+      ? player.currentTime * 1000
       : (pendingVideoSeekRef.current ?? audioStateBeforeVideoRef.current?.position ?? 0);
 
-    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying || isVideoPlaying);
-    await videoRef.current?.pauseAsync().catch(() => {});
-    setVideoAutoPlay(false);
+    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying || isVideoPlayingRef.current);
+    player.pause();
     setShowVideo(false);
+    showVideoRef.current = false;
     setIsVideoLoading(false);
     setIsVideoReady(false);
+    isVideoReadyRef.current = false;
     setIsVideoPlaying(false);
+    isVideoPlayingRef.current = false;
     videoDidFinishHandledRef.current = false;
     audio.seekTo(position);
 
@@ -124,28 +182,17 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
   };
 
   const closeIfOpen = async () => {
-    if (showVideo) await toggle();
+    if (showVideoRef.current) await toggle();
   };
 
   return {
     showVideo,
-    setShowVideo,
     isVideoLoading,
-    setIsVideoLoading,
     isVideoReady,
-    setIsVideoReady,
     videoProgress,
-    setVideoProgress,
     videoDuration,
-    setVideoDuration,
     isVideoPlaying,
-    setIsVideoPlaying,
-    videoAutoPlay,
-    setVideoAutoPlay,
-    videoRef,
-    videoDidFinishHandledRef,
-    pendingVideoSeekRef,
-    audioStateBeforeVideoRef,
+    player,
     toggle,
     closeIfOpen,
     seek,
@@ -243,10 +290,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const handlePlayPausePress = async () => {
     if (video.showVideo) {
       if (!video.isVideoReady) return;
-      const status = await video.videoRef.current?.getStatusAsync();
-      if (!status || !(status as any).isLoaded) return;
-      if ((status as any).isPlaying) await video.videoRef.current?.pauseAsync();
-      else await video.videoRef.current?.playAsync();
+      if (video.player.playing) video.player.pause();
+      else video.player.play();
       return;
     }
     if (!isLoading) togglePlayPause();
@@ -315,21 +360,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     songs: { current: currentSong, prev: prevSong, next: nextSong },
     video: {
       show: video.showVideo,
-      ref: video.videoRef,
+      player: video.player,
       isReady: video.isVideoReady,
       isLoading: video.isVideoLoading,
-      isPlaying: video.isVideoPlaying,
-      autoPlay: video.videoAutoPlay,
-      setAutoPlay: video.setVideoAutoPlay,
-      setShow: video.setShowVideo,
-      setIsLoading: video.setIsVideoLoading,
-      setIsReady: video.setIsVideoReady,
-      setIsPlaying: video.setIsVideoPlaying,
-      setProgress: video.setVideoProgress,
-      setDuration: video.setVideoDuration,
-      didFinishHandledRef: video.videoDidFinishHandledRef,
-      pendingSeekRef: video.pendingVideoSeekRef,
-      audioStateBeforeVideoRef: video.audioStateBeforeVideoRef,
       toggle: video.toggle,
     },
     audio: { playNext, playPrevious, seekTo, togglePlayPause },

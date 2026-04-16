@@ -1,23 +1,21 @@
-import { SongData } from '@/components/Song';
+import { SongData } from '@/interfaces/Song';
 import { youtubeService } from '@/services/api';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRef } from 'react';
 
 export const usePreloader = () => {
-  const preloadedSoundsRef = useRef<Map<string, Audio.Sound>>(new Map());
+  const preloadedSoundsRef = useRef<Map<string, AudioPlayer>>(new Map());
 
   const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number, isOnline: boolean = true) => {
-    
+
     const currentSong = currentQueue[currentIndex];
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
     const idsToKeep = new Set([currentSong.id, ...nextSongs.map(s => s.id)]);
-    
-    for (const [id, sound] of preloadedSoundsRef.current.entries())
-    {
-      if (!idsToKeep.has(id))
-      {
-        await sound.unloadAsync();
+
+    for (const [id, player] of preloadedSoundsRef.current.entries()) {
+      if (!idsToKeep.has(id)) {
+        player.remove();
         preloadedSoundsRef.current.delete(id);
         const cacheUri = `${FileSystem.cacheDirectory}${id}.mp3`;
         const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
@@ -27,17 +25,16 @@ export const usePreloader = () => {
       }
     }
 
-    for (const song of nextSongs)
-    {
+    for (const song of nextSongs) {
       const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
       let fileInfo = await FileSystem.getInfoAsync(persistentUri);
       let localUri = persistentUri;
-      
+
       if (!fileInfo.exists) {
 
         localUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
         fileInfo = await FileSystem.getInfoAsync(localUri);
-        
+
         if (!fileInfo.exists) {
 
           if (!isOnline) continue;
@@ -46,7 +43,7 @@ export const usePreloader = () => {
             localUri,
             {}
           );
-          
+
           try {
             const downloadResult = await downloadResumable.downloadAsync();
             if (downloadResult && downloadResult.uri) {
@@ -70,18 +67,12 @@ export const usePreloader = () => {
 
       if (!preloadedSoundsRef.current.has(song.id)) {
         try {
-          console.log(`[PRELOADED] Cargando sound para ${song.id} desde ${localUri}`);
-          const { sound, status } = await Audio.Sound.createAsync(
-            { uri: localUri },
-            { shouldPlay: false }
-          );
-
-          if (status.isLoaded) preloadedSoundsRef.current.set(song.id, sound);
-          else await sound.unloadAsync();
-
+          console.log(`[PRELOADED] Cargando player para ${song.id} desde ${localUri}`);
+          const player = createAudioPlayer({ uri: localUri });
+          preloadedSoundsRef.current.set(song.id, player);
         }
         catch (error) {
-          console.warn(`[PRELOADED] Error al crear objeto de sonido para ${song.id}:`, error);
+          console.warn(`[PRELOADED] Error al crear player para ${song.id}:`, error);
           if (localUri.includes(FileSystem.cacheDirectory ?? '')) {
             await FileSystem.deleteAsync(localUri, { idempotent: true }).catch(() => {});
           }
@@ -90,9 +81,9 @@ export const usePreloader = () => {
     }
   };
 
-  const clearPreloaded = async () => {
-    for (const sound of preloadedSoundsRef.current.values()) {
-      await sound.unloadAsync();
+  const clearPreloaded = () => {
+    for (const player of preloadedSoundsRef.current.values()) {
+      player.remove();
     }
     preloadedSoundsRef.current.clear();
   };

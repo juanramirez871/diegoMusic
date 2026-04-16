@@ -1,12 +1,11 @@
 import Foundation from '@expo/vector-icons/Foundation';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoView } from 'expo-video';
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import { youtubeService as apiYoutubeService } from '@/services/api';
 import { useThumbnail } from '@/hooks/useThumbnail';
 import { LoadingSpinner } from './LoadingSpinner';
-import React from 'react';
+import React, { useRef } from 'react';
 import { PlayerCarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
@@ -60,16 +59,11 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
   const nextImageStyle = useSideImageStyle(true);
   const prevImageStyle = useSideImageStyle(false);
 
-  const presentVideoFullscreen = async () => {
+  const videoViewRef = useRef<VideoView>(null);
+
+  const presentVideoFullscreen = () => {
     if (!video.show || !video.isReady) return;
-    const player: any = video.ref.current;
-    if (typeof player?.presentFullscreenPlayer === 'function') {
-      player.presentFullscreenPlayer();
-      return;
-    }
-    if (typeof player?.presentFullscreenPlayerAsync === 'function') {
-      await player.presentFullscreenPlayerAsync();
-    }
+    videoViewRef.current?.enterFullscreen();
   };
 
   const videoLongPressGesture = Gesture.LongPress()
@@ -96,54 +90,12 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
             <GestureDetector gesture={videoLongPressGesture}>
               <Animated.View style={[styles.imageContainer, mainImageStyle]}>
                 {video.show && (
-                  <Video
-                    ref={video.ref}
-                    source={{ uri: apiYoutubeService.getVideoStreamUrl(songs.current.url) }}
+                  <VideoView
+                    ref={videoViewRef}
+                    player={video.player}
                     style={[styles.cover, styles.videoLayer, { opacity: video.isReady ? 1 : 0 }]}
-                    resizeMode={ResizeMode.COVER}
-                    isLooping={false}
-                    shouldPlay={video.autoPlay}
-                    onLoad={(status) => {
-                      if (!(status as any).isLoaded) return;
-                      console.log("[Video] Metadata cargada:", (status as any).uri);
-                      video.didFinishHandledRef.current = false;
-                      const durationMillis = (status as any).durationMillis ?? 0;
-                      if (durationMillis > 0) runOnJS(video.setDuration)(durationMillis);
-                      const pending = video.pendingSeekRef.current;
-                      if (pending !== null) {
-                        video.pendingSeekRef.current = null;
-                        runOnJS(video.setProgress)(pending);
-                        video.ref.current?.setPositionAsync(pending).catch(() => {});
-                      }
-                    }}
-                    onReadyForDisplay={() => {
-                      console.log("[Video] Listo para mostrar");
-                      runOnJS(video.setIsLoading)(false);
-                      runOnJS(video.setIsReady)(true);
-                    }}
-                    onError={(error) => {
-                      console.error("[Video] Error de carga/reproducción:", error);
-                      runOnJS(video.setIsLoading)(false);
-                      runOnJS(video.setIsReady)(false);
-                      runOnJS(video.setShow)(false);
-                      runOnJS(video.setAutoPlay)(false);
-                      const restore = video.audioStateBeforeVideoRef.current;
-                      if (restore) {
-                        runOnJS(audio.seekTo)(restore.position);
-                        if (restore.wasPlaying) runOnJS(audio.togglePlayPause)();
-                      }
-                    }}
-                    onPlaybackStatusUpdate={(status) => {
-                      if (!(status as any).isLoaded) return;
-                      runOnJS(video.setIsPlaying)(Boolean((status as any).isPlaying));
-                      runOnJS(video.setProgress)(Number((status as any).positionMillis || 0));
-                      const durationMillis = Number((status as any).durationMillis || 0);
-                      if (durationMillis > 0) runOnJS(video.setDuration)(durationMillis);
-                      if ((status as any).didJustFinish && !video.didFinishHandledRef.current) {
-                        video.didFinishHandledRef.current = true;
-                        runOnJS(audio.playNext)();
-                      }
-                    }}
+                    contentFit="cover"
+                    nativeControls={false}
                   />
                 )}
                 {(!video.show || !video.isReady) && (
