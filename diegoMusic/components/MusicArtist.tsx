@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Image } from "react-native";
-import CarouselPlayer from "./CarouselPlayer";
+import CarouselPlayer from "./ListPlayer";
 import { MusicArtistProps } from "@/interfaces/artists";
 
 

@@ -3,213 +3,19 @@ import { Ionicons } from "@expo/vector-icons";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, interpolateColor, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
-import Foundation from '@expo/vector-icons/Foundation';
-import { LoadingSpinner } from './LoadingSpinner';
+import Animated, { interpolateColor, runOnJS, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
-import { Video, ResizeMode } from 'expo-av';
-import { youtubeService as apiYoutubeService } from '@/services/api';
+import { Video } from 'expo-av';
 import { useNetwork } from '@/context/NetworkContext';
-import { useThumbnail } from '@/hooks/useThumbnail';
-import { CarouselProps } from '@/interfaces/player';
+import { SongData } from '@/interfaces/Song';
+import { PlayerCarousel } from './PlayerCarousel';
+import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
-const IMAGE_SIZE = width - 48;
-const SWIPE_THRESHOLD = 80;
-
-const Carousel = ({
-  currentSong,
-  prevSong,
-  nextSong,
-  showVideo,
-  videoRef,
-  isVideoReady,
-  isVideoLoading,
-  isVideoPlaying,
-  setIsVideoLoading,
-  setIsVideoReady,
-  setIsVideoPlaying,
-  setVideoProgress,
-  setVideoDuration,
-  videoDidFinishHandledRef,
-  pendingVideoSeekRef,
-  videoAutoPlay,
-  setVideoAutoPlay,
-  audioStateBeforeVideoRef,
-  setShowVideo,
-  handleToggleVideo,
-  playNext,
-  playPrevious,
-  seekTo,
-  togglePlayPause
-}: CarouselProps) => {
-
-  const translateX = useSharedValue(0);
-  
-  const prevThumbnailSource = useThumbnail(prevSong?.id, prevSong?.thumbnail?.url);
-  const currentThumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
-  const nextThumbnailSource = useThumbnail(nextSong?.id, nextSong?.thumbnail?.url);
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      translateX.value = event.translationX;
-    })
-    .onEnd((event) => {
-      if (event.translationX < -SWIPE_THRESHOLD && (nextSong || prevSong)) {
-        translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(playNext)();
-        });
-      }
-      else if (event.translationX > SWIPE_THRESHOLD && (nextSong || prevSong)) {
-        translateX.value = withTiming(width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(playPrevious)();
-        });
-      }
-      else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const mainImageStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(Math.abs(translateX.value), [0, width], [1, 0.5], Extrapolation.CLAMP);
-    const scale = interpolate(Math.abs(translateX.value), [0, width], [1, 0.8], Extrapolation.CLAMP);
-    return { opacity, transform: [{ scale }] };
-  });
-
-  const useSideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
-    const targetValue = isNext ? -width : width;
-    const opacity = interpolate(translateX.value, [0, targetValue], [0.5, 1], Extrapolation.CLAMP);
-    const scale = interpolate(translateX.value, [0, targetValue], [0.8, 1], Extrapolation.CLAMP);
-    return { opacity, transform: [{ scale }] };
-  });
-
-  const nextImageStyle = useSideImageStyle(true);
-  const prevImageStyle = useSideImageStyle(false);
-  const presentVideoFullscreen = async () => {
-    if (!showVideo || !isVideoReady) return;
-    const player: any = videoRef.current;
-    if (typeof player?.presentFullscreenPlayer === 'function') {
-      player.presentFullscreenPlayer();
-      return;
-    }
-    if (typeof player?.presentFullscreenPlayerAsync === 'function') {
-      await player.presentFullscreenPlayerAsync();
-    }
-  };
-
-  const videoLongPressGesture = Gesture.LongPress()
-    .minDuration(450)
-    .onStart(() => {
-      if (showVideo && isVideoReady) {
-        runOnJS(presentVideoFullscreen)();
-      }
-    });
-
-  return (
-    <View style={styles.carouselContainer}>
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.imagesWrapper, animatedStyle]}>
-          <View style={styles.imageContainerWrapper}>
-            {prevSong && (
-              <Animated.View style={[prevImageStyle, styles.imageWrapper]}>
-                <Image key={prevSong.id} source={prevThumbnailSource} style={styles.cover} />
-              </Animated.View>
-            )}
-          </View>
-
-          <View style={styles.imageContainerWrapper}>
-            <GestureDetector gesture={videoLongPressGesture}>
-              <Animated.View style={[styles.imageContainer, mainImageStyle]}>
-                {showVideo && (
-                  <Video
-                    ref={videoRef}
-                    source={{ uri: apiYoutubeService.getVideoStreamUrl(currentSong.url) }}
-                    style={[styles.cover, styles.videoLayer, { opacity: isVideoReady ? 1 : 0 }]}
-                    resizeMode={ResizeMode.COVER}
-                    isLooping={false}
-                    shouldPlay={videoAutoPlay}
-                    onLoad={(status) => {
-                      if (!(status as any).isLoaded) return;
-                      console.log("[Video] Metadata cargada:", (status as any).uri);
-                      videoDidFinishHandledRef.current = false;
-                      const durationMillis = (status as any).durationMillis ?? 0;
-                      if (durationMillis > 0) runOnJS(setVideoDuration)(durationMillis);
-                      const pending = pendingVideoSeekRef.current;
-                      if (pending !== null) {
-                        pendingVideoSeekRef.current = null;
-                        runOnJS(setVideoProgress)(pending);
-                        videoRef.current?.setPositionAsync(pending).catch(() => {});
-                      }
-                    }}
-                    onReadyForDisplay={() => {
-                      console.log("[Video] Listo para mostrar");
-                      runOnJS(setIsVideoLoading)(false);
-                      runOnJS(setIsVideoReady)(true);
-                    }}
-                    onError={(error) => {
-                      console.error("[Video] Error de carga/reproducción:", error);
-                      runOnJS(setIsVideoLoading)(false);
-                      runOnJS(setIsVideoReady)(false);
-                      runOnJS(setShowVideo)(false);
-                      runOnJS(setVideoAutoPlay)(false);
-                      const restore = audioStateBeforeVideoRef.current;
-                      if (restore) {
-                        runOnJS(seekTo)(restore.position);
-                        if (restore.wasPlaying) runOnJS(togglePlayPause)();
-                      }
-                    }}
-                    onPlaybackStatusUpdate={(status) => {
-                      if (!(status as any).isLoaded) return;
-                      runOnJS(setIsVideoPlaying)(Boolean((status as any).isPlaying));
-                      runOnJS(setVideoProgress)(Number((status as any).positionMillis || 0));
-                      const durationMillis = Number((status as any).durationMillis || 0);
-                      if (durationMillis > 0) runOnJS(setVideoDuration)(durationMillis);
-                      if ((status as any).didJustFinish && !videoDidFinishHandledRef.current) {
-                        videoDidFinishHandledRef.current = true;
-                        runOnJS(playNext)();
-                      }
-                    }}
-                  />
-                )}
-                {(!showVideo || !isVideoReady) && (
-                  <Image key={currentSong.id} source={currentThumbnailSource} style={styles.cover} />
-                )}
-                <TouchableOpacity onPress={handleToggleVideo} style={styles.icon}>
-                  {showVideo && isVideoLoading ? (
-                    <LoadingSpinner size={22} />
-                  ) : (
-                    <Foundation name="play-video" size={30} color="#ffffffff" />
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
-            </GestureDetector>
-          </View>
-
-          <View style={styles.imageContainerWrapper}>
-            {nextSong && (
-              <Animated.View style={nextImageStyle}>
-                <Image key={nextSong.id} source={nextThumbnailSource} style={styles.cover} />
-              </Animated.View>
-            )}
-          </View>
-        </Animated.View>
-      </GestureDetector>
-    </View>
-  );
-};
-
-interface MaximazedPlayerProps {
-  visible: boolean;
-  onClose: () => void;
-}
 
 const MarqueeText = ({ text, style }: { text: string; style: any }) => {
   return (
@@ -225,14 +31,20 @@ const MarqueeText = ({ text, style }: { text: string; style: any }) => {
   );
 };
 
-export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
+type UseVideoPlaybackArgs = {
+  currentSong: SongData | null;
+  isOnline: boolean;
+  audio: {
+    isPlaying: boolean;
+    progress: number;
+    pause: () => Promise<void>;
+    seekTo: (pos: number) => void;
+    togglePlayPause: () => void;
+  };
+};
 
-  const { isOnline } = useNetwork();
-  const [isOptionsVisible, setIsOptionsVisible] = useState(false);
-  const [isQueueVisible, setIsQueueVisible] = useState(false);
-  const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
-  const [isSeeking, setIsSeeking] = useState(false);
-  const [seekProgress, setSeekProgress] = useState(0);
+const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs) => {
+
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [isVideoReady, setIsVideoReady] = useState(false);
@@ -242,9 +54,112 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [videoAutoPlay, setVideoAutoPlay] = useState(false);
   const videoRef = useRef<Video | null>(null);
   const videoDidFinishHandledRef = useRef(false);
-  const showVideoRef = useRef(false);
   const pendingVideoSeekRef = useRef<number | null>(null);
-  const audioStateBeforeVideoRef = useRef<{ wasPlaying: boolean; position: number } | null>(null);
+  const audioStateBeforeVideoRef = useRef<AudioStateBeforeVideo | null>(null);
+
+  useEffect(() => {
+    setVideoProgress(0);
+    videoRef.current?.pauseAsync().catch(() => {});
+    setShowVideo(false);
+    setIsVideoLoading(false);
+    setIsVideoReady(false);
+    setIsVideoPlaying(false);
+    setVideoAutoPlay(false);
+    pendingVideoSeekRef.current = null;
+    audioStateBeforeVideoRef.current = null;
+    setVideoDuration(0);
+    videoDidFinishHandledRef.current = false;
+  }, [currentSong?.id]);
+
+  const seek = (position: number) => {
+    if (showVideo) {
+      if (!isVideoReady) {
+        pendingVideoSeekRef.current = position;
+        return;
+      }
+      videoRef.current?.setPositionAsync(position).catch(() => {});
+      return;
+    }
+    audio.seekTo(position);
+  };
+
+  const toggle = async () => {
+    if (!currentSong) return;
+
+    if (!showVideo) {
+      if (!isOnline) {
+        Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
+        return;
+      }
+
+      videoDidFinishHandledRef.current = false;
+      audioStateBeforeVideoRef.current = { wasPlaying: audio.isPlaying, position: audio.progress };
+      pendingVideoSeekRef.current = audio.progress;
+      setVideoAutoPlay(true);
+      setIsVideoLoading(true);
+      setIsVideoReady(false);
+      setIsVideoPlaying(false);
+      await audio.pause();
+      setShowVideo(true);
+      return;
+    }
+
+    const status = await videoRef.current?.getStatusAsync();
+    const isLoaded = Boolean(status && (status as any).isLoaded);
+    const position = isLoaded
+      ? (status as any).positionMillis
+      : (pendingVideoSeekRef.current ?? audioStateBeforeVideoRef.current?.position ?? 0);
+
+    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying || isVideoPlaying);
+    await videoRef.current?.pauseAsync().catch(() => {});
+    setVideoAutoPlay(false);
+    setShowVideo(false);
+    setIsVideoLoading(false);
+    setIsVideoReady(false);
+    setIsVideoPlaying(false);
+    videoDidFinishHandledRef.current = false;
+    audio.seekTo(position);
+
+    if (shouldResumeAudio) audio.togglePlayPause();
+  };
+
+  const closeIfOpen = async () => {
+    if (showVideo) await toggle();
+  };
+
+  return {
+    showVideo,
+    setShowVideo,
+    isVideoLoading,
+    setIsVideoLoading,
+    isVideoReady,
+    setIsVideoReady,
+    videoProgress,
+    setVideoProgress,
+    videoDuration,
+    setVideoDuration,
+    isVideoPlaying,
+    setIsVideoPlaying,
+    videoAutoPlay,
+    setVideoAutoPlay,
+    videoRef,
+    videoDidFinishHandledRef,
+    pendingVideoSeekRef,
+    audioStateBeforeVideoRef,
+    toggle,
+    closeIfOpen,
+    seek,
+  };
+};
+
+export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
+
+  const { isOnline } = useNetwork();
+  const [isOptionsVisible, setIsOptionsVisible] = useState(false);
+  const [isQueueVisible, setIsQueueVisible] = useState(false);
+  const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekProgress, setSeekProgress] = useState(0);
   const { 
     currentSong, 
     queue, 
@@ -264,45 +179,36 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     sleepTimer
   } = usePlayer();
 
+  const video = useVideoPlayback({
+    currentSong,
+    isOnline,
+    audio: {
+      isPlaying,
+      progress,
+      pause,
+      seekTo,
+      togglePlayPause,
+    },
+  });
+
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
   const prevSong = hasNextOrPrev ? queue[(currentIndex - 1 + queue.length) % queue.length] : null;
 
-  const activeProgress = showVideo ? (isVideoReady ? videoProgress : progress) : progress;
-  const activeDuration = showVideo ? (isVideoReady && videoDuration > 0 ? videoDuration : duration) : duration;
-  const activeIsPlaying = showVideo ? (isVideoReady ? isVideoPlaying : false) : isPlaying;
-  const activeIsLoading = showVideo ? isVideoLoading : isLoading;
+  const activeProgress = video.showVideo ? (video.isVideoReady ? video.videoProgress : progress) : progress;
+  const activeDuration = video.showVideo ? (video.isVideoReady && video.videoDuration > 0 ? video.videoDuration : duration) : duration;
+  const activeIsPlaying = video.showVideo ? (video.isVideoReady ? video.isVideoPlaying : false) : isPlaying;
+  const activeIsLoading = video.showVideo ? video.isVideoLoading : isLoading;
   const isSeekEnabled = true;
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
-  const playTint = useSharedValue(!showVideo && isLoading ? 1 : 0);
+  const playTint = useSharedValue(!video.showVideo && isLoading ? 1 : 0);
 
   useEffect(() => {
-    showVideoRef.current = showVideo;
-  }, [showVideo]);
-
-  useEffect(() => {
-    playTint.value = withTiming(!showVideo && isLoading ? 1 : 0, { duration: 220 });
-  }, [showVideo, isLoading, playTint]);
-
-  useEffect(() => {
-    setSeekProgress(0);
-    if (showVideoRef.current) {
-      videoRef.current?.pauseAsync().catch(() => {});
-      setShowVideo(false);
-      setIsVideoLoading(false);
-      setIsVideoReady(false);
-      setIsVideoPlaying(false);
-      setVideoAutoPlay(false);
-      pendingVideoSeekRef.current = null;
-      audioStateBeforeVideoRef.current = null;
-      setVideoProgress(0);
-      setVideoDuration(0);
-    }
-    videoDidFinishHandledRef.current = false;
-  }, [currentSong?.id]);
+    playTint.value = withTiming(!video.showVideo && isLoading ? 1 : 0, { duration: 220 });
+  }, [video.showVideo, isLoading, playTint]);
 
   useEffect(() => {
     if (!activeIsLoading && !isSeeking) {
@@ -329,90 +235,18 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     color: interpolateColor(playTint.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
   }));
 
-  const handleSeek = (position: number) => {
-    if (showVideo) {
-      if (!isVideoReady) {
-        pendingVideoSeekRef.current = position;
-        return;
-      }
-      videoRef.current?.setPositionAsync(position).catch(() => {});
-      return;
-    }
-    seekTo(position);
-  };
-
-  const handleToggleVideo = async () => {
-    if (!currentSong) return;
-
-    if (!showVideo) {
-      if (!isOnline) {
-        Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
-        return;
-      }
-      videoDidFinishHandledRef.current = false;
-      audioStateBeforeVideoRef.current = { wasPlaying: isPlaying, position: progress };
-      pendingVideoSeekRef.current = progress;
-      setVideoAutoPlay(true);
-      setIsVideoLoading(true);
-      setIsVideoReady(false);
-      setIsVideoPlaying(false);
-      await pause();
-      setShowVideo(true);
-      return;
-    }
-
-    const status = await videoRef.current?.getStatusAsync();
-    const isLoaded = Boolean(status && (status as any).isLoaded);
-    const position = isLoaded
-      ? (status as any).positionMillis
-      : (pendingVideoSeekRef.current ?? audioStateBeforeVideoRef.current?.position ?? 0);
-    const shouldResumeAudio = Boolean(audioStateBeforeVideoRef.current?.wasPlaying || isVideoPlaying);
-    await videoRef.current?.pauseAsync().catch(() => {});
-    setVideoAutoPlay(false);
-    setShowVideo(false);
-    setIsVideoLoading(false);
-    setIsVideoReady(false);
-    setIsVideoPlaying(false);
-    videoDidFinishHandledRef.current = false;
-    seekTo(position);
-
-    if (shouldResumeAudio) togglePlayPause();
-  };
-
-  const presentVideoFullscreen = async () => {
-    if (!showVideo || !isVideoReady) return;
-    const player: any = videoRef.current;
-    if (typeof player?.presentFullscreenPlayer === 'function') {
-      player.presentFullscreenPlayer();
-      return;
-    }
-    if (typeof player?.presentFullscreenPlayerAsync === 'function') {
-      await player.presentFullscreenPlayerAsync();
-    }
-  };
-
-  const videoLongPressGesture = Gesture.LongPress()
-    .minDuration(450)
-    .onStart(() => {
-      if (showVideo && isVideoReady) {
-        runOnJS(presentVideoFullscreen)();
-      }
-    });
-
   const handleClose = async () => {
-    if (showVideo) {
-      await handleToggleVideo();
-    }
+    await video.closeIfOpen();
     onClose();
   };
 
   const handlePlayPausePress = async () => {
-    if (showVideo) {
-      if (!isVideoReady) return;
-      const status = await videoRef.current?.getStatusAsync();
+    if (video.showVideo) {
+      if (!video.isVideoReady) return;
+      const status = await video.videoRef.current?.getStatusAsync();
       if (!status || !(status as any).isLoaded) return;
-      if ((status as any).isPlaying) await videoRef.current?.pauseAsync();
-      else await videoRef.current?.playAsync();
+      if ((status as any).isPlaying) await video.videoRef.current?.pauseAsync();
+      else await video.videoRef.current?.playAsync();
       return;
     }
     if (!isLoading) togglePlayPause();
@@ -429,7 +263,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const handleShare = async () => {
     if (!currentSong) return;
     try {
-      const result = await Share.share({
+      await Share.share({
         message: `¡Escucha "${currentSong.title}" de ${currentSong.channel.name} en Diego Music!\nhttps://www.youtube.com/watch?v=${currentSong.id}`,
         url: `https://www.youtube.com/watch?v=${currentSong.id}`,
         title: currentSong.title,
@@ -452,7 +286,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     .onEnd((event) => {
       if (activeDuration > 0) {
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
-        runOnJS(handleSeek)(newProgress);
+        runOnJS(video.seek)(newProgress);
         setTimeout(() => {
           runOnJS(setIsSeeking)(false);
         }, 1500);
@@ -468,7 +302,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
         runOnJS(setSeekProgress)(newProgress);
         runOnJS(setIsSeeking)(true);
-        runOnJS(handleSeek)(newProgress);
+        runOnJS(video.seek)(newProgress);
         setTimeout(() => {
           runOnJS(setIsSeeking)(false);
         }, 1500);
@@ -477,6 +311,29 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   if (!currentSong) return null;
   const favoriteStatus = isFavorite(currentSong.id);
+  const carouselProps: PlayerCarouselProps = {
+    songs: { current: currentSong, prev: prevSong, next: nextSong },
+    video: {
+      show: video.showVideo,
+      ref: video.videoRef,
+      isReady: video.isVideoReady,
+      isLoading: video.isVideoLoading,
+      isPlaying: video.isVideoPlaying,
+      autoPlay: video.videoAutoPlay,
+      setAutoPlay: video.setVideoAutoPlay,
+      setShow: video.setShowVideo,
+      setIsLoading: video.setIsVideoLoading,
+      setIsReady: video.setIsVideoReady,
+      setIsPlaying: video.setIsVideoPlaying,
+      setProgress: video.setVideoProgress,
+      setDuration: video.setVideoDuration,
+      didFinishHandledRef: video.videoDidFinishHandledRef,
+      pendingSeekRef: video.pendingVideoSeekRef,
+      audioStateBeforeVideoRef: video.audioStateBeforeVideoRef,
+      toggle: video.toggle,
+    },
+    audio: { playNext, playPrevious, seekTo, togglePlayPause },
+  };
 
   return (
     <Modal
@@ -504,33 +361,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
           </View>
 
           <View style={styles.content}>
-            <Carousel
-              key={currentSong.id}
-              currentSong={currentSong}
-              prevSong={prevSong}
-              nextSong={nextSong}
-              showVideo={showVideo}
-              videoRef={videoRef}
-              isVideoReady={isVideoReady}
-              isVideoLoading={isVideoLoading}
-              isVideoPlaying={isVideoPlaying}
-              setIsVideoLoading={setIsVideoLoading}
-              setIsVideoReady={setIsVideoReady}
-              setIsVideoPlaying={setIsVideoPlaying}
-              setVideoProgress={setVideoProgress}
-              setVideoDuration={setVideoDuration}
-              videoDidFinishHandledRef={videoDidFinishHandledRef}
-              pendingVideoSeekRef={pendingVideoSeekRef}
-              videoAutoPlay={videoAutoPlay}
-              setVideoAutoPlay={setVideoAutoPlay}
-              audioStateBeforeVideoRef={audioStateBeforeVideoRef}
-              setShowVideo={setShowVideo}
-              handleToggleVideo={handleToggleVideo}
-              playNext={playNext}
-              playPrevious={playPrevious}
-              seekTo={seekTo}
-              togglePlayPause={togglePlayPause}
-            />
+            <PlayerCarousel key={currentSong.id} {...carouselProps} />
 
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
@@ -572,7 +403,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity style={styles.playButton} onPress={handlePlayPausePress}>
                 <AnimatedIonicons
                   animatedProps={playIconAnimatedProps}
-                  name={(!showVideo && isLoading) || activeIsPlaying ? "pause-circle" : "play-circle"}
+                  name={(!video.showVideo && isLoading) || activeIsPlaying ? "pause-circle" : "play-circle"}
                   size={80}
                 />
               </TouchableOpacity>
@@ -653,46 +484,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 40,
   },
-  carouselContainer: {
-    width: width,
-    height: IMAGE_SIZE,
-    marginLeft: -24,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagesWrapper: {
-    flexDirection: 'row',
-    width: width * 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageContainer: {
-     width: IMAGE_SIZE,
-     height: IMAGE_SIZE,
-     borderRadius: 12,
-     shadowColor: '#000',
-     shadowOffset: { width: 0, height: 10 },
-     shadowOpacity: 0.5,
-     shadowRadius: 15,
-     elevation: 20,
-     position: 'relative',
-    },
-   imageContainerWrapper: {
-     width: width,
-     justifyContent: 'center',
-     alignItems: 'center',
-   },
-   cover: {
-     width: IMAGE_SIZE,
-     height: IMAGE_SIZE,
-     borderRadius: 12,
-   },
-   videoLayer: {
-     position: 'absolute',
-     top: 0,
-     left: 0,
-   },
   infoContainer: {
     marginTop: 40,
   },
@@ -778,19 +569,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 40,
-  },
-  icon: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    zIndex: 10,
-    elevation: 10,
-    borderRadius: 12,
-    padding: 4,
-  },
-  imageWrapper: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
   },
  });

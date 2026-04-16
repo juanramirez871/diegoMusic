@@ -1,4 +1,4 @@
-import CarouselPlayer from "@/components/CarouselPlayer";
+import ListPlayer from "@/components/ListPlayer";
 import FavoriteArtists from "@/components/FavoriteArtists";
 import { GenreOverlay } from "@/components/GenreOverlay";
 import MusicArtist from "@/components/MusicArtist";
@@ -120,7 +120,7 @@ export default function HomeScreen() {
                 <View>
                   <Text style={styles.title}>Your most played music</Text>
                   {mostPlayed.length > 0 ? (
-                    <CarouselPlayer data={mostPlayed} />
+                    <ListPlayer data={mostPlayed} />
                   ) : (
                     <View style={styles.emptyContainer}>
                       <Text style={styles.emptyText}>No most played music yet ( ˘︹˘ )</Text>

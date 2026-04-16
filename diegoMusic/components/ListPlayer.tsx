@@ -7,7 +7,7 @@ import { CarouselPlayerProps } from "@/interfaces/player";
 import { SongData } from "@/interfaces/Song";
 
 
-export default function CarouselPlayer({ channelId, query, data }: CarouselPlayerProps) {
+export default function ListPlayer({ channelId, query, data }: CarouselPlayerProps) {
 
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
