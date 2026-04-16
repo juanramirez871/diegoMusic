@@ -4,7 +4,6 @@ import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 import { usePlayer } from "@/context/PlayerContext";
-import { LoadingSpinner } from "./LoadingSpinner";
 import { useThumbnail } from "@/hooks/useThumbnail";
 
 export interface ArtistData {
