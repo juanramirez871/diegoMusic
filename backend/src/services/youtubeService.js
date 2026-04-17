@@ -42,6 +42,7 @@ const getInnertubeInfo = async (videoId, type) => {
       try {
         const info = await yt.getBasicInfo(videoId, { client });
         const sd = info.streaming_data;
+        console.log(`[Innertube] client=${client} sd keys:`, Object.keys(sd), 'adaptive:', sd.adaptive_formats?.length, 'formats:', sd.formats?.length);
 
         if (!sd) continue;
 
