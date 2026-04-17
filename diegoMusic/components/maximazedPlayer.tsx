@@ -274,19 +274,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
-  const isAudioBuffering = !video.showVideo && isIntendingToPlay && !isPlaying;
-  const playTint = useSharedValue(isAudioBuffering ? 1 : 0);
+  const playTint = useSharedValue(0);
 
   useEffect(() => {
-    if (!isAudioBuffering) {
-      playTint.value = withTiming(0, { duration: 220 });
-      return;
-    }
-    const t = setTimeout(() => {
-      playTint.value = withTiming(1, { duration: 220 });
-    }, 300);
-    return () => clearTimeout(t);
-  }, [isAudioBuffering, playTint]);
+    playTint.value = withTiming(!video.showVideo && activeIsLoading ? 1 : 0, { duration: 200 });
+  }, [activeIsLoading, video.showVideo]);
+
+  useEffect(() => {
+    setSeekProgress(0);
+    setIsSeeking(false);
+  }, [currentSong?.id]);
 
   useEffect(() => {
     if (!activeIsLoading && !isSeeking) {

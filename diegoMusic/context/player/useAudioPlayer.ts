@@ -35,6 +35,7 @@ export const useAudioPlayer = (
   const isUsingLocalFileRef = useRef<boolean>(false);
   const lastSeekTimeRef = useRef<number>(0);
   const seekOffsetRef = useRef(0);
+  const playStartTimeRef = useRef<number>(0);
 
   const stableSetIsPlaying = (value: boolean) => {
     setIsPlaying(value);
@@ -108,8 +109,9 @@ export const useAudioPlayer = (
     if (now - lastSeekTimeRef.current < 800) return;
 
     if (status.playing) {
-      if (!isLoadingRef.current) stableSetIsPlaying(true);
-    } else if (!isLoadingRef.current && isPlayingRef.current) {
+      if (isLoadingRef.current) stableSetIsLoading(false);
+      stableSetIsPlaying(true);
+    } else if (!isLoadingRef.current && isPlayingRef.current && (Date.now() - playStartTimeRef.current > 2000)) {
       stableSetIsPlaying(false);
     }
 
@@ -178,6 +180,7 @@ export const useAudioPlayer = (
     stableSetIsPlaying(false);
     setIsIntendingToPlay(true);
     stableSetIsLoading(true);
+    playStartTimeRef.current = Date.now();
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
     seekOffsetRef.current = 0;
@@ -359,8 +362,8 @@ export const useAudioPlayer = (
     }
     finally {
       if (currentSequence === playSequenceRef.current) {
-        stableSetIsLoading(false);
         if (soundRef.current?.playing) {
+          stableSetIsLoading(false);
           stableSetIsPlaying(true);
         }
       }
