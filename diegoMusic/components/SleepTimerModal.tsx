@@ -72,15 +72,15 @@ export default function SleepTimerModal({
   }, [visible]);
 
   const timerOptions = [
-    { label: "Desactivar", value: null },
-    { label: "5 minutos", value: 5 },
-    { label: "15 minutos", value: 15 },
-    { label: "30 minutos", value: 30 },
-    { label: "45 minutos", value: 45 },
-    { label: "1 hora", value: 60 },
-    { label: "2 horas", value: 120 },
-    { label: "3 horas", value: 180 },
-    { label: "4 horas", value: 240 },
+    { label: "Disable", value: null },
+    { label: "5 minutes", value: 5 },
+    { label: "15 minutes", value: 15 },
+    { label: "30 minutes", value: 30 },
+    { label: "45 minutes", value: 45 },
+    { label: "1 hour", value: 60 },
+    { label: "2 hours", value: 120 },
+    { label: "3 hours", value: 180 },
+    { label: "4 hours", value: 240 },
   ];
 
   return (
@@ -99,7 +99,7 @@ export default function SleepTimerModal({
           <View style={styles.handle} />
           
           <View style={styles.header}>
-            <Text style={styles.title}>Temporizador de apagado</Text>
+            <Text style={styles.title}>Sleep Timer</Text>
             {sleepTimer && (
               <Text style={styles.subtitle}>
                 Activo: {sleepTimer >= 60 ? `${Math.floor(sleepTimer / 60)}h ${sleepTimer % 60}m` : `${sleepTimer}m`}
