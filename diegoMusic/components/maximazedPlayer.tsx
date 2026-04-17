@@ -312,6 +312,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const playerTranslateY = useSharedValue(0);
   const playerTranslateX = useSharedValue(0);
+  const swipeDirectionRef = useRef<'none' | 'horizontal' | 'vertical'>('none');
 
   const playerAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -346,39 +347,31 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const SWIPE_DOWN_THRESHOLD = 80;
   const SWIPE_HORIZ_THRESHOLD = 60;
 
-  const swipeDownGesture = Gesture.Pan()
+  const playerGesture = Gesture.Pan()
     .runOnJS(true)
-    .activeOffsetY([15, Infinity])
-    .failOffsetX([-25, 25])
+    .minDistance(15)
+    .onStart((e) => {
+      swipeDirectionRef.current = Math.abs(e.translationX) >= Math.abs(e.translationY)
+        ? 'horizontal'
+        : 'vertical';
+    })
     .onUpdate((e) => {
-      if (e.translationY > 0) {
+      if (swipeDirectionRef.current === 'vertical' && e.translationY > 0) {
         playerTranslateY.value = e.translationY * 0.4;
+      } else if (swipeDirectionRef.current === 'horizontal') {
+        playerTranslateX.value = e.translationX * 0.25;
       }
     })
     .onEnd((e) => {
-      if (e.translationY > SWIPE_DOWN_THRESHOLD) {
-        handleClose();
+      if (swipeDirectionRef.current === 'horizontal') {
+        if (e.translationX < -SWIPE_HORIZ_THRESHOLD) handleNext();
+        else if (e.translationX > SWIPE_HORIZ_THRESHOLD) handlePrevious();
+        playerTranslateX.value = withSpring(0);
+      } else if (swipeDirectionRef.current === 'vertical') {
+        if (e.translationY > SWIPE_DOWN_THRESHOLD) handleClose();
+        playerTranslateY.value = withSpring(0);
       }
-      playerTranslateY.value = withSpring(0);
     });
-
-  const swipeHorizGesture = Gesture.Pan()
-    .runOnJS(true)
-    .activeOffsetX([-20, 20])
-    .failOffsetY([-20, 20])
-    .onUpdate((e) => {
-      playerTranslateX.value = e.translationX * 0.25;
-    })
-    .onEnd((e) => {
-      if (e.translationX < -SWIPE_HORIZ_THRESHOLD) {
-        handleNext();
-      } else if (e.translationX > SWIPE_HORIZ_THRESHOLD) {
-        handlePrevious();
-      }
-      playerTranslateX.value = withSpring(0);
-    });
-
-  const playerGesture = Gesture.Race(swipeDownGesture, swipeHorizGesture);
 
   const handleShare = async () => {
     if (!currentSong) return;

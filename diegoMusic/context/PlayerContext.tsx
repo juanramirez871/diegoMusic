@@ -66,6 +66,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentSong(song);
     setIsIntendingToPlay(true);
 
+    const artworkUrl = song.thumbnail?.url;
+    const normalizedArtwork = typeof artworkUrl === 'string' && artworkUrl.length > 0
+      ? artworkUrl.replace(/^http:\/\//, 'https://')
+      : undefined;
+
+    SafeMediaControl.updateMetadata({
+      title: song.title,
+      artist: song.channel?.name || 'Unknown Artist',
+      duration: parseDuration(song.duration_formatted) / 1000,
+      ...(normalizedArtwork ? { artwork: { uri: normalizedArtwork } } : {}),
+    })
+    .catch(() => {});
+
     const playPromise = playSongLogic(song);
     const queueUpdatePromise = updateQueueAndSource(song, initialQueue, source);
     const [{ newSource }] = await Promise.all([queueUpdatePromise, playPromise]);

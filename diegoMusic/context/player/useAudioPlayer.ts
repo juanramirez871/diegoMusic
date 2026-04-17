@@ -36,6 +36,7 @@ export const useAudioPlayer = (
   const lastSeekTimeRef = useRef<number>(0);
   const seekOffsetRef = useRef(0);
   const playStartTimeRef = useRef<number>(0);
+  const playbackSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stableSetIsPlaying = (value: boolean) => {
     setIsPlaying(value);
@@ -76,6 +77,9 @@ export const useAudioPlayer = (
     return () => {
       subscription.remove();
       cancelDownload();
+      if (playbackSafetyTimerRef.current) {
+        clearTimeout(playbackSafetyTimerRef.current);
+      }
       statusSubscriptionRef.current?.remove();
       soundRef.current?.remove();
     };
@@ -172,6 +176,11 @@ export const useAudioPlayer = (
 
   const playSongLogic = async (song: SongData) => {
 
+    if (playbackSafetyTimerRef.current) {
+      clearTimeout(playbackSafetyTimerRef.current);
+      playbackSafetyTimerRef.current = null;
+    }
+
     const dyingPlayer = soundRef.current;
 
     const currentSequence = ++playSequenceRef.current;
@@ -193,6 +202,8 @@ export const useAudioPlayer = (
     statusSubscriptionRef.current = null;
     soundRef.current = null;
     if (dyingPlayer) fadeOutAndUnload(dyingPlayer);
+
+    SafeMediaControl.updatePlaybackState(PlaybackState.BUFFERING, 0).catch(() => {});
 
     try {
       let sound: AudioPlayer;
@@ -365,6 +376,23 @@ export const useAudioPlayer = (
         if (soundRef.current?.playing) {
           stableSetIsLoading(false);
           stableSetIsPlaying(true);
+        }
+        else if (soundRef.current) {
+          playbackSafetyTimerRef.current = setTimeout(() => {
+            playbackSafetyTimerRef.current = null;
+            if (currentSequence !== playSequenceRef.current) return;
+            if (!soundRef.current || isPlayingRef.current) return;
+
+            console.warn('[SAFETY] Playback not detected after timeout, retrying play()');
+            try {
+              soundRef.current.play();
+              stableSetIsPlaying(true);
+              stableSetIsLoading(false);
+            }
+            catch (e) {
+              console.error('[SAFETY] Retry play failed:', e);
+            }
+          }, 1500);
         }
       }
     }

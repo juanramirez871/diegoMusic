@@ -23,6 +23,8 @@ export function PlayerCarousel({ songs, video, audio, onEnterFullscreen }: Playe
   const playPrevious = audio.playPrevious;
 
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-25, 25])
     .onUpdate((event) => {
       translateX.value = event.translationX;
     })
