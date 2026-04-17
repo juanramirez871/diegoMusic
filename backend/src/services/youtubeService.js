@@ -14,7 +14,6 @@ import {
 import { existsSync } from "fs";
 import { execSync } from "child_process";
 
-
 let innertube = null;
 const downloadCache = new Map();
 const urlCache = new Map();
@@ -22,7 +21,7 @@ const URL_CACHE_TTL = 4 * 60 * 60 * 1000;
 
 const getInnertube = async () => {
   if (!innertube) {
-    innertube = await Innertube.create();
+    innertube = await Innertube.create({ generate_session_locally: true });
   }
   return innertube;
 };

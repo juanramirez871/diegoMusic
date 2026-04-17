@@ -14,7 +14,7 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      console.log((data as any).error);
+      throw new Error((data as any).error || `HTTP ${response.status}`);
     }
 
     return data as T;
