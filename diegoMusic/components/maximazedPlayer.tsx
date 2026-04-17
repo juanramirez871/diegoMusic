@@ -278,7 +278,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const playTint = useSharedValue(isAudioBuffering ? 1 : 0);
 
   useEffect(() => {
-    playTint.value = withTiming(isAudioBuffering ? 1 : 0, { duration: 220 });
+    if (!isAudioBuffering) {
+      playTint.value = withTiming(0, { duration: 220 });
+      return;
+    }
+    const t = setTimeout(() => {
+      playTint.value = withTiming(1, { duration: 220 });
+    }, 300);
+    return () => clearTimeout(t);
   }, [isAudioBuffering, playTint]);
 
   useEffect(() => {
