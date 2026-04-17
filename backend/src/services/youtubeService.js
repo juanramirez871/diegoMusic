@@ -11,7 +11,7 @@ import {
   mapInnertubeVideoToChannelItem,
   resolveChannelId
 } from "../utils/youtubeUtils.js";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { execSync } from "child_process";
 
 
@@ -45,7 +45,7 @@ const getYtdlpBaseArgs = () => {
     "--no-part",
     "--js-runtimes", `deno:${denoPath}`,
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "--extractor-args", "youtube:player_client=web_safari,tv_embedded,web",
+    "--extractor-args", "youtube:player_client=web_safari,web",
   ];
 
   if (hasCookies) {
@@ -105,7 +105,7 @@ const searchChannelVideos = async (channelId) => {
     console.warn("[searchChannelVideos] Falló Innertube:", error.message);
   }
 
-  const videos = await ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy: "popular" });
+  const videos = ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy: "popular" });
   return (videos.items || []).map(v => ({
     ...v,
     author: (!v.author || v.author === "N/A") ? channelInfo.name : v.author,

@@ -11,12 +11,13 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
       ...options,
     });
 
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.log(errorData.error);
+      console.log((data as any).error);
     }
 
-    return await response.json();
+    return data as T;
   }
   catch (error) {
     console.error(`API Fetch Error [${endpoint}]:`, error);
