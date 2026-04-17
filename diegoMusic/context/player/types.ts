@@ -1,4 +1,5 @@
-import { SongData, ArtistData } from '@/components/Song';
+import { ArtistData, SongData } from "@/interfaces/Song";
+
 
 export const CURRENT_SONG_KEY = '@current_song';
 export const FAVORITES_KEY = '@favorites_songs';
@@ -33,6 +34,7 @@ export interface PlayerContextType {
   isShuffle: boolean;
   toggleShuffle: () => void;
   isPlaying: boolean;
+  isIntendingToPlay: boolean;
   togglePlayPause: () => void;
   pause: () => Promise<void>;
   progress: number;

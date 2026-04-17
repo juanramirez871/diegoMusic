@@ -79,6 +79,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const {
     isPlaying,
+    isIntendingToPlay,
     isLoading,
     progress,
     duration,
@@ -300,6 +301,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isShuffle,
       toggleShuffle: onToggleShuffle,
       isPlaying,
+      isIntendingToPlay,
       togglePlayPause,
       pause,
       progress,

@@ -9,14 +9,19 @@ import { MinimizedPlayerProps } from "@/interfaces/player";
 
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
-  const { currentSong, isPlaying, togglePlayPause, progress, duration, isLoading } = usePlayer();
+  const { currentSong, isPlaying, isIntendingToPlay, togglePlayPause, progress, duration, isLoading } = usePlayer();
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
-  const loadingProgress = useSharedValue(isLoading ? 1 : 0);
+  const isBuffering = isIntendingToPlay && !isPlaying;
+  const loadingProgress = useSharedValue(isBuffering ? 1 : 0);
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
 
   useEffect(() => {
-    loadingProgress.value = withTiming(isLoading ? 1 : 0, { duration: 220 });
-  }, [isLoading, loadingProgress]);
+    if (isBuffering) {
+      loadingProgress.value = 1;
+    } else {
+      loadingProgress.value = withTiming(0, { duration: 220 });
+    }
+  }, [isBuffering, loadingProgress]);
 
   const playIconAnimatedProps = useAnimatedProps(() => ({
     color: interpolateColor(loadingProgress.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
@@ -49,7 +54,7 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
       >
         <AnimatedIonicons
           animatedProps={playIconAnimatedProps}
-          name={(isLoading || isPlaying) ? "pause-circle" : "play-circle"}
+          name={isIntendingToPlay ? "pause-circle" : "play-circle"}
           size={40}
         />
       </TouchableOpacity>

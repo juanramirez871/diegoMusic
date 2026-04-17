@@ -233,6 +233,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     isShuffle, 
     toggleShuffle,
     isPlaying,
+    isIntendingToPlay,
     togglePlayPause,
     pause,
     progress,
@@ -269,11 +270,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
   const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
-  const playTint = useSharedValue(!video.showVideo && isLoading ? 1 : 0);
+  const isAudioBuffering = !video.showVideo && isIntendingToPlay && !isPlaying;
+  const playTint = useSharedValue(isAudioBuffering ? 1 : 0);
 
   useEffect(() => {
-    playTint.value = withTiming(!video.showVideo && isLoading ? 1 : 0, { duration: 220 });
-  }, [video.showVideo, isLoading, playTint]);
+    playTint.value = withTiming(isAudioBuffering ? 1 : 0, { duration: 220 });
+  }, [isAudioBuffering, playTint]);
 
   useEffect(() => {
     if (!activeIsLoading && !isSeeking) {
@@ -457,7 +459,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity style={styles.playButton} onPress={handlePlayPausePress}>
                 <AnimatedIonicons
                   animatedProps={playIconAnimatedProps}
-                  name={(!video.showVideo && isLoading) || activeIsPlaying ? "pause-circle" : "play-circle"}
+                  name={video.showVideo ? (activeIsPlaying ? "pause-circle" : "play-circle") : (isIntendingToPlay ? "pause-circle" : "play-circle")}
                   size={80}
                 />
               </TouchableOpacity>

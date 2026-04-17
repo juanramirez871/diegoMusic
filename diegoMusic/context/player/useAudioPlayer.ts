@@ -18,13 +18,15 @@ export const useAudioPlayer = (
 ) => {
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isIntendingToPlay, setIsIntendingToPlay] = useState(false);
+  const [isLoading, _setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
   const soundRef = useRef<AudioPlayer | null>(null);
   const statusSubscriptionRef = useRef<any>(null);
   const isPlayingRef = useRef(false);
+  const isLoadingRef = useRef(false);
   const currentSongRef = useRef<SongData | null>(null);
   const playNextRef = useRef<() => void>(playNext);
   const playSequenceRef = useRef<number>(0);
@@ -37,6 +39,11 @@ export const useAudioPlayer = (
   const stableSetIsPlaying = (value: boolean) => {
     setIsPlaying(value);
     isPlayingRef.current = value;
+  };
+
+  const stableSetIsLoading = (value: boolean) => {
+    _setIsLoading(value);
+    isLoadingRef.current = value;
   };
 
   useEffect(() => {
@@ -101,8 +108,8 @@ export const useAudioPlayer = (
     if (now - lastSeekTimeRef.current < 800) return;
 
     if (status.playing) {
-      stableSetIsPlaying(true);
-    } else if (!isLoading && isPlayingRef.current) {
+      if (!isLoadingRef.current) stableSetIsPlaying(true);
+    } else if (!isLoadingRef.current && isPlayingRef.current) {
       stableSetIsPlaying(false);
     }
 
@@ -152,7 +159,8 @@ export const useAudioPlayer = (
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
 
     stableSetIsPlaying(false);
-    setIsLoading(true);
+    setIsIntendingToPlay(true);
+    stableSetIsLoading(true);
     setProgress(0);
     setDuration(parseDuration(song.duration_formatted));
     seekOffsetRef.current = 0;
@@ -181,7 +189,7 @@ export const useAudioPlayer = (
           'Sin conexión',
           'Esta canción no está disponible sin internet. Guárdala en favoritos para escucharla offline.'
         );
-        setIsLoading(false);
+        stableSetIsLoading(false);
         stableSetIsPlaying(false);
         return;
       }
@@ -289,7 +297,10 @@ export const useAudioPlayer = (
     }
     finally {
       if (currentSequence === playSequenceRef.current) {
-        setIsLoading(false);
+        stableSetIsLoading(false);
+        if (soundRef.current?.playing) {
+          stableSetIsPlaying(true);
+        }
       }
     }
   };
@@ -305,9 +316,11 @@ export const useAudioPlayer = (
     if (isPlaying) {
       soundRef.current.pause();
       stableSetIsPlaying(false);
+      setIsIntendingToPlay(false);
     } else {
       soundRef.current.play();
       stableSetIsPlaying(true);
+      setIsIntendingToPlay(true);
     }
   };
 
@@ -315,6 +328,7 @@ export const useAudioPlayer = (
     if (soundRef.current && isPlaying) {
       soundRef.current.pause();
       stableSetIsPlaying(false);
+      setIsIntendingToPlay(false);
     }
   };
 
@@ -363,6 +377,7 @@ export const useAudioPlayer = (
 
   return {
     isPlaying,
+    isIntendingToPlay,
     isLoading,
     progress,
     duration,
