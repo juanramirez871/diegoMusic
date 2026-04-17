@@ -50,4 +50,7 @@ export interface PlayerContextType {
   setSleepTimer: (minutes: number | null) => void;
   showDownloadBanner: boolean;
   streak: number;
+  pendingArtistOverlay: { id: string; name: string } | null;
+  openArtistOverlay: (artist: { id: string; name: string }) => void;
+  closeArtistOverlay: () => void;
 }

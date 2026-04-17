@@ -36,6 +36,7 @@ export interface GenreOverlayProps {
   genreTitle: string;
   channelId?: string;
   fadeAnim: Animated.Value;
+  bottomOffset?: number;
 }
 
 export interface SongOptionsModalProps {

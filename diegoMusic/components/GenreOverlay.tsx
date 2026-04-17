@@ -32,6 +32,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
   genreTitle,
   channelId,
   fadeAnim,
+  bottomOffset = 0,
 }) => {
 
   const { playSong } = usePlayer();
@@ -85,7 +86,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
   if (!isVisible) return null;
 
   return (
-    <Animated.View style={[styles.modalContainer, { opacity: fadeAnim, zIndex: 110 }]}>
+    <Animated.View style={[styles.modalContainer, { opacity: fadeAnim, zIndex: 110, bottom: bottomOffset }]}>
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#fff" />

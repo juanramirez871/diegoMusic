@@ -243,7 +243,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     duration,
     seekTo,
     isLoading,
-    sleepTimer
+    sleepTimer,
+    openArtistOverlay,
   } = usePlayer();
 
   const video = useVideoPlayback({
@@ -476,7 +477,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <View style={styles.titleRow}>
                 <View style={styles.textWrapper}>
                   <MarqueeText key={`title-${currentSong.id}`} text={currentSong.title} style={styles.title} />
-                  <MarqueeText key={`artist-${currentSong.id}`} text={currentSong.channel.name} style={styles.artist} />
+                  <TouchableOpacity onPress={() => currentSong.channel.id && openArtistOverlay({ id: currentSong.channel.id, name: currentSong.channel.name })}>
+                    <MarqueeText key={`artist-${currentSong.id}`} text={currentSong.channel.name} style={styles.artist} />
+                  </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={() => toggleFavorite(currentSong)}>
                   <Ionicons 

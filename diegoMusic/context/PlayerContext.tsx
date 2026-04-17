@@ -18,6 +18,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { isOnline } = useNetwork();
   const [isMaximized, setIsMaximized] = useState(false);
+  const [pendingArtistOverlay, setPendingArtistOverlay] = useState<{ id: string; name: string } | null>(null);
+  const openArtistOverlay = useCallback((artist: { id: string; name: string }) => {
+    setIsMaximized(false);
+    setPendingArtistOverlay(artist);
+  }, []);
+
+  const closeArtistOverlay = useCallback(() => {
+    setPendingArtistOverlay(null);
+  }, []);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const {
     favorites,
@@ -328,6 +337,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setSleepTimer,
       showDownloadBanner,
       streak,
+      pendingArtistOverlay,
+      openArtistOverlay,
+      closeArtistOverlay,
     }}>
       {children}
     </PlayerContext.Provider>
