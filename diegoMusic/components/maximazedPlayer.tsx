@@ -7,7 +7,7 @@ import { Alert, Dimensions, Modal, Platform, Share, StyleSheet, Text, TouchableO
 import { VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import Animated, { interpolateColor, runOnJS, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
@@ -65,6 +65,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
 
   const player = useVideoPlayer(null, (p) => {
     p.loop = false;
+    p.timeUpdateEventInterval = 0.5;
   });
 
   useEventListener(player, 'statusChange', ({ status, error }: any) => {
@@ -254,6 +255,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     },
   });
 
+
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
@@ -335,38 +337,39 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     }
   };
 
+  const handleSeek = (pos: number) => {
+    video.seek(pos);
+    setSeekProgress(pos);
+    setIsSeeking(true);
+    setTimeout(() => setIsSeeking(false), 1500);
+  };
+
   const progressGesture = Gesture.Pan()
+    .runOnJS(true)
     .enabled(isSeekEnabled)
     .onUpdate((event) => {
       if (activeDuration > 0) {
-        if (!isSeeking) runOnJS(setIsSeeking)(true);
+        setIsSeeking(true);
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
-        runOnJS(setSeekProgress)(newProgress);
+        setSeekProgress(newProgress);
       }
     })
     .onEnd((event) => {
       if (activeDuration > 0) {
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
-        runOnJS(video.seek)(newProgress);
-        setTimeout(() => {
-          runOnJS(setIsSeeking)(false);
-        }, 1500);
+        handleSeek(newProgress);
       } else {
-        runOnJS(setIsSeeking)(false);
+        setIsSeeking(false);
       }
-    })
+    });
 
   const progressTap = Gesture.Tap()
+    .runOnJS(true)
     .enabled(isSeekEnabled)
     .onEnd((event) => {
       if (activeDuration > 0) {
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
-        runOnJS(setSeekProgress)(newProgress);
-        runOnJS(setIsSeeking)(true);
-        runOnJS(video.seek)(newProgress);
-        setTimeout(() => {
-          runOnJS(setIsSeeking)(false);
-        }, 1500);
+        handleSeek(newProgress);
       }
     });
 
