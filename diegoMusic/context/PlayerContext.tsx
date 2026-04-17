@@ -225,42 +225,50 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 
   useEffect(() => {
+    let cancelled = false;
+
     const updateMetadata = async () => {
-      if (currentSong) {
-        let artworkUri = currentSong.thumbnail?.url;
-        
-        if (isFavorite(currentSong.id)) {
-          const localThumbUri = `${FileSystem.documentDirectory}${currentSong.id}_thumb.jpg`;
-          try {
-            const info = await FileSystem.getInfoAsync(localThumbUri);
-            if (info.exists) {
-              artworkUri = localThumbUri;
-            }
-          } catch (e) {
-            console.warn('Error checking local thumbnail for metadata:', e);
+      if (!currentSong) return;
+
+      let artworkUri = currentSong.thumbnail?.url;
+
+      if (isFavorite(currentSong.id)) {
+        const localThumbUri = `${FileSystem.documentDirectory}${currentSong.id}_thumb.jpg`;
+        try {
+          const info = await FileSystem.getInfoAsync(localThumbUri);
+          if (info.exists) {
+            artworkUri = localThumbUri;
           }
+        } catch (e) {
+          console.warn('Error checking local thumbnail for metadata:', e);
         }
-
-        const normalizedArtworkUri =
-          typeof artworkUri === 'string' && artworkUri.length > 0
-            ? artworkUri.replace(/^http:\/\//, 'https://')
-            : undefined;
-
-        const metadata: any = {
-          title: currentSong.title,
-          artist: currentSong.channel?.name || 'Unknown Artist',
-          duration: parseDuration(currentSong.duration_formatted) / 1000,
-        };
-
-        if (normalizedArtworkUri) {
-          metadata.artwork = { uri: normalizedArtworkUri };
-        }
-
-        SafeMediaControl.updateMetadata(metadata).catch(() => {});
       }
+
+      if (cancelled) return;
+
+      const normalizedArtworkUri =
+        typeof artworkUri === 'string' && artworkUri.length > 0
+          ? artworkUri.replace(/^http:\/\//, 'https://')
+          : undefined;
+
+      const metadata: any = {
+        title: currentSong.title,
+        artist: currentSong.channel?.name || 'Unknown Artist',
+        duration: parseDuration(currentSong.duration_formatted) / 1000,
+      };
+
+      if (normalizedArtworkUri) {
+        metadata.artwork = { uri: normalizedArtworkUri };
+      }
+
+      SafeMediaControl.updateMetadata(metadata).catch(() => {});
     };
 
     updateMetadata();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentSong, favorites]);
 
 
