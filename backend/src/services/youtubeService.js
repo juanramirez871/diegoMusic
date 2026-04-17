@@ -1,7 +1,7 @@
 import ytch from "yt-channel-info";
 import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
-import { unlink, writeFile } from "fs/promises";
+import { unlink } from "fs/promises";
 import { createWriteStream } from "fs";
 import os from "os";
 import fetch from "node-fetch";
@@ -27,46 +27,70 @@ const getInnertube = async () => {
   return innertube;
 };
 
-const getBestAudioUrl = async (videoId) => {
+// Clientes en orden de prioridad: WEB_EMBEDDED y ANDROID suelen devolver adaptive_formats
+const INNERTUBE_CLIENTS = ["WEB_EMBEDDED", "ANDROID", "TV", "WEB"];
 
-  const yt = await getInnertube();
-  const info = await yt.getBasicInfo(videoId, { client: "TV" });
-  const formats = info.streaming_data?.adaptive_formats ?? [];
-  const audioFormat =
-    formats.find(f => f.mime_type?.startsWith("audio/mp4") && f.itag === 140) ||
-    formats.find(f => f.mime_type?.startsWith("audio/mp4")) ||
-    formats.find(f => f.mime_type?.startsWith("audio/"));
+const getInnertubeInfo = async (videoId, type) => {
+  // Reintentar con un innertube fresco si el player no está disponible
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt === 1) {
+      innertube = null; // forzar recreación
+    }
+    const yt = await getInnertube();
 
-  if (!audioFormat) throw new Error("No audio format found via Innertube");
+    for (const client of INNERTUBE_CLIENTS) {
+      try {
+        const info = await yt.getBasicInfo(videoId, { client });
+        const sd = info.streaming_data;
 
-  const url = yt.session.player?.decipher(audioFormat.url, audioFormat.signature_cipher);
-  if (!url) throw new Error("Failed to decipher audio URL");
+        if (!sd) continue;
 
-  return { url, mimeType: "audio/mp4" };
+        if (type === "audio") {
+          const all = [...(sd.adaptive_formats ?? []), ...(sd.formats ?? [])];
+          const fmt =
+            all.find(f => f.mime_type?.startsWith("audio/mp4") && f.itag === 140) ||
+            all.find(f => f.mime_type?.startsWith("audio/mp4")) ||
+            all.find(f => f.mime_type?.startsWith("audio/"));
+
+          if (!fmt) continue;
+
+          const url = yt.session.player?.decipher(fmt.url, fmt.signature_cipher) ?? fmt.url;
+          if (!url) continue;
+
+          console.log(`[Innertube] Audio OK con client=${client}`);
+          return { url, mimeType: "audio/mp4" };
+        }
+
+        if (type === "video") {
+          const muxed = sd.formats ?? [];
+          const adaptive = sd.adaptive_formats ?? [];
+          const fmt =
+            muxed.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 22) ||
+            muxed.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 18) ||
+            muxed.find(f => f.mime_type?.startsWith("video/mp4")) ||
+            adaptive.find(f => f.mime_type?.startsWith("video/mp4")) ||
+            muxed[0];
+
+          if (!fmt) continue;
+
+          const url = yt.session.player?.decipher(fmt.url, fmt.signature_cipher) ?? fmt.url;
+          if (!url) continue;
+
+          const mimeType = fmt.mime_type?.startsWith("video/webm") ? "video/webm" : "video/mp4";
+          console.log(`[Innertube] Video OK con client=${client}`);
+          return { directUrl: url, mimeType };
+        }
+      } catch (e) {
+        console.warn(`[Innertube] client=${client} falló: ${e.message}`);
+      }
+    }
+  }
+
+  throw new Error(`No ${type} format found via Innertube for ${videoId}`);
 };
 
-const getBestVideoUrl = async (videoId) => {
-
-  const yt = await getInnertube();
-  const info = await yt.getBasicInfo(videoId, { client: "TV" });
-  const formats = info.streaming_data?.formats ?? [];
-  const adaptive = info.streaming_data?.adaptive_formats ?? [];
-
-  const videoFormat =
-    formats.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 22) ||
-    formats.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 18) ||
-    formats.find(f => f.mime_type?.startsWith("video/mp4")) ||
-    adaptive.find(f => f.mime_type?.startsWith("video/mp4")) ||
-    formats[0];
-
-  if (!videoFormat) throw new Error("No video format found via Innertube");
-
-  const url = yt.session.player?.decipher(videoFormat.url, videoFormat.signature_cipher);
-  if (!url) throw new Error("Failed to decipher video URL");
-
-  const mimeType = videoFormat.mime_type?.startsWith("video/webm") ? "video/webm" : "video/mp4";
-  return { directUrl: url, mimeType };
-};
+const getBestAudioUrl = (videoId) => getInnertubeInfo(videoId, "audio");
+const getBestVideoUrl = (videoId) => getInnertubeInfo(videoId, "video");
 
 
 const getYtdlpBaseArgs = () => {
