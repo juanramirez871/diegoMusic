@@ -28,7 +28,7 @@ export default function FavoriteScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredFavorites = useMemo(() => {
-    return favorites.filter(
+    return [...favorites].reverse().filter(
       (song) =>
         song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         song.channel.name.toLowerCase().includes(searchQuery.toLowerCase()),

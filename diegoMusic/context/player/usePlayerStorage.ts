@@ -59,12 +59,10 @@ export const usePlayerStorage = () => {
 
         if (savedFavorites) {
           const parsedFavorites = JSON.parse(savedFavorites);
-          const sorted = parsedFavorites.sort((a: SongData, b: SongData) => a.id.localeCompare(b.id));
-          setFavorites(sorted);
-          
-          // Trigger thumbnail sync in background
-          syncThumbnails(sorted);
+          setFavorites(parsedFavorites);
+          syncThumbnails(parsedFavorites);
         }
+        
         if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
         if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
         if (savedMostPlayed) setMostPlayed(JSON.parse(savedMostPlayed));
@@ -84,7 +82,7 @@ export const usePlayerStorage = () => {
     
     let newFavorites;
     if (isFav) newFavorites = favorites.filter(f => f.id !== song.id);
-    else newFavorites = [...favorites, song].sort((a, b) => a.id.localeCompare(b.id));
+    else newFavorites = [...favorites, song];
     
     setFavorites(newFavorites);
 
