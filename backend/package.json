@@ -1,6 +1,6 @@
 {
   "name": "backend-diego-music",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Backend for diego-music",
   "main": "src/app.js",
   "scripts": {
