@@ -19,6 +19,9 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
   const prevThumbnailSource = useThumbnail(songs.prev?.id, songs.prev?.thumbnail?.url);
   const currentThumbnailSource = useThumbnail(songs.current?.id, songs.current?.thumbnail?.url);
   const nextThumbnailSource = useThumbnail(songs.next?.id, songs.next?.thumbnail?.url);
+  const playNext = audio.playNext;
+  const playPrevious = audio.playPrevious;
+
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
       translateX.value = event.translationX;
@@ -26,12 +29,12 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
     .onEnd((event) => {
       if (event.translationX < -SWIPE_THRESHOLD && (songs.next || songs.prev)) {
         translateX.value = withTiming(-width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(audio.playNext)();
+          if (finished) runOnJS(playNext)();
         });
       }
       else if (event.translationX > SWIPE_THRESHOLD && (songs.next || songs.prev)) {
         translateX.value = withTiming(width, { duration: 300 }, (finished) => {
-          if (finished) runOnJS(audio.playPrevious)();
+          if (finished) runOnJS(playPrevious)();
         });
       }
       else {
@@ -46,7 +49,9 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
   const mainImageStyle = useAnimatedStyle(() => {
     const opacity = interpolate(Math.abs(translateX.value), [0, width], [1, 0.5], Extrapolation.CLAMP);
     const scale = interpolate(Math.abs(translateX.value), [0, width], [1, 0.8], Extrapolation.CLAMP);
-    return { opacity, transform: [{ scale }] };
+    const shadowOpacity = interpolate(Math.abs(translateX.value), [0, width], [0.5, 0], Extrapolation.CLAMP);
+    const elevation = interpolate(Math.abs(translateX.value), [0, width], [20, 0], Extrapolation.CLAMP);
+    return { opacity, transform: [{ scale }], shadowOpacity, elevation };
   });
 
   const useSideImageStyle = (isNext: boolean) => useAnimatedStyle(() => {
@@ -70,9 +75,10 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
     .minDuration(450)
     .onStart(() => {
       if (video.show && video.isReady) {
-        runOnJS(presentVideoFullscreen)();
+        presentVideoFullscreen();
       }
-    });
+    })
+    .runOnJS(true);
 
   return (
     <View style={styles.carouselContainer}>
@@ -146,9 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
     shadowRadius: 15,
-    elevation: 20,
     position: 'relative',
   },
   imageContainerWrapper: {

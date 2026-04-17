@@ -164,6 +164,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           playsInSilentMode: true,
           interruptionMode: 'doNotMix',
           allowsRecording: false,
+          shouldPlayInBackground: true,
         });
 
         if (SafeMediaControl.isAvailable()) {
