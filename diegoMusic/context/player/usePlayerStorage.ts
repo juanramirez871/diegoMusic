@@ -2,6 +2,7 @@ import { youtubeService } from '@/services/api';
 import storage from '@/services/storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import {
     FAVORITES_KEY,
     FAVORITE_ARTISTS_KEY,
@@ -16,6 +17,12 @@ export const usePlayerStorage = () => {
   const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [mostPlayed, setMostPlayed] = useState<SongData[]>([]);
+  const [showDownloadBanner, setShowDownloadBanner] = useState(false);
+
+  const triggerDownloadBanner = () => {
+    setShowDownloadBanner(true);
+    setTimeout(() => setShowDownloadBanner(false), 2000);
+  };
 
   const syncThumbnails = async (favoritesList: SongData[]) => {
     console.log(`[SYNC] Revisando ${favoritesList.length} favoritos para portadas faltantes...`);
@@ -97,15 +104,32 @@ export const usePlayerStorage = () => {
       }
       else {
         const fileInfo = await FileSystem.getInfoAsync(persistentUri);
-        if (!fileInfo.exists) {
+        const hasValidFile = fileInfo.exists && (fileInfo as any).size > 5000;
+        if (!hasValidFile) {
+          if (fileInfo.exists) {
+            await FileSystem.deleteAsync(persistentUri, { idempotent: true });
+          }
           console.log(`[FAVORITE] Iniciando descarga de audio: ${song.title}`);
-          youtubeService.getAudioDirectUrl(song.url).then(({ url: directUrl }) => {
-            const downloadResumable = FileSystem.createDownloadResumable(directUrl, persistentUri, {});
-            return downloadResumable.downloadAsync();
-          }).then(() => {
-            console.log(`[FAVORITE] Descarga de audio completada: ${song.title}`);
+          const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+          const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, persistentUri, {});
+          downloadResumable.downloadAsync().then(async (result) => {
+            if (!result?.uri) {
+              console.error(`[FAVORITE] Descarga falló sin resultado: ${song.title}`);
+              return;
+            }
+            const info = await FileSystem.getInfoAsync(result.uri);
+            if (!info.exists || (info as any).size <= 5000) {
+              console.error(`[FAVORITE] Archivo inválido tras descarga (${(info as any).size ?? 0} bytes): ${song.title}`);
+              await FileSystem.deleteAsync(result.uri, { idempotent: true });
+              Alert.alert('Error de descarga', `No se pudo guardar "${song.title}" para escuchar sin internet.`);
+              return;
+            }
+            console.log(`[FAVORITE] Descarga de audio completada (${(info as any).size} bytes): ${song.title}`);
+            triggerDownloadBanner();
           }).catch(err => {
             console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
+            FileSystem.deleteAsync(persistentUri, { idempotent: true }).catch(() => {});
+            Alert.alert('Error de descarga', `No se pudo guardar "${song.title}" para escuchar sin internet.`);
           });
         }
 
@@ -201,6 +225,7 @@ export const usePlayerStorage = () => {
     favoriteArtists,
     recentPlayed,
     mostPlayed,
+    showDownloadBanner,
     toggleFavorite,
     isFavorite,
     toggleFavoriteArtist,

@@ -43,4 +43,5 @@ export interface PlayerContextType {
   isLoading: boolean;
   sleepTimer: number | null;
   setSleepTimer: (minutes: number | null) => void;
+  showDownloadBanner: boolean;
 }

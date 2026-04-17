@@ -7,6 +7,7 @@ import { MaximazedPlayer } from '@/components/maximazedPlayer';
 import { PlayerProvider, usePlayer } from '@/context/PlayerContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NetworkProvider } from '@/context/NetworkContext';
+import { DownloadBanner } from '@/components/DownloadBanner';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -34,6 +35,7 @@ export default function RootLayout() {
     <NetworkProvider>
       <PlayerProvider>
         <RootLayoutContent />
+        <DownloadBanner />
       </PlayerProvider>
     </NetworkProvider>
   );

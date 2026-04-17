@@ -252,11 +252,36 @@ export const useAudioPlayer = (
         console.log('[LOCAL] Priorizando archivo guardado (favoritos/cache) aunque hay red:', localUri);
         if (currentSequence !== playSequenceRef.current) return;
 
-        localFileUriRef.current = localUri;
-        isUsingLocalFileRef.current = true;
-        sound = createAudioPlayer({ uri: localUri });
-        attachStatusListener(sound);
-        sound.play();
+        try {
+          localFileUriRef.current = localUri;
+          isUsingLocalFileRef.current = true;
+          sound = createAudioPlayer({ uri: localUri });
+          attachStatusListener(sound);
+          sound.play();
+        } catch (localErr) {
+          console.warn('[LOCAL] Error al reproducir archivo local, eliminando y usando stream:', localErr);
+          await FileSystem.deleteAsync(localUri, { idempotent: true });
+          localFileUriRef.current = null;
+          isUsingLocalFileRef.current = false;
+
+          if (!isOnline) throw new Error('Offline and local file is corrupt');
+
+          const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
+          if (currentSequence !== playSequenceRef.current) return;
+          sound = createAudioPlayer({ uri: directUrl });
+          attachStatusListener(sound);
+          sound.play();
+
+          const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
+          const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
+          downloadResumableRef.current = downloadResumable;
+          downloadResumable.downloadAsync().then(async (result: any) => {
+            if (result?.uri && currentSongRef.current?.id === song.id) {
+              localFileUriRef.current = result.uri;
+              isUsingLocalFileRef.current = true;
+            }
+          }).catch((err: any) => console.error('Download error:', err));
+        }
       }
       else if (isOnline) {
         const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);

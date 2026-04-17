@@ -17,6 +17,7 @@ import { youtubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
 import { SongData } from '@/interfaces/Song';
 import { PlayerCarousel } from './PlayerCarousel';
+import { DownloadBanner } from './DownloadBanner';
 import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
@@ -522,6 +523,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
         visible={isSleepTimerVisible}
         onClose={() => setIsSleepTimerVisible(false)}
       />
+      <DownloadBanner />
     </Modal>
   );
 }

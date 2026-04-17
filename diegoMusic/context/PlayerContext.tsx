@@ -19,14 +19,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { isOnline } = useNetwork();
   const [isMaximized, setIsMaximized] = useState(false);
   const [currentSong, setCurrentSong] = useState<SongData | null>(null);
-  const { 
-    favorites, 
-    favoriteArtists, 
-    recentPlayed, 
-    mostPlayed, 
-    toggleFavorite, 
-    isFavorite, 
-    toggleFavoriteArtist, 
+  const {
+    favorites,
+    favoriteArtists,
+    recentPlayed,
+    mostPlayed,
+    showDownloadBanner,
+    toggleFavorite,
+    isFavorite,
+    toggleFavoriteArtist,
     isFavoriteArtist,
     addRecentPlayed,
     addMostPlayed
@@ -311,7 +312,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       seekTo,
       isLoading,
       sleepTimer,
-      setSleepTimer
+      setSleepTimer,
+      showDownloadBanner
     }}>
       {children}
     </PlayerContext.Provider>

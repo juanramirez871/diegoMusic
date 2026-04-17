@@ -14,6 +14,7 @@ import Song from "./Song";
 import { youtubeService } from "../services/api";
 import { Skeleton } from "./Skeleton";
 import { usePlayer } from "../context/PlayerContext";
+import { DownloadBanner } from "./DownloadBanner";
 import { SongData } from "@/interfaces/Song";
 
 export interface HistoryItem {
@@ -178,6 +179,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 
   return (
     <Animated.View style={[styles.modalContainer, { opacity: fadeAnim, zIndex: 100 }]}>
+      <DownloadBanner />
       <View style={{ backgroundColor: "#282828", paddingTop: insets.top }}>
         <View style={styles.modalHeader}>
           <View style={styles.activeSearchWrapper}>
