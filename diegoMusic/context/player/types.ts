@@ -12,6 +12,9 @@ export const SEARCH_QUEUE_KEY = '@player_search_queue';
 export const SEARCH_DEFAULT_QUEUE_KEY = '@player_search_default_queue';
 export const QUEUE_SOURCE_KEY = '@player_queue_source';
 export const SHUFFLE_KEY = '@player_shuffle';
+export const REPEAT_KEY = '@player_repeat';
+export const ACTIVE_DAYS_KEY = '@player_active_days';
+export type RepeatMode = 'off' | 'all' | 'one';
 
 export interface PlayerContextType {
   isMaximized: boolean;
@@ -33,6 +36,8 @@ export interface PlayerContextType {
   playPrevious: () => void;
   isShuffle: boolean;
   toggleShuffle: () => void;
+  repeatMode: RepeatMode;
+  toggleRepeat: () => void;
   isPlaying: boolean;
   isIntendingToPlay: boolean;
   togglePlayPause: () => void;
@@ -44,4 +49,5 @@ export interface PlayerContextType {
   sleepTimer: number | null;
   setSleepTimer: (minutes: number | null) => void;
   showDownloadBanner: boolean;
+  streak: number;
 }

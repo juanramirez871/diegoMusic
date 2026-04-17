@@ -4,9 +4,11 @@ import { GenreOverlay } from "@/components/GenreOverlay";
 import MusicArtist from "@/components/MusicArtist";
 import { OfflineView } from "@/components/OfflineView";
 import RecentPlayed from "@/components/RecentPlayed";
+import { StatsOverlay } from "@/components/StatsOverlay";
 import { useNetwork } from "@/context/NetworkContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { ArtistData } from "@/interfaces/Song";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useRef, useState } from "react";
 import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,7 +21,25 @@ export default function HomeScreen() {
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
+  const [isStatsVisible, setIsStatsVisible] = useState(false);
+  const statsFadeAnim = useRef(new Animated.Value(0)).current;
   const { isOnline, isNetworkChecked } = useNetwork();
+  const handleOpenStats = () => {
+    setIsStatsVisible(true);
+    Animated.timing(statsFadeAnim, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleCloseStats = () => {
+    Animated.timing(statsFadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => setIsStatsVisible(false));
+  };
 
   const displayArtists = useMemo(() => {
     if (favoriteArtists.length <= 3) return favoriteArtists;
@@ -91,6 +111,13 @@ export default function HomeScreen() {
                   Music
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.statsButton}
+                onPress={handleOpenStats}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trophy-outline" size={18} color="#E0E0E0" />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -144,12 +171,18 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <GenreOverlay 
+      <GenreOverlay
         isVisible={isArtistOverlayVisible}
         onClose={handleCloseArtist}
         genreTitle={selectedArtist?.name || ""}
         channelId={selectedArtist?.id}
         fadeAnim={artistFadeAnim}
+      />
+
+      <StatsOverlay
+        isVisible={isStatsVisible}
+        onClose={handleCloseStats}
+        fadeAnim={statsFadeAnim}
       />
     </SafeAreaView>
   );
@@ -199,6 +232,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#333",
     minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#1A1A1A",
+    borderWidth: 1,
+    borderColor: "#333",
     alignItems: "center",
     justifyContent: "center",
   },

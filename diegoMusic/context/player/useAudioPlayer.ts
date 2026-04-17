@@ -151,9 +151,26 @@ export const useAudioPlayer = (
     prev?.remove();
   };
 
+  const CROSSFADE_DURATION_MS = 600;
+  const CROSSFADE_STEPS = 12;
+
+  const fadeOutAndUnload = async (player: AudioPlayer) => {
+    try {
+      const stepDelay = CROSSFADE_DURATION_MS / CROSSFADE_STEPS;
+      const stepSize = 1 / CROSSFADE_STEPS;
+      let vol = 1;
+      for (let i = 0; i < CROSSFADE_STEPS; i++) {
+        vol = Math.max(0, vol - stepSize);
+        try { player.volume = vol; } catch {}
+        await new Promise<void>((res) => setTimeout(res, stepDelay));
+      }
+    } catch {}
+    try { player.remove(); } catch {}
+  };
+
   const playSongLogic = async (song: SongData) => {
 
-    soundRef.current?.pause();
+    const dyingPlayer = soundRef.current;
 
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
@@ -168,7 +185,11 @@ export const useAudioPlayer = (
     localFileUriRef.current = null;
 
     await cancelDownload();
-    unloadCurrentSound();
+
+    statusSubscriptionRef.current?.remove();
+    statusSubscriptionRef.current = null;
+    soundRef.current = null;
+    if (dyingPlayer) fadeOutAndUnload(dyingPlayer);
 
     try {
       let sound: AudioPlayer;

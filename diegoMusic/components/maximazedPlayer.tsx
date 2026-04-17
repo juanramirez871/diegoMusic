@@ -7,7 +7,7 @@ import { Alert, Dimensions, Modal, Platform, Share, StyleSheet, Text, TouchableO
 import { VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
-import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
@@ -224,15 +224,17 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     }
   }, [isVideoFullscreen]);
-  const { 
-    currentSong, 
-    queue, 
-    toggleFavorite, 
-    isFavorite, 
-    playNext, 
-    playPrevious, 
-    isShuffle, 
+  const {
+    currentSong,
+    queue,
+    toggleFavorite,
+    isFavorite,
+    playNext,
+    playPrevious,
+    isShuffle,
     toggleShuffle,
+    repeatMode,
+    toggleRepeat,
     isPlaying,
     isIntendingToPlay,
     togglePlayPause,
@@ -303,6 +305,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     color: interpolateColor(playTint.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
   }));
 
+  const playerTranslateY = useSharedValue(0);
+  const playerTranslateX = useSharedValue(0);
+
+  const playerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: playerTranslateY.value },
+      { translateX: playerTranslateX.value },
+    ],
+  }));
+
   const handleClose = async () => {
     await video.closeIfOpen();
     onClose();
@@ -325,6 +337,43 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const handlePrevious = () => {
     if (hasNextOrPrev) playPrevious();
   };
+
+  const SWIPE_DOWN_THRESHOLD = 80;
+  const SWIPE_HORIZ_THRESHOLD = 60;
+
+  const swipeDownGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetY([15, Infinity])
+    .failOffsetX([-25, 25])
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        playerTranslateY.value = e.translationY * 0.4;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > SWIPE_DOWN_THRESHOLD) {
+        handleClose();
+      }
+      playerTranslateY.value = withSpring(0);
+    });
+
+  const swipeHorizGesture = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-20, 20])
+    .onUpdate((e) => {
+      playerTranslateX.value = e.translationX * 0.25;
+    })
+    .onEnd((e) => {
+      if (e.translationX < -SWIPE_HORIZ_THRESHOLD) {
+        handleNext();
+      } else if (e.translationX > SWIPE_HORIZ_THRESHOLD) {
+        handlePrevious();
+      }
+      playerTranslateX.value = withSpring(0);
+    });
+
+  const playerGesture = Gesture.Race(swipeDownGesture, swipeHorizGesture);
 
   const handleShare = async () => {
     if (!currentSong) return;
@@ -399,7 +448,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       visible={visible}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalContainer}>
+      <GestureDetector gesture={playerGesture}>
+      <Animated.View style={[styles.modalContainer, playerAnimatedStyle]}>
         <LinearGradient
           colors={['#2c5af3ff', '#141414', '#101010ff']}
           style={styles.gradient}
@@ -467,12 +517,17 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               <TouchableOpacity onPress={handleNext}>
                 <Ionicons name="play-skip-forward" size={36} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIsSleepTimerVisible(true)}>
-                <MaterialCommunityIcons 
-                  name={sleepTimer ? "timer" : "timer-outline"} 
-                  size={28} 
-                  color={sleepTimer ? "#2c5af3ff" : "#fff"} 
+              <TouchableOpacity onPress={toggleRepeat} style={styles.repeatButton}>
+                <Ionicons
+                  name={repeatMode === 'one' ? "repeat-outline" : "repeat"}
+                  size={28}
+                  color={repeatMode !== 'off' ? "#2c5af3ff" : "#fff"}
                 />
+                {repeatMode === 'one' && (
+                  <View style={styles.repeatOneBadge}>
+                    <Text style={styles.repeatOneText}>1</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -481,6 +536,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <Ionicons name="share-outline" size={24} color="#b3b3b3" />
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
+              <TouchableOpacity onPress={() => setIsSleepTimerVisible(true)}>
+                <MaterialCommunityIcons
+                  name={sleepTimer ? "timer" : "timer-outline"}
+                  size={24}
+                  color={sleepTimer ? "#2c5af3ff" : "#b3b3b3"}
+                />
+              </TouchableOpacity>
+              <View style={{ width: 16 }} />
               <TouchableOpacity onPress={() => setIsQueueVisible(true)}>
                 <Ionicons name="list" size={24} color="#b3b3b3" />
               </TouchableOpacity>
@@ -506,7 +569,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </View>
           </GestureDetector>
         )}
-      </View>
+      </Animated.View>
+      </GestureDetector>
 
       <SongOptionsModal 
         visible={isOptionsVisible} 
@@ -641,6 +705,28 @@ const styles = StyleSheet.create({
   },
   playButton: {
     paddingHorizontal: 10,
+  },
+  repeatButton: {
+    position: 'relative',
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  repeatOneBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -6,
+    backgroundColor: '#2c5af3ff',
+    borderRadius: 6,
+    width: 12,
+    height: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  repeatOneText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
   },
   footerActions: {
     flexDirection: 'row',

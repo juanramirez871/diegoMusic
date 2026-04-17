@@ -25,6 +25,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     recentPlayed,
     mostPlayed,
     showDownloadBanner,
+    streak,
     toggleFavorite,
     isFavorite,
     toggleFavoriteArtist,
@@ -38,6 +39,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setQueue,
     isShuffle,
     toggleShuffle,
+    repeatMode,
+    toggleRepeat,
     updateQueueAndSource,
     getNextSong,
     getPreviousSong
@@ -311,6 +314,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       playPrevious,
       isShuffle,
       toggleShuffle: onToggleShuffle,
+      repeatMode,
+      toggleRepeat,
       isPlaying,
       isIntendingToPlay,
       togglePlayPause,
@@ -321,7 +326,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       isLoading,
       sleepTimer,
       setSleepTimer,
-      showDownloadBanner
+      showDownloadBanner,
+      streak,
     }}>
       {children}
     </PlayerContext.Provider>

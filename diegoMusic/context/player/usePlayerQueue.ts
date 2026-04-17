@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import storage from '@/services/storage';
-import { SongData } from '@/components/Song';
-import { 
-  FAVORITES_QUEUE_KEY, 
-  SEARCH_QUEUE_KEY, 
-  FAVORITES_DEFAULT_QUEUE_KEY, 
-  SEARCH_DEFAULT_QUEUE_KEY, 
-  QUEUE_SOURCE_KEY, 
-  SHUFFLE_KEY 
+import {
+  FAVORITES_QUEUE_KEY,
+  SEARCH_QUEUE_KEY,
+  FAVORITES_DEFAULT_QUEUE_KEY,
+  SEARCH_DEFAULT_QUEUE_KEY,
+  QUEUE_SOURCE_KEY,
+  SHUFFLE_KEY,
+  REPEAT_KEY,
+  RepeatMode,
 } from './types';
+import { SongData } from '@/interfaces/Song';
 
 export const usePlayerQueue = () => {
 
   const [queue, setQueueState] = useState<SongData[]>([]);
   const [defaultQueue, setDefaultQueue] = useState<SongData[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
   const [queueSource, setQueueSource] = useState<'favorites' | 'search'>('search');
 
   useEffect(() => {
@@ -32,9 +35,11 @@ export const usePlayerQueue = () => {
           storage.getItem(SHUFFLE_KEY)
         ]);
 
+        const savedRepeat = await storage.getItem(REPEAT_KEY);
         if (savedQueue) setQueueState(JSON.parse(savedQueue));
         if (savedDefaultQueue) setDefaultQueue(JSON.parse(savedDefaultQueue));
         if (savedShuffle) setIsShuffle(JSON.parse(savedShuffle));
+        if (savedRepeat) setRepeatMode(JSON.parse(savedRepeat) as RepeatMode);
       }
       catch (error) {
         console.error('Error loading persisted queue:', error);
@@ -148,21 +153,32 @@ export const usePlayerQueue = () => {
     return { newQueue, newDefaultQueue, newSource };
   };
 
-  const getNextSong = (currentSong: SongData | null) => {
+  const toggleRepeat = async () => {
+    const next: RepeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
+    setRepeatMode(next);
+    try {
+      await storage.setItem(REPEAT_KEY, JSON.stringify(next));
+    } catch (error) {
+      console.error('Error persisting repeat mode:', error);
+    }
+  };
 
+  const getNextSong = (currentSong: SongData | null) => {
     if (queue.length === 0 || !currentSong) return null;
+    if (repeatMode === 'one') return currentSong;
     const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-    
     if (currentIndex !== -1 && currentIndex < queue.length - 1) return queue[currentIndex + 1];
-    return queue[0];
+    if (repeatMode === 'all') return queue[0];
+    return null;
   };
 
   const getPreviousSong = (currentSong: SongData | null) => {
     if (queue.length === 0 || !currentSong) return null;
+    if (repeatMode === 'one') return currentSong;
     const currentIndex = queue.findIndex(s => s.id === currentSong.id);
-  
     if (currentIndex > 0) return queue[currentIndex - 1];
-    return queue[queue.length - 1];
+    if (repeatMode === 'all') return queue[queue.length - 1];
+    return null;
   };
 
   return {
@@ -170,6 +186,8 @@ export const usePlayerQueue = () => {
     setQueue,
     isShuffle,
     toggleShuffle,
+    repeatMode,
+    toggleRepeat,
     queueSource,
     updateQueueAndSource,
     getNextSong,

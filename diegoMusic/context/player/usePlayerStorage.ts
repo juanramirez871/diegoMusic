@@ -7,7 +7,8 @@ import {
     FAVORITES_KEY,
     FAVORITE_ARTISTS_KEY,
     MOST_PLAYED_KEY,
-    RECENT_PLAYED_KEY
+    RECENT_PLAYED_KEY,
+    ACTIVE_DAYS_KEY,
 } from './types';
 import { ArtistData, SongData } from '@/interfaces/Song';
 
@@ -18,6 +19,28 @@ export const usePlayerStorage = () => {
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [mostPlayed, setMostPlayed] = useState<SongData[]>([]);
   const [showDownloadBanner, setShowDownloadBanner] = useState(false);
+  const [streak, setStreak] = useState(0);
+
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+
+  const computeStreak = (days: string[]): number => {
+    if (days.length === 0) return 0;
+    const sorted = [...new Set(days)].sort().reverse();
+    const today = todayStr();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+    let count = 1;
+
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date(sorted[i - 1]);
+      const curr = new Date(sorted[i]);
+      const diff = (prev.getTime() - curr.getTime()) / 86400000;
+      if (diff === 1) count++;
+      else break;
+    }
+
+    return count;
+  };
 
   const triggerDownloadBanner = () => {
     setShowDownloadBanner(true);
@@ -41,7 +64,8 @@ export const usePlayerStorage = () => {
           );
           await thumbDownload.downloadAsync();
         }
-      } catch (e) {
+      }
+      catch (e) {
         console.warn(`[SYNC] Error sincronizando portada de ${song.title}:`, e);
       }
     }
@@ -50,11 +74,12 @@ export const usePlayerStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed] = await Promise.all([
+        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays] = await Promise.all([
           storage.getItem(FAVORITES_KEY),
           storage.getItem(FAVORITE_ARTISTS_KEY),
           storage.getItem(RECENT_PLAYED_KEY),
           storage.getItem(MOST_PLAYED_KEY),
+          storage.getItem(ACTIVE_DAYS_KEY),
         ]);
 
         if (savedFavorites) {
@@ -62,10 +87,14 @@ export const usePlayerStorage = () => {
           setFavorites(parsedFavorites);
           syncThumbnails(parsedFavorites);
         }
-        
+
         if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
         if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
         if (savedMostPlayed) setMostPlayed(JSON.parse(savedMostPlayed));
+        if (savedActiveDays) {
+          const days: string[] = JSON.parse(savedActiveDays);
+          setStreak(computeStreak(days));
+        }
       }
       catch (error) {
         console.error('Error loading persisted storage data:', error);
@@ -178,6 +207,21 @@ export const usePlayerStorage = () => {
     return favoriteArtists.some(f => f.id === artistId);
   };
 
+  const recordActiveDay = async () => {
+    const today = todayStr();
+    try {
+      const saved = await storage.getItem(ACTIVE_DAYS_KEY);
+      const days: string[] = saved ? JSON.parse(saved) : [];
+      if (!days.includes(today)) {
+        const updated = [...days, today];
+        await storage.setItem(ACTIVE_DAYS_KEY, JSON.stringify(updated));
+        setStreak(computeStreak(updated));
+      }
+    } catch (err) {
+      console.error('Error recording active day:', err);
+    }
+  };
+
   const addRecentPlayed = async (song: SongData) => {
     const filtered = recentPlayed.filter(s => s.id !== song.id);
     const updated = [song, ...filtered].slice(0, 8);
@@ -188,6 +232,7 @@ export const usePlayerStorage = () => {
     catch (err) {
       console.error('Error saving recent played:', err);
     }
+    recordActiveDay();
   };
 
   const addMostPlayed = async (song: SongData) => {
@@ -224,6 +269,7 @@ export const usePlayerStorage = () => {
     recentPlayed,
     mostPlayed,
     showDownloadBanner,
+    streak,
     toggleFavorite,
     isFavorite,
     toggleFavoriteArtist,
