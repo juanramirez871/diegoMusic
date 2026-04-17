@@ -307,14 +307,14 @@ export const useAudioPlayer = (
         throw new Error('Offline and no local file');
       }
 
+      soundRef.current = sound;
+      await addRecentPlayed(song);
+      await addMostPlayed(song);
+
       if (currentSequence !== playSequenceRef.current) {
         sound.remove();
         return;
       }
-
-      soundRef.current = sound;
-      await addRecentPlayed(song);
-      await addMostPlayed(song);
     }
     catch (error) {
       console.error('Error playing song:', error);
