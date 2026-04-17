@@ -1,7 +1,8 @@
 import ytch from "yt-channel-info";
 import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
-import { unlink } from "fs/promises";
+import { unlink, writeFile } from "fs/promises";
+import { createWriteStream } from "fs";
 import os from "os";
 import fetch from "node-fetch";
 import path from "path";
@@ -24,6 +25,47 @@ const getInnertube = async () => {
     innertube = await Innertube.create({ generate_session_locally: true });
   }
   return innertube;
+};
+
+const getBestAudioUrl = async (videoId) => {
+
+  const yt = await getInnertube();
+  const info = await yt.getBasicInfo(videoId, { client: "TV" });
+  const formats = info.streaming_data?.adaptive_formats ?? [];
+  const audioFormat =
+    formats.find(f => f.mime_type?.startsWith("audio/mp4") && f.itag === 140) ||
+    formats.find(f => f.mime_type?.startsWith("audio/mp4")) ||
+    formats.find(f => f.mime_type?.startsWith("audio/"));
+
+  if (!audioFormat) throw new Error("No audio format found via Innertube");
+
+  const url = yt.session.player?.decipher(audioFormat.url, audioFormat.signature_cipher);
+  if (!url) throw new Error("Failed to decipher audio URL");
+
+  return { url, mimeType: "audio/mp4" };
+};
+
+const getBestVideoUrl = async (videoId) => {
+
+  const yt = await getInnertube();
+  const info = await yt.getBasicInfo(videoId, { client: "TV" });
+  const formats = info.streaming_data?.formats ?? [];
+  const adaptive = info.streaming_data?.adaptive_formats ?? [];
+
+  const videoFormat =
+    formats.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 22) ||
+    formats.find(f => f.mime_type?.startsWith("video/mp4") && f.itag === 18) ||
+    formats.find(f => f.mime_type?.startsWith("video/mp4")) ||
+    adaptive.find(f => f.mime_type?.startsWith("video/mp4")) ||
+    formats[0];
+
+  if (!videoFormat) throw new Error("No video format found via Innertube");
+
+  const url = yt.session.player?.decipher(videoFormat.url, videoFormat.signature_cipher);
+  if (!url) throw new Error("Failed to decipher video URL");
+
+  const mimeType = videoFormat.mime_type?.startsWith("video/webm") ? "video/webm" : "video/mp4";
+  return { directUrl: url, mimeType };
 };
 
 
@@ -123,6 +165,16 @@ export const getAudioDirectUrl = async (url) => {
     return cached.data;
   }
 
+  try {
+    const result = await getBestAudioUrl(videoId);
+    urlCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    console.log(`[getAudioDirectUrl] URL obtenida via Innertube para ${videoId}`);
+    return result;
+  }
+  catch (innertubeErr) {
+    console.warn(`[getAudioDirectUrl] Innertube falló (${innertubeErr.message}), intentando yt-dlp...`);
+  }
+
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const args = [
     ...getYtdlpBaseArgs(),
@@ -156,23 +208,13 @@ export const getAudioDirectUrl = async (url) => {
 
   const result = { url: directUrl, mimeType: 'audio/mp4' };
   urlCache.set(cacheKey, { data: result, timestamp: Date.now() });
-  console.log(`[getAudioDirectUrl] URL obtenida para ${videoId}`);
+  console.log(`[getAudioDirectUrl] URL obtenida via yt-dlp para ${videoId}`);
   return result;
 };
 
 
-export const downloadAudio = (url, startSeconds = 0) => {
-
-  const videoId = extractVideoId(url);
-  const cacheKey = `${videoId}-${startSeconds}`;
-
-  if (downloadCache.has(cacheKey)) {
-    console.log(`[yt-dlp] Cache hit: ${cacheKey}`);
-    return downloadCache.get(cacheKey);
-  }
-
-  const tempFile = path.join(os.tmpdir(), `ytdlp-${cacheKey}.m4a`);
-  const promise = new Promise((resolve, reject) => {
+const downloadAudioViaYtdlp = (videoId, tempFile, startSeconds) => {
+  return new Promise((resolve, reject) => {
     if (existsSync(tempFile)) {
       console.log(`[yt-dlp] Archivo en disco: ${tempFile}`);
       return resolve(tempFile);
@@ -199,24 +241,73 @@ export const downloadAudio = (url, startSeconds = 0) => {
       if (code === 0) {
         console.log(`[yt-dlp] Descarga completa: ${tempFile}`);
         resolve(tempFile);
-      }
-      else {
-        downloadCache.delete(cacheKey);
+      } else {
         reject(new Error(`yt-dlp salió con código ${code}`));
       }
     });
 
-    proc.on("error", (err) => {
-      downloadCache.delete(cacheKey);
-      reject(err);
-    });
+    proc.on("error", reject);
   });
+};
+
+const downloadAudioViaInnertube = async (videoId, tempFile) => {
+  const { url } = await getBestAudioUrl(videoId);
+  console.log(`[Innertube] Descargando audio para ${videoId}...`);
+
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    },
+  });
+
+  if (!response.ok) throw new Error(`Fetch falló: ${response.status} ${response.statusText}`);
+
+  await new Promise((resolve, reject) => {
+    const dest = createWriteStream(tempFile);
+    response.body.pipe(dest);
+    dest.on("finish", resolve);
+    dest.on("error", reject);
+    response.body.on("error", reject);
+  });
+
+  console.log(`[Innertube] Descarga completa: ${tempFile}`);
+  return tempFile;
+};
+
+export const downloadAudio = (url, startSeconds = 0) => {
+
+  const videoId = extractVideoId(url);
+  const cacheKey = `${videoId}-${startSeconds}`;
+
+  if (downloadCache.has(cacheKey)) {
+    console.log(`[downloadAudio] Cache hit: ${cacheKey}`);
+    return downloadCache.get(cacheKey);
+  }
+
+  const tempFile = path.join(os.tmpdir(), `ytdlp-${cacheKey}.m4a`);
+
+  const promise = (async () => {
+    if (existsSync(tempFile)) {
+      console.log(`[downloadAudio] Archivo en disco: ${tempFile}`);
+      return tempFile;
+    }
+
+    try {
+      return await downloadAudioViaYtdlp(videoId, tempFile, startSeconds);
+    } catch (ytdlpErr) {
+      console.warn(`[downloadAudio] yt-dlp falló (${ytdlpErr.message}), intentando Innertube...`);
+      // Innertube no soporta --download-sections, solo descarga completa
+      return await downloadAudioViaInnertube(videoId, tempFile);
+    }
+  })();
 
   promise.then((filePath) => {
     setTimeout(async () => {
       downloadCache.delete(cacheKey);
       try { await unlink(filePath); } catch {}
     }, 10 * 60 * 1000);
+  }).catch(() => {
+    downloadCache.delete(cacheKey);
   });
 
   downloadCache.set(cacheKey, promise);
@@ -235,10 +326,18 @@ export const getVideoDirectSource = async (url) => {
     return cached.data;
   }
 
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
   console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId}`);
 
+  try {
+    const result = await getBestVideoUrl(videoId);
+    urlCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    console.log(`[getVideoDirectSource] URL obtenida via Innertube (mime: ${result.mimeType})`);
+    return result;
+  } catch (innertubeErr) {
+    console.warn(`[getVideoDirectSource] Innertube falló (${innertubeErr.message}), intentando yt-dlp...`);
+  }
+
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
   const args = [
     ...getYtdlpBaseArgs(),
     "-f", "18/22/best[ext=mp4]/best",
@@ -284,7 +383,7 @@ export const getVideoDirectSource = async (url) => {
       ? "video/webm"
       : "video/mp4";
 
-  console.log(`[getVideoDirectSource] URL obtenida correctamente (mime: ${mimeType})`);
+  console.log(`[getVideoDirectSource] URL obtenida via yt-dlp (mime: ${mimeType})`);
   urlCache.set(cacheKey, { data: { directUrl, mimeType }, timestamp: Date.now() });
   return { directUrl, mimeType };
 };
