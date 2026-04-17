@@ -399,6 +399,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const progressGesture = Gesture.Pan()
     .runOnJS(true)
     .enabled(isSeekEnabled)
+    .activeOffsetX([-5, 5])
+    .failOffsetY([-20, 20])
     .onUpdate((event) => {
       if (activeDuration > 0) {
         setIsSeeking(true);
@@ -519,15 +521,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               </TouchableOpacity>
               <TouchableOpacity onPress={toggleRepeat} style={styles.repeatButton}>
                 <Ionicons
-                  name={repeatMode === 'one' ? "repeat-outline" : "repeat"}
+                  name="repeat"
                   size={28}
-                  color={repeatMode !== 'off' ? "#2c5af3ff" : "#fff"}
+                  color={repeatMode === 'one' ? "#2c5af3ff" : "#fff"}
                 />
-                {repeatMode === 'one' && (
-                  <View style={styles.repeatOneBadge}>
-                    <Text style={styles.repeatOneText}>1</Text>
-                  </View>
-                )}
               </TouchableOpacity>
             </View>
 
@@ -661,7 +658,7 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   progressContainer: {
-    height: 20,
+    height: 36,
     width: '100%',
     backgroundColor: 'transparent',
     borderRadius: 2,

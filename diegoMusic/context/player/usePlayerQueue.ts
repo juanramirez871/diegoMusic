@@ -154,7 +154,7 @@ export const usePlayerQueue = () => {
   };
 
   const toggleRepeat = async () => {
-    const next: RepeatMode = repeatMode === 'off' ? 'all' : repeatMode === 'all' ? 'one' : 'off';
+    const next: RepeatMode = repeatMode === 'off' ? 'one' : 'off';
     setRepeatMode(next);
     try {
       await storage.setItem(REPEAT_KEY, JSON.stringify(next));
@@ -168,8 +168,7 @@ export const usePlayerQueue = () => {
     if (repeatMode === 'one') return currentSong;
     const currentIndex = queue.findIndex(s => s.id === currentSong.id);
     if (currentIndex !== -1 && currentIndex < queue.length - 1) return queue[currentIndex + 1];
-    if (repeatMode === 'all') return queue[0];
-    return null;
+    return queue[0];
   };
 
   const getPreviousSong = (currentSong: SongData | null) => {
