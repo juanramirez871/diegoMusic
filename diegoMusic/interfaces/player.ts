@@ -86,4 +86,6 @@ export type PlayerCarouselProps = {
   songs: CarouselSongs;
   video: CarouselVideo;
   audio: CarouselAudio;
+  onEnterFullscreen: () => void;
+  onExitFullscreen: () => void;
 };

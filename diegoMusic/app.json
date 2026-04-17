@@ -3,7 +3,7 @@
     "name": "DiegoMusic",
     "slug": "DiegoMusic",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "diegomusic",
     "userInterfaceStyle": "light",
@@ -64,7 +64,8 @@
         }
       ],
       "expo-audio",
-      "expo-video"
+      "expo-video",
+      "expo-screen-orientation"
     ],
     "experiments": {
       "typedRoutes": true,

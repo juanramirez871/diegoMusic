@@ -2,10 +2,10 @@ import Foundation from '@expo/vector-icons/Foundation';
 import { VideoView } from 'expo-video';
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { useThumbnail } from '@/hooks/useThumbnail';
 import { LoadingSpinner } from './LoadingSpinner';
-import React, { useRef } from 'react';
+import React, { useEffect } from 'react';
 import { PlayerCarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
@@ -13,7 +13,7 @@ const IMAGE_SIZE = width - 48;
 const SWIPE_THRESHOLD = 80;
 
 
-export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
+export function PlayerCarousel({ songs, video, audio, onEnterFullscreen }: PlayerCarouselProps) {
 
   const translateX = useSharedValue(0);
   const prevThumbnailSource = useThumbnail(songs.prev?.id, songs.prev?.thumbnail?.url);
@@ -64,19 +64,28 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
   const nextImageStyle = useSideImageStyle(true);
   const prevImageStyle = useSideImageStyle(false);
 
-  const videoViewRef = useRef<VideoView>(null);
+  const loadingBarX = useSharedValue(-IMAGE_SIZE);
+  useEffect(() => {
+    if (video.isLoading) {
+      loadingBarX.value = -IMAGE_SIZE;
+      loadingBarX.value = withRepeat(
+        withTiming(IMAGE_SIZE, { duration: 900 }),
+        -1,
+        false
+      );
+    } else {
+      loadingBarX.value = -IMAGE_SIZE;
+    }
+  }, [video.isLoading]);
 
-  const presentVideoFullscreen = () => {
-    if (!video.show || !video.isReady) return;
-    videoViewRef.current?.enterFullscreen();
-  };
+  const loadingBarStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: loadingBarX.value }],
+  }));
 
   const videoLongPressGesture = Gesture.LongPress()
     .minDuration(450)
     .onStart(() => {
-      if (video.show && video.isReady) {
-        presentVideoFullscreen();
-      }
+      if (video.show && video.isReady) runOnJS(onEnterFullscreen)();
     })
     .runOnJS(true);
 
@@ -97,7 +106,6 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
               <Animated.View style={[styles.imageContainer, mainImageStyle]}>
                 {video.show && (
                   <VideoView
-                    ref={videoViewRef}
                     player={video.player}
                     style={[styles.cover, styles.videoLayer, { opacity: video.isReady ? 1 : 0 }]}
                     contentFit="cover"
@@ -106,6 +114,11 @@ export function PlayerCarousel({ songs, video, audio }: PlayerCarouselProps) {
                 )}
                 {(!video.show || !video.isReady) && (
                   <Image key={songs.current.id} source={currentThumbnailSource} style={styles.cover} />
+                )}
+                {video.isLoading && (
+                  <View style={styles.loadingBarTrack}>
+                    <Animated.View style={[styles.loadingBarFill, loadingBarStyle]} />
+                  </View>
                 )}
                 <TouchableOpacity onPress={video.toggle} style={styles.icon}>
                   {video.show && video.isLoading ? (
@@ -183,5 +196,26 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     height: '100%',
+  },
+  loadingBarTrack: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    overflow: 'hidden',
+    zIndex: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  loadingBarFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: IMAGE_SIZE * 0.45,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#2c5af3',
   },
 });

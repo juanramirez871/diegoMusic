@@ -4,6 +4,8 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { VideoView } from 'expo-video';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import Animated, { interpolateColor, runOnJS, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import QueueModal from './QueueModal';
@@ -156,7 +158,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
       setIsVideoPlaying(false);
       isVideoPlayingRef.current = false;
       await audio.pause();
-      player.replace({ uri: youtubeService.getVideoStreamUrl(currentSong.url) });
+      await player.replaceAsync({ uri: youtubeService.getVideoStreamUrl(currentSong.url) });
       player.play();
       setShowVideo(true);
       showVideoRef.current = true;
@@ -208,6 +210,18 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
+  const isVideoFullscreenRef = useRef(false);
+
+  useEffect(() => {
+    if (isVideoFullscreen) {
+      isVideoFullscreenRef.current = true;
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+    } else if (isVideoFullscreenRef.current) {
+      isVideoFullscreenRef.current = false;
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    }
+  }, [isVideoFullscreen]);
   const { 
     currentSong, 
     queue, 
@@ -368,6 +382,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       toggle: video.toggle,
     },
     audio: { playNext, playPrevious, seekTo, togglePlayPause },
+    onEnterFullscreen: () => setIsVideoFullscreen(true),
+    onExitFullscreen: () => setIsVideoFullscreen(false),
   };
 
   return (
@@ -465,6 +481,25 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </View>
           </View>
         </LinearGradient>
+
+        {isVideoFullscreen && (
+          <GestureDetector gesture={Gesture.LongPress().minDuration(450).onStart(() => setIsVideoFullscreen(false)).runOnJS(true)}>
+            <View style={styles.videoFullscreen}>
+              <VideoView
+                player={video.player}
+                style={StyleSheet.absoluteFill}
+                contentFit="contain"
+                nativeControls={false}
+              />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color="rgba(255,255,255,0.4)"
+                style={styles.videoFullscreenHint}
+              />
+            </View>
+          </GestureDetector>
+        )}
       </View>
 
       <SongOptionsModal 
@@ -604,5 +639,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 40,
+  },
+  videoFullscreen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000',
+    zIndex: 999,
+  },
+  videoFullscreenHint: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 40 : 16,
+    alignSelf: 'center',
+    zIndex: 1000,
   },
  });
