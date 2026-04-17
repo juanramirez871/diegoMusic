@@ -21,6 +21,7 @@ import { DownloadBanner } from './DownloadBanner';
 import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
+const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
 
 const MarqueeText = ({ text, style }: { text: string; style: any }) => {
   return (
@@ -273,7 +274,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const isSeekEnabled = true;
 
   const currentDisplayProgress = (isSeeking || activeIsLoading) ? seekProgress : activeProgress;
-  const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
   const playTint = useSharedValue(0);
 
   useEffect(() => {
