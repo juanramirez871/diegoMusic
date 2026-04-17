@@ -217,6 +217,8 @@ export const downloadAudio = (url, startSeconds = 0) => {
       downloadCache.delete(cacheKey);
       try { await unlink(filePath); } catch {}
     }, 10 * 60 * 1000);
+  }).catch(() => {
+    downloadCache.delete(cacheKey);
   });
 
   downloadCache.set(cacheKey, promise);

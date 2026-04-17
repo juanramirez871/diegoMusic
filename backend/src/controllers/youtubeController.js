@@ -28,6 +28,7 @@ const downloadAudio = async (req, res) => {
   try {
 
     const { url, start = 0 } = req.query;
+    if (!url) return res.status(400).json({ error: 'url is required' });
     const filePath = await youtubeService.downloadAudio(url, Number(start));
     const fileSize = statSync(filePath).size;
     const rangeHeader = req.headers.range;
