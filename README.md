@@ -1,5 +1,3 @@
-Perfecto, aquí tienes una versión más natural y cercana, pero sin emojis y con un tono más relajado:
-
 # DiegoMusic
 
 <p align="center">
