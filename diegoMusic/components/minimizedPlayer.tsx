@@ -1,8 +1,6 @@
 import { View, StyleSheet, Image, Text, Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
-import { useEffect } from "react";
-import Animated, { interpolateColor, useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
 import { useThumbnail } from "@/hooks/useThumbnail";
 import { MinimizedPlayerProps } from "@/interfaces/player";
 
@@ -10,30 +8,16 @@ import { MinimizedPlayerProps } from "@/interfaces/player";
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
 
   const { currentSong, isPlaying, isIntendingToPlay, togglePlayPause, progress, duration, isLoading } = usePlayer();
-  const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
   const isBuffering = isIntendingToPlay && !isPlaying;
-  const loadingProgress = useSharedValue(isBuffering ? 1 : 0);
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
-
-  useEffect(() => {
-    if (isBuffering) {
-      loadingProgress.value = 1;
-    } else {
-      loadingProgress.value = withTiming(0, { duration: 220 });
-    }
-  }, [isBuffering, loadingProgress]);
-
-  const playIconAnimatedProps = useAnimatedProps(() => ({
-    color: interpolateColor(loadingProgress.value, [0, 1], ["#fff", "rgba(255, 255, 255, 0.4)"]),
-  }));
 
   if (!currentSong) return null;
   const progressPercentage = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
 
   return (
-    <TouchableOpacity 
-      activeOpacity={1} 
-      onPress={onPress} 
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={onPress}
       style={[styles.container, style]}
     >
       <Image
@@ -45,17 +29,17 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
         <Text style={styles.artist} numberOfLines={1}>{currentSong.channel.name}</Text>
       </View>
 
-      <TouchableOpacity 
-        style={styles.controls} 
+      <TouchableOpacity
+        style={styles.controls}
         onPress={(e) => {
           e.stopPropagation();
           if (!isLoading) togglePlayPause();
         }}
       >
-        <AnimatedIonicons
-          animatedProps={playIconAnimatedProps}
+        <Ionicons
           name={isIntendingToPlay ? "pause-circle" : "play-circle"}
           size={40}
+          color={isBuffering ? "rgba(255, 255, 255, 0.4)" : "#fff"}
         />
       </TouchableOpacity>
       <View style={styles.progressContainer}>
@@ -127,5 +111,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         zIndex: 1,
     }
-    
+
 });

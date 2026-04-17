@@ -51,7 +51,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
     setCurrentSong(song);
-    
+    setIsIntendingToPlay(true);
+
     const playPromise = playSongLogic(song);
     const queueUpdatePromise = updateQueueAndSource(song, initialQueue, source);
     const [{ newSource }] = await Promise.all([queueUpdatePromise, playPromise]);
@@ -80,6 +81,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const {
     isPlaying,
     isIntendingToPlay,
+    setIsIntendingToPlay,
     isLoading,
     progress,
     duration,

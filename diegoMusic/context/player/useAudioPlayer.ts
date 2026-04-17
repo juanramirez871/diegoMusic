@@ -378,6 +378,7 @@ export const useAudioPlayer = (
   return {
     isPlaying,
     isIntendingToPlay,
+    setIsIntendingToPlay,
     isLoading,
     progress,
     duration,
