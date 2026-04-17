@@ -29,7 +29,7 @@ export default function TabTwoScreen() {
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [isGenreVisible, setIsGenreVisible] = useState(false);
-  const { isOnline, isNetworkChecked } = useNetwork();
+  const { isOnline, isNetworkChecked, isApiReachable } = useNetwork();
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -99,6 +99,8 @@ export default function TabTwoScreen() {
     });
   };
 
+  const isDisabled = (isNetworkChecked && !isOnline) || !isApiReachable;
+
   if (isNetworkChecked && !isOnline) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -123,18 +125,21 @@ export default function TabTwoScreen() {
           </View>
 
           <View style={styles.searchSection}>
-            <TouchableOpacity 
-              activeOpacity={0.9} 
-              style={styles.inputWrapper}
-              onPress={handleOpenSearch}
+            <TouchableOpacity
+              activeOpacity={isDisabled ? 1 : 0.9}
+              style={[styles.inputWrapper, isDisabled && styles.inputWrapperDisabled]}
+              onPress={isDisabled ? undefined : handleOpenSearch}
+              disabled={isDisabled}
             >
               <Ionicons
                 name="search"
                 size={22}
-                color="#252424"
+                color={isDisabled ? "#aaa" : "#252424"}
                 style={styles.searchIcon}
               />
-              <Text style={styles.placeholderText}>What do you want to listen to?</Text>
+              <Text style={[styles.placeholderText, isDisabled && styles.placeholderDisabled]}>
+                {isDisabled ? "Not available offline" : "What do you want to listen to?"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -144,13 +149,15 @@ export default function TabTwoScreen() {
               {CATEGORIES.map((category) => (
                 <TouchableOpacity
                   key={category.id}
-                  style={[styles.categoryCard, { backgroundColor: category.color }]}
-                  onPress={() => handleOpenGenre(category.title)}
+                  style={[styles.categoryCard, { backgroundColor: category.color }, isDisabled && styles.categoryCardDisabled]}
+                  onPress={isDisabled ? undefined : () => handleOpenGenre(category.title)}
+                  disabled={isDisabled}
+                  activeOpacity={isDisabled ? 1 : 0.7}
                 >
                   <Text style={styles.categoryTitle}>{category.title}</Text>
                   <Image
                     source={category.image}
-                    style={styles.categoryIcon}
+                    style={[styles.categoryIcon, isDisabled && styles.categoryIconDisabled]}
                   />
                 </TouchableOpacity>
               ))}
@@ -226,6 +233,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     flex: 1,
+  },
+  inputWrapperDisabled: {
+    opacity: 0.5,
+  },
+  placeholderDisabled: {
+    color: "#999",
+  },
+  categoryCardDisabled: {
+    opacity: 0.4,
+  },
+  categoryIconDisabled: {
+    opacity: 0.4,
   },
   browseAllSection: {
     marginTop: 8,

@@ -1,13 +1,18 @@
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
 const searchCache = new Map<string, any[]>();
 
+const API_TIMEOUT_MS = 8000;
+
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      signal: controller.signal,
       ...options,
     });
 
@@ -22,6 +27,9 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
   catch (error) {
     console.error(`API Fetch Error [${endpoint}]:`, error);
     throw error;
+  }
+  finally {
+    clearTimeout(timeoutId);
   }
 };
 

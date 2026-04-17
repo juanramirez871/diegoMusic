@@ -194,7 +194,23 @@ export const useAudioPlayer = (
         return;
       }
 
-      if (preloadedSound) {
+      if (hasPersistent) {
+
+        console.log('[PERSISTENT] Usando archivo local persistente (favorito):', persistentUri);
+        if (currentSequence !== playSequenceRef.current) return;
+        localFileUriRef.current = persistentUri;
+        isUsingLocalFileRef.current = true;
+
+        if (preloadedSound) {
+          preloadedSoundsRef.current.delete(song.id);
+          try { preloadedSound.remove(); } catch {}
+        }
+
+        sound = createAudioPlayer({ uri: persistentUri });
+        attachStatusListener(sound);
+        sound.play();
+      }
+      else if (preloadedSound) {
         try {
           sound = preloadedSound;
           preloadedSoundsRef.current.delete(song.id);

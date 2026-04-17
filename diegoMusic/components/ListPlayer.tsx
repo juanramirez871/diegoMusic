@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "rea
 import { useEffect, useState } from "react";
 import { youtubeService } from "@/services/api";
 import { usePlayer } from "@/context/PlayerContext";
+import { useNetwork } from "@/context/NetworkContext";
 import { Skeleton } from "./Skeleton";
 import { CarouselPlayerProps } from "@/interfaces/player";
 import { SongData } from "@/interfaces/Song";
@@ -11,7 +12,9 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
 
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const { playSong } = usePlayer();
+  const { isApiReachable } = useNetwork();
 
   useEffect(() => {
     if (data) {
@@ -20,8 +23,15 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
       return;
     }
 
+    if (!isApiReachable) {
+      setLoading(true);
+      setApiError(true);
+      return;
+    }
+
     const fetchSongs = async () => {
       setLoading(true);
+      setApiError(false);
       try {
         let fetchedData: SongData[] = [];
         if (channelId) fetchedData = await youtubeService.getChannelVideos(channelId);
@@ -31,6 +41,7 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
       }
       catch (error) {
         console.error("Error fetching carousel songs:", error);
+        setApiError(true);
       }
       finally {
         setLoading(false);
@@ -38,9 +49,9 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
     };
 
     fetchSongs();
-  }, [channelId, query, data]);
+  }, [channelId, query, data, isApiReachable]);
 
-  if (loading) {
+  if (loading || apiError) {
     return (
       <View style={styles.container}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
