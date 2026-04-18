@@ -1,3 +1,4 @@
+import { LyricLine } from '@/hooks/useLyrics';
 import {
   Animated,
 } from "react-native";
@@ -43,4 +44,22 @@ export interface SongOptionsModalProps {
   visible: boolean;
   onClose: () => void;
   song?: SongData;
+}
+
+export interface LyricsPanelProps extends LyricsBaseProps {
+  onExpand: () => void;
+}
+
+export interface LyricsBaseProps {
+  syncedLyrics: LyricLine[] | null;
+  plainLyrics: string | null;
+  loading: boolean;
+  notFound: boolean;
+  isOnline: boolean;
+  currentLineIndex: number;
+  onSeek: (ms: number) => void;
+}
+
+export interface LyricsViewProps extends LyricsBaseProps {
+  onClose: () => void;
 }

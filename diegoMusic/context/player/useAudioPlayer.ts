@@ -37,6 +37,8 @@ export const useAudioPlayer = (
   const seekOffsetRef = useRef(0);
   const playStartTimeRef = useRef<number>(0);
   const playbackSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const playSongLogicRef = useRef<((song: SongData, isRetry?: boolean) => Promise<void>) | null>(null);
 
   const stableSetIsPlaying = (value: boolean) => {
     setIsPlaying(value);
@@ -128,7 +130,8 @@ export const useAudioPlayer = (
     if (song?.duration_formatted && song.duration_formatted !== "00:00") {
       const parsed = parseDuration(song.duration_formatted);
       if (parsed > 0) setDuration(parsed);
-    } else {
+    }
+    else {
       const durationMs = (status.duration ?? 0) * 1000;
       if (durationMs > 0) setDuration(durationMs);
     }
@@ -141,6 +144,7 @@ export const useAudioPlayer = (
     const state = status.playing
       ? PlaybackState.PLAYING
       : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
+
     SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
   };
 
@@ -159,7 +163,6 @@ export const useAudioPlayer = (
 
   const CROSSFADE_DURATION_MS = 600;
   const CROSSFADE_STEPS = 12;
-
   const fadeOutAndUnload = async (player: AudioPlayer) => {
     try {
       const stepDelay = CROSSFADE_DURATION_MS / CROSSFADE_STEPS;
@@ -171,18 +174,19 @@ export const useAudioPlayer = (
         await new Promise<void>((res) => setTimeout(res, stepDelay));
       }
     } catch {}
+
     try { player.remove(); } catch {}
   };
 
-  const playSongLogic = async (song: SongData) => {
+  const playSongLogic = async (song: SongData, isRetry = false) => {
 
+    if (!isRetry) retryCountRef.current = 0;
     if (playbackSafetyTimerRef.current) {
       clearTimeout(playbackSafetyTimerRef.current);
       playbackSafetyTimerRef.current = null;
     }
 
     const dyingPlayer = soundRef.current;
-
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
 
@@ -224,6 +228,7 @@ export const useAudioPlayer = (
           'Sin conexión',
           'Esta canción no está disponible sin internet. Guárdala en favoritos para escucharla offline.'
         );
+
         stableSetIsLoading(false);
         stableSetIsPlaying(false);
         return;
@@ -279,22 +284,24 @@ export const useAudioPlayer = (
             }).catch((err: any) => console.error('Download error:', err));
           }
 
-        } catch (error) {
+        }
+        catch (error) {
           console.error('[PRELOADED] Fallo al usar sound pre-cargado. Creando nuevo...', error);
           if (currentSequence !== playSequenceRef.current) return;
-
           if (localUri) {
             localFileUriRef.current = localUri;
             isUsingLocalFileRef.current = true;
             sound = createAudioPlayer({ uri: localUri });
             attachStatusListener(sound);
             sound.play();
-          } else if (isOnline) {
+          }
+          else if (isOnline) {
             const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
             sound = createAudioPlayer({ uri: directUrl });
             attachStatusListener(sound);
             sound.play();
-          } else {
+          }
+          else {
             throw new Error('Offline and no local file');
           }
         }
@@ -309,7 +316,9 @@ export const useAudioPlayer = (
           sound = createAudioPlayer({ uri: localUri });
           attachStatusListener(sound);
           sound.play();
-        } catch (localErr) {
+        }
+        catch (localErr) {
+
           console.warn('[LOCAL] Error al reproducir archivo local, eliminando y usando stream:', localErr);
           await FileSystem.deleteAsync(localUri, { idempotent: true });
           localFileUriRef.current = null;
@@ -331,10 +340,12 @@ export const useAudioPlayer = (
               localFileUriRef.current = result.uri;
               isUsingLocalFileRef.current = true;
             }
-          }).catch((err: any) => console.error('Download error:', err));
+          })
+          .catch((err: any) => console.error('Download error:', err));
         }
       }
       else if (isOnline) {
+
         const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
         console.log('[NETWORK] Reproduciendo desde URL directa:', song.id);
         if (currentSequence !== playSequenceRef.current) return;
@@ -353,8 +364,10 @@ export const useAudioPlayer = (
             isUsingLocalFileRef.current = true;
             console.log('Descarga finalizada para', song.id, 'en', result.uri);
           }
-        }).catch((err: any) => console.error('Download error:', err));
-      } else {
+        })
+        .catch((err: any) => console.error('Download error:', err));
+      }
+      else {
         throw new Error('Offline and no local file');
       }
 
@@ -370,6 +383,29 @@ export const useAudioPlayer = (
     catch (error) {
       console.error('Error playing song:', error);
       stableSetIsPlaying(false);
+
+      if (currentSequence !== playSequenceRef.current) return;
+      if (retryCountRef.current < 1) {
+        retryCountRef.current++;
+        const retrySequence = currentSequence;
+        setTimeout(() => {
+          if (retrySequence === playSequenceRef.current) {
+            playSongLogicRef.current?.(song, true);
+          }
+        }, 1000);
+      }
+      else {
+        retryCountRef.current = 0;
+        stableSetIsLoading(false);
+        Alert.alert(
+          'Error de reproducción',
+          `No se pudo reproducir "${song.title}"`,
+          [
+            { text: 'Reintentar', onPress: () => playSongLogicRef.current?.(song) },
+            { text: 'Cancelar', style: 'cancel' },
+          ]
+        );
+      }
     }
     finally {
       if (currentSequence === playSequenceRef.current) {
@@ -410,7 +446,8 @@ export const useAudioPlayer = (
       soundRef.current.pause();
       stableSetIsPlaying(false);
       setIsIntendingToPlay(false);
-    } else {
+    }
+    else {
       soundRef.current.play();
       stableSetIsPlaying(true);
       setIsIntendingToPlay(true);
@@ -467,6 +504,8 @@ export const useAudioPlayer = (
       console.warn('Seek error:', error);
     }
   };
+
+  playSongLogicRef.current = playSongLogic;
 
   return {
     isPlaying,

@@ -89,3 +89,16 @@ export type PlayerCarouselProps = {
   onEnterFullscreen: () => void;
   onExitFullscreen: () => void;
 };
+
+export type UseVideoPlaybackArgs = {
+  currentSong: SongData | null;
+  isOnline: boolean;
+  audio: {
+    isPlaying: boolean;
+    progress: number;
+    pause: () => Promise<void>;
+    seekTo: (pos: number) => void;
+    togglePlayPause: () => void;
+    playNext: () => void;
+  };
+};

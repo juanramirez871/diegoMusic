@@ -11,6 +11,8 @@ import Animated, { interpolateColor, useAnimatedProps, useAnimatedStyle, useShar
 import QueueModal from './QueueModal';
 import SleepTimerModal from './SleepTimerModal';
 import SongOptionsModal from './SongOptionsModal';
+import { LyricsView, LyricsPanel } from './LyricsView';
+import { useLyrics } from '@/hooks/useLyrics';
 import { useVideoPlayer } from 'expo-video';
 import { useEventListener } from 'expo';
 import { youtubeService } from '@/services/api';
@@ -18,7 +20,7 @@ import { useNetwork } from '@/context/NetworkContext';
 import { SongData } from '@/interfaces/Song';
 import { PlayerCarousel } from './PlayerCarousel';
 import { DownloadBanner } from './DownloadBanner';
-import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps } from '@/interfaces/player';
+import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps, UseVideoPlaybackArgs } from '@/interfaces/player';
 
 const { width } = Dimensions.get('window');
 const AnimatedIonicons = Animated.createAnimatedComponent(Ionicons) as any;
@@ -35,19 +37,6 @@ const MarqueeText = ({ text, style }: { text: string; style: any }) => {
       </Text>
     </ScrollView>
   );
-};
-
-type UseVideoPlaybackArgs = {
-  currentSong: SongData | null;
-  isOnline: boolean;
-  audio: {
-    isPlaying: boolean;
-    progress: number;
-    pause: () => Promise<void>;
-    seekTo: (pos: number) => void;
-    togglePlayPause: () => void;
-    playNext: () => void;
-  };
 };
 
 const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs) => {
@@ -77,12 +66,14 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
       isVideoReadyRef.current = true;
       if (player.duration) setVideoDuration(player.duration * 1000);
       const pending = pendingVideoSeekRef.current;
-      if (pending !== null) {
+      if (pending !== null)
+      {
         pendingVideoSeekRef.current = null;
         player.currentTime = pending / 1000;
         setVideoProgress(pending);
       }
-    } else if (status === 'error') {
+    }
+    else if (status === 'error') {
       console.error('[Video] Error de carga/reproducción:', error);
       setIsVideoLoading(false);
       setIsVideoReady(false);
@@ -137,6 +128,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
         pendingVideoSeekRef.current = position;
         return;
       }
+
       player.currentTime = position / 1000;
       return;
     }
@@ -211,6 +203,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
+  const [showLyrics, setShowLyrics] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
@@ -262,6 +255,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   });
 
 
+  const lyrics = useLyrics(currentSong, isOnline);
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
@@ -283,6 +277,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   useEffect(() => {
     setSeekProgress(0);
     setIsSeeking(false);
+    setShowLyrics(false);
   }, [currentSong?.id]);
 
   useEffect(() => {
@@ -346,7 +341,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const SWIPE_DOWN_THRESHOLD = 80;
   const SWIPE_HORIZ_THRESHOLD = 60;
-
   const playerGesture = Gesture.Pan()
     .runOnJS(true)
     .minDistance(15)
@@ -451,7 +445,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
       <GestureDetector gesture={playerGesture}>
       <Animated.View style={[styles.modalContainer, playerAnimatedStyle]}>
         <LinearGradient
-          colors={['#2c5af3ff', '#141414', '#101010ff']}
+          colors={['#2145baff', '#141414', '#101010ff']}
           style={styles.gradient}
         >
           <View style={styles.header}>
@@ -467,7 +461,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
+          >
             <PlayerCarousel key={currentSong.id} {...carouselProps} />
 
             <View style={styles.infoContainer}>
@@ -479,10 +479,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={() => toggleFavorite(currentSong)}>
-                  <Ionicons 
-                    name={favoriteStatus ? "heart" : "heart-outline"} 
-                    size={28} 
-                    color={favoriteStatus ? "#2c5af3ff" : "#fff"} 
+                  <Ionicons
+                    name={favoriteStatus ? "heart" : "heart-outline"}
+                    size={28}
+                    color={favoriteStatus ? "#2c5af3ff" : "#fff"}
                   />
                 </TouchableOpacity>
               </View>
@@ -545,8 +545,32 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <Ionicons name="list" size={24} color="#b3b3b3" />
               </TouchableOpacity>
             </View>
-          </View>
+
+            <LyricsPanel
+              syncedLyrics={lyrics.syncedLyrics}
+              plainLyrics={lyrics.plainLyrics}
+              loading={lyrics.loading}
+              notFound={lyrics.notFound}
+              isOnline={isOnline}
+              currentLineIndex={lyrics.getCurrentLineIndex(currentDisplayProgress)}
+              onSeek={handleSeek}
+              onExpand={() => setShowLyrics(true)}
+            />
+          </ScrollView>
         </LinearGradient>
+
+        {showLyrics && (
+          <LyricsView
+            syncedLyrics={lyrics.syncedLyrics}
+            plainLyrics={lyrics.plainLyrics}
+            loading={lyrics.loading}
+            notFound={lyrics.notFound}
+            isOnline={isOnline}
+            currentLineIndex={lyrics.getCurrentLineIndex(currentDisplayProgress)}
+            onSeek={handleSeek}
+            onClose={() => setShowLyrics(false)}
+          />
+        )}
 
         {isVideoFullscreen && (
           <GestureDetector gesture={Gesture.LongPress().minDuration(450).onStart(() => setIsVideoFullscreen(false)).runOnJS(true)}>
@@ -597,13 +621,13 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 0,
   },
   closeButton: {
     padding: 8,
@@ -617,10 +641,11 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 8,
   },
-  content: {
+  scroll: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingBottom: 40,
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   infoContainer: {
     marginTop: 40,
@@ -683,7 +708,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     backgroundColor: '#fff',
-    marginLeft: -6,
+    marginLeft: -0,
   },
   timeRow: {
     flexDirection: 'row',
