@@ -6,22 +6,25 @@ import { useRef } from 'react';
 
 
 export const usePreloader = () => {
-  const preloadedSoundsRef = useRef<Map<string, AudioPlayer>>(new Map());
 
+  const preloadedSoundsRef = useRef<Map<string, AudioPlayer>>(new Map());
   const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number, isOnline: boolean = true) => {
 
     const currentSong = currentQueue[currentIndex];
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
     const idsToKeep = new Set([currentSong.id, ...nextSongs.map(s => s.id)]);
 
-    for (const [id, player] of preloadedSoundsRef.current.entries()) {
+    for (const [id, player] of preloadedSoundsRef.current.entries())
+    {
       if (!idsToKeep.has(id)) {
         player.remove();
         preloadedSoundsRef.current.delete(id);
         const cacheUri = `${FileSystem.cacheDirectory}${id}.mp3`;
         const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
+        console.log(`[PRELOADER_CLEANUP] Eliminando preloaded id=${id} cacheExists=${cacheInfo.exists}`);
         if (cacheInfo.exists) {
           await FileSystem.deleteAsync(cacheUri, { idempotent: true }).catch(() => {});
+          console.log(`[PRELOADER_CLEANUP] Cache eliminado: ${cacheUri}`);
         }
       }
     }
@@ -38,7 +41,7 @@ export const usePreloader = () => {
 
       if (!preloadedSoundsRef.current.has(song.id)) {
         try {
-          if (fileInfo.exists && (fileInfo.size === undefined || fileInfo.size >= 5 * 1024)) {
+          if (fileInfo.exists && (fileInfo.size === undefined || fileInfo.size >= 100 * 1024)) {
             console.log(`[PRELOADED] Cargando player para ${song.id} desde archivo local`);
             const player = createAudioPlayer({ uri: localUri });
             preloadedSoundsRef.current.set(song.id, player);

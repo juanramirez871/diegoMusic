@@ -31,6 +31,7 @@ export const useAudioPlayer = (
   const playNextRef = useRef<() => void>(playNext);
   const playSequenceRef = useRef<number>(0);
   const downloadResumableRef = useRef<any>(null);
+  const downloadTargetUriRef = useRef<string | null>(null);
   const localFileUriRef = useRef<string | null>(null);
   const isUsingLocalFileRef = useRef<boolean>(false);
   const lastSeekTimeRef = useRef<number>(0);
@@ -60,13 +61,37 @@ export const useAudioPlayer = (
 
   const cancelDownload = async () => {
     if (downloadResumableRef.current) {
+      const partialUri = downloadTargetUriRef.current;
+      console.log('[CANCEL_DL] Cancelando descarga. partialUri:', partialUri);
       try {
         await downloadResumableRef.current.cancelAsync();
+        console.log('[CANCEL_DL] cancelAsync OK');
       }
       catch (error) {
-        console.warn('Error cancelling download:', error);
+        console.warn('[CANCEL_DL] Error en cancelAsync (puede ser que ya terminó):', error);
       }
       downloadResumableRef.current = null;
+      downloadTargetUriRef.current = null;
+
+      if (partialUri && FileSystem.cacheDirectory && partialUri.includes(FileSystem.cacheDirectory)) {
+        try {
+          const info = await FileSystem.getInfoAsync(partialUri);
+          console.log('[CANCEL_DL] Archivo parcial existe:', info.exists, 'size:', (info as any).size);
+          if (info.exists) {
+            await FileSystem.deleteAsync(partialUri, { idempotent: true });
+            console.log('[CANCEL_DL] Archivo parcial eliminado:', partialUri);
+          }
+        }
+        catch (e) {
+          console.warn('[CANCEL_DL] Error eliminando parcial:', e);
+        }
+      }
+      else {
+        console.log('[CANCEL_DL] No se elimina archivo. partialUri:', partialUri, '| cacheDir:', FileSystem.cacheDirectory);
+      }
+    }
+    else {
+      console.log('[CANCEL_DL] No hay descarga activa (downloadResumableRef = null)');
     }
   };
 
@@ -137,8 +162,14 @@ export const useAudioPlayer = (
     }
 
     if (status.didJustFinish) {
-      console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
-      playNextRef.current();
+      const elapsedMs = Date.now() - playStartTimeRef.current;
+      if (elapsedMs < 3000) {
+        console.warn(`[PLAYBACK] didJustFinish ignorado — playback duró solo ${elapsedMs}ms (posible archivo corrupto o vacío)`);
+      }
+      else {
+        console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
+        playNextRef.current();
+      }
     }
 
     const state = status.playing
@@ -190,6 +221,7 @@ export const useAudioPlayer = (
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
 
+    console.log(`\n[PSL_START] ▶ song="${song.title.slice(0,30)}" id=${song.id} seq=${currentSequence} isRetry=${isRetry} preloaded=${!!preloadedSound} dyingPlayer=${!!dyingPlayer}`);
     stableSetIsPlaying(false);
     setIsIntendingToPlay(true);
     stableSetIsLoading(true);
@@ -214,13 +246,19 @@ export const useAudioPlayer = (
       const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
       const cacheUri = `${FileSystem.cacheDirectory}${song.id}.mp3`;
 
-      if (currentSequence !== playSequenceRef.current) return;
+      if (currentSequence !== playSequenceRef.current) {
+        console.log(`[PSL] seq mismatch después de cancelDownload: ${currentSequence} vs ${playSequenceRef.current}. ABORT.`);
+        return;
+      }
       const persistentInfo = await FileSystem.getInfoAsync(persistentUri);
-      const hasPersistent = persistentInfo.exists && (persistentInfo as any).size > 5000;
+      const hasPersistent = persistentInfo.exists && (persistentInfo as any).size > 100000;
 
       const cacheInfo = !hasPersistent ? await FileSystem.getInfoAsync(cacheUri) : { exists: false };
-      const hasCache = cacheInfo.exists && (cacheInfo as any).size > 5000;
+      const hasCache = cacheInfo.exists && (cacheInfo as any).size > 100000;
       const localUri = hasPersistent ? persistentUri : (hasCache ? cacheUri : null);
+
+      console.log(`[PSL_FILES] seq=${currentSequence} persistent exists=${persistentInfo.exists} size=${(persistentInfo as any).size ?? 'N/A'} hasPersistent=${hasPersistent}`);
+      console.log(`[PSL_FILES] cache exists=${(cacheInfo as any).exists} size=${(cacheInfo as any).size ?? 'N/A'} hasCache=${hasCache} → localUri=${localUri ?? 'null'}`);
 
       if (!isOnline && !localUri) {
         console.warn('[OFFLINE] Sin conexión y sin archivo local para:', song.id);
@@ -236,7 +274,7 @@ export const useAudioPlayer = (
 
       if (hasPersistent) {
 
-        console.log('[PERSISTENT] Usando archivo local persistente (favorito):', persistentUri);
+        console.log(`[PSL] seq=${currentSequence} → RAMA: PERSISTENT`);
         if (currentSequence !== playSequenceRef.current) return;
         localFileUriRef.current = persistentUri;
         isUsingLocalFileRef.current = true;
@@ -254,7 +292,7 @@ export const useAudioPlayer = (
         try {
           sound = preloadedSound;
           preloadedSoundsRef.current.delete(song.id);
-          console.log('[PRELOADED] Usando sound pre-cargado para', song.id);
+          console.log(`[PSL] seq=${currentSequence} → RAMA: PRELOADED`);
 
           if (localUri) {
             localFileUriRef.current = localUri;
@@ -262,26 +300,34 @@ export const useAudioPlayer = (
           }
 
           if (currentSequence !== playSequenceRef.current) {
+            console.log(`[PSL] PRELOADED: seq mismatch ${currentSequence} vs ${playSequenceRef.current}. ABORT.`);
             sound.remove();
             return;
           }
 
           attachStatusListener(sound);
           sound.play();
+          console.log(`[PSL] PRELOADED: play() llamado. seq=${currentSequence}`);
 
           if (!localUri && isOnline) {
             const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
+            if (currentSequence !== playSequenceRef.current) return;
             const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
             console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
             const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
+
             downloadResumableRef.current = downloadResumable;
+            downloadTargetUriRef.current = targetUri;
             downloadResumable.downloadAsync().then(async (result: any) => {
+              downloadResumableRef.current = null;
+              downloadTargetUriRef.current = null;
               if (result && result.uri && currentSongRef.current?.id === song.id) {
                 localFileUriRef.current = result.uri;
                 isUsingLocalFileRef.current = true;
                 console.log('Descarga finalizada para', song.id, 'en', result.uri);
               }
-            }).catch((err: any) => console.error('Download error:', err));
+            })
+            .catch((err: any) => console.error('Download error:', err));
           }
 
         }
@@ -307,8 +353,11 @@ export const useAudioPlayer = (
         }
       }
       else if (localUri) {
-        console.log('[LOCAL] Priorizando archivo guardado (favoritos/cache) aunque hay red:', localUri);
-        if (currentSequence !== playSequenceRef.current) return;
+        console.log(`[PSL] seq=${currentSequence} → RAMA: LOCAL uri=${localUri}`);
+        if (currentSequence !== playSequenceRef.current) {
+          console.log(`[PSL] LOCAL: seq mismatch ${currentSequence} vs ${playSequenceRef.current}. ABORT.`);
+          return;
+        }
 
         try {
           localFileUriRef.current = localUri;
@@ -316,10 +365,11 @@ export const useAudioPlayer = (
           sound = createAudioPlayer({ uri: localUri });
           attachStatusListener(sound);
           sound.play();
+          console.log(`[PSL] LOCAL: play() llamado. seq=${currentSequence}`);
         }
         catch (localErr) {
 
-          console.warn('[LOCAL] Error al reproducir archivo local, eliminando y usando stream:', localErr);
+          console.warn('[PSL] LOCAL: Error al reproducir archivo local, eliminando y usando stream:', localErr);
           await FileSystem.deleteAsync(localUri, { idempotent: true });
           localFileUriRef.current = null;
           isUsingLocalFileRef.current = false;
@@ -335,7 +385,10 @@ export const useAudioPlayer = (
           const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
           const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
           downloadResumableRef.current = downloadResumable;
+          downloadTargetUriRef.current = targetUri;
           downloadResumable.downloadAsync().then(async (result: any) => {
+            downloadResumableRef.current = null;
+            downloadTargetUriRef.current = null;
             if (result?.uri && currentSongRef.current?.id === song.id) {
               localFileUriRef.current = result.uri;
               isUsingLocalFileRef.current = true;
@@ -346,19 +399,28 @@ export const useAudioPlayer = (
       }
       else if (isOnline) {
 
+        console.log(`[PSL] seq=${currentSequence} → RAMA: NETWORK (API fetch) song.url=${song.url}`);
         const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
-        console.log('[NETWORK] Reproduciendo desde URL directa:', song.id);
-        if (currentSequence !== playSequenceRef.current) return;
+        console.log(`[PSL] NETWORK: API respondió OK. seq actual=${playSequenceRef.current} (esperado ${currentSequence}). directUrl slice=${directUrl?.slice(0,60)}`);
+        if (currentSequence !== playSequenceRef.current) {
+          console.log(`[PSL] NETWORK: seq mismatch tras API ${currentSequence} vs ${playSequenceRef.current}. ABORT.`);
+          return;
+        }
 
         sound = createAudioPlayer({ uri: directUrl });
         attachStatusListener(sound);
         sound.play();
+        console.log(`[PSL] NETWORK: play() llamado. seq=${currentSequence}`);
 
         const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
         console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
         const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
         downloadResumableRef.current = downloadResumable;
+        downloadTargetUriRef.current = targetUri;
+
         downloadResumable.downloadAsync().then(async (result: any) => {
+          downloadResumableRef.current = null;
+          downloadTargetUriRef.current = null;
           if (result && result.uri && currentSongRef.current?.id === song.id) {
             localFileUriRef.current = result.uri;
             isUsingLocalFileRef.current = true;
@@ -367,18 +429,19 @@ export const useAudioPlayer = (
         })
         .catch((err: any) => console.error('Download error:', err));
       }
-      else {
-        throw new Error('Offline and no local file');
-      }
+      else throw new Error('Offline and no local file');
 
       soundRef.current = sound;
+      console.log(`[PSL] soundRef asignado. seq=${currentSequence}`);
       await addRecentPlayed(song);
       await addMostPlayed(song);
 
       if (currentSequence !== playSequenceRef.current) {
+        console.log(`[PSL] seq mismatch tras addRecent/MostPlayed: ${currentSequence} vs ${playSequenceRef.current}. Removiendo player. ABORT.`);
         sound.remove();
         return;
       }
+      console.log(`[PSL] try block completado OK. seq=${currentSequence}`);
     }
     catch (error) {
       console.error('Error playing song:', error);
@@ -408,28 +471,38 @@ export const useAudioPlayer = (
       }
     }
     finally {
-      if (currentSequence === playSequenceRef.current) {
+      console.log(`[PSL_FINALLY] seq=${currentSequence} currentSeq=${playSequenceRef.current} soundRef=${!!soundRef.current} soundRef.playing=${soundRef.current?.playing}`);
+      if (currentSequence === playSequenceRef.current)
+      {
         if (soundRef.current?.playing) {
+          console.log(`[PSL_FINALLY] → ya playing, limpiando loading`);
           stableSetIsLoading(false);
           stableSetIsPlaying(true);
         }
         else if (soundRef.current) {
+          console.log(`[PSL_FINALLY] → soundRef existe pero no playing. Activando safety timer 1500ms`);
           playbackSafetyTimerRef.current = setTimeout(() => {
             playbackSafetyTimerRef.current = null;
             if (currentSequence !== playSequenceRef.current) return;
             if (!soundRef.current || isPlayingRef.current) return;
 
-            console.warn('[SAFETY] Playback not detected after timeout, retrying play()');
+            console.warn('[SAFETY] Playback no detectado tras timeout. soundRef.playing=', soundRef.current?.playing, '| isPlayingRef=', isPlayingRef.current);
             try {
               soundRef.current.play();
               stableSetIsPlaying(true);
               stableSetIsLoading(false);
             }
             catch (e) {
-              console.error('[SAFETY] Retry play failed:', e);
+              console.error('[SAFETY] Retry play falló:', e);
             }
           }, 1500);
         }
+        else {
+          console.log(`[PSL_FINALLY] → soundRef es null (falló o fue abortado)`);
+        }
+      }
+      else {
+        console.log(`[PSL_FINALLY] → seq mismatch (${currentSequence} vs ${playSequenceRef.current}), ignorando`);
       }
     }
   };
