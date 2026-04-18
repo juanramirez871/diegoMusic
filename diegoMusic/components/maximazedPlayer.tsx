@@ -461,6 +461,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </TouchableOpacity>
           </View>
 
+          <PlayerCarousel key={currentSong.id} {...carouselProps} />
+
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
@@ -468,8 +470,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             bounces={false}
             overScrollMode="never"
           >
-            <PlayerCarousel key={currentSong.id} {...carouselProps} />
-
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
                 <View style={styles.textWrapper}>

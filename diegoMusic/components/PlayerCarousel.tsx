@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
   carouselContainer: {
     width: width,
     height: IMAGE_SIZE,
-    marginLeft: -24,
-    overflow: 'hidden',
+    marginLeft: -20,
+    overflow: 'visible',
     justifyContent: 'center',
     alignItems: 'center',
   },

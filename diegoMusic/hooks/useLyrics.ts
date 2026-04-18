@@ -47,7 +47,7 @@ export function useLyrics(currentSong: SongData | null, isOnline: boolean) {
       try {
         const title = cleanTitle(currentSong.title);
         const artist = currentSong.channel.name;
-        console.log(`Title ${title} artist ${artist}`)
+        console.log(`[UseLyrics] Title ${title} artist ${artist}`)
         const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`;
         const res = await fetch(url);
         const data = await res.json();
