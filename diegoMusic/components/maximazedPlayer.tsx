@@ -461,15 +461,18 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             </TouchableOpacity>
           </View>
 
-          <PlayerCarousel key={currentSong.id} {...carouselProps} />
-
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             bounces={false}
             overScrollMode="never"
+            scrollEventThrottle={16}
           >
+            <View style={styles.carouselWrapper}>
+              <PlayerCarousel key={currentSong.id} {...carouselProps} />
+            </View>
+
             <View style={styles.infoContainer}>
               <View style={styles.titleRow}>
                 <View style={styles.textWrapper}>
@@ -643,8 +646,10 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+    marginHorizontal: -20,
   },
   scrollContent: {
+    paddingHorizontal: 20,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   infoContainer: {
@@ -754,6 +759,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 40,
+  },
+  carouselWrapper: {
+    marginHorizontal: -20,
   },
   videoFullscreen: {
     position: 'absolute',
