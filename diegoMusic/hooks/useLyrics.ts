@@ -19,12 +19,28 @@ function parseLRC(lrc: string): LyricLine[] {
   return result.sort((a, b) => a.time - b.time);
 }
 
-function cleanTitle(title: string): string {
-  return title
-    .replace(/\(.*?\)/g, '')
-    .replace(/\[.*?\]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+const YOUTUBE_NOISE = /\b(official|music|video|audio|lyrics?|hd|hq|4k|mv|clip|vevo|visualizer|letra|traducid[ao]|subtitulad[ao]|en\s+español|explicit|clean|directed|remaster(ed)?|extended|original\s+mix)\b/i;
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function cleanTitle(title: string, artist?: string): string {
+
+  let t = title;
+  if (artist) {
+    const artistEscaped = escapeRegex(artist.trim());
+    t = t.replace(new RegExp(`^${artistEscaped}\\s*[-–—:]\\s*`, 'i'), '');
+  }
+
+  t = t.replace(/\([^)]*\)/g, (m) => (YOUTUBE_NOISE.test(m) || /\(\d{4}\)/.test(m) ? '' : m));
+  t = t.replace(/\[[^\]]*\]/g, (m) => (YOUTUBE_NOISE.test(m) || /\[\d{4}\]/.test(m) ? '' : m));
+  t = t.replace(/\s*[-–—|]\s*(official|lyric|music|video|audio|hd|hq|4k|vevo|letra).*/gi, '');
+  t = t.replace(/\s*\b(feat\.?|ft\.?|featuring)\b.*/gi, '');
+  t = t.replace(/\s*\bprod\.?\s+\S+/gi, '');
+  t = t.replace(/[-–—|,]+\s*$/, '').replace(/\s+/g, ' ').trim();
+
+  return t;
 }
 
 export function useLyrics(currentSong: SongData | null, isOnline: boolean) {
@@ -45,9 +61,9 @@ export function useLyrics(currentSong: SongData | null, isOnline: boolean) {
     const fetchLyrics = async () => {
       setLoading(true);
       try {
-        const title = cleanTitle(currentSong.title);
+        
         const artist = currentSong.channel.name;
-        console.log(`[UseLyrics] Title ${title} artist ${artist}`)
+        const title = cleanTitle(currentSong.title, artist);
         const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist)}`;
         const res = await fetch(url);
         const data = await res.json();
