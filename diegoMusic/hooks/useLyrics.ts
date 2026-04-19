@@ -19,7 +19,7 @@ function parseLRC(lrc: string): LyricLine[] {
   return result.sort((a, b) => a.time - b.time);
 }
 
-const YOUTUBE_NOISE = /\b(official|music|video|audio|lyrics?|hd|hq|4k|mv|clip|vevo|visualizer|letra|traducid[ao]|subtitulad[ao]|en\s+español|explicit|clean|directed|remaster(ed)?|extended|original\s+mix)\b/i;
+const YOUTUBE_NOISE = /\b(official|music|video|audio|lyrics?|hd|hq|4k|mv|clip|vevo|visualizer|letra|traducid[ao]|subtitulad[ao]|en\s+español|explicit|clean|directed|remaster(ed)?|extended|original\s+mix|live|acoustic|remix|version|cover|demo|session|unplugged|en\s+vivo|radio\s+edit|single)\b/i;
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
