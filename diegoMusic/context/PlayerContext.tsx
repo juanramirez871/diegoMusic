@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
 import { setAudioModeAsync } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import storage from '@/services/storage';
@@ -33,6 +33,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     favoriteArtists,
     recentPlayed,
     mostPlayed,
+    artistPlays,
+    songPlays,
     showDownloadBanner,
     streak,
     toggleFavorite,
@@ -61,10 +63,16 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     clearPreloaded 
   } = usePreloader();
 
-  const playSong = async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
+  const updateQueueAndSourceRef = useRef(updateQueueAndSource);
+  useEffect(() => {
+    updateQueueAndSourceRef.current = updateQueueAndSource;
+  }, [updateQueueAndSource]);
+
+  const setIsIntendingToPlayRef = useRef<(value: boolean) => void>(() => {});
+  const playSong = useCallback(async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
     setCurrentSong(song);
-    setIsIntendingToPlay(true);
+    setIsIntendingToPlayRef.current(true);
 
     const artworkUrl = song.thumbnail?.url;
     const normalizedArtwork = typeof artworkUrl === 'string' && artworkUrl.length > 0
@@ -79,10 +87,10 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     })
     .catch(() => {});
 
-    const playPromise = playSongLogic(song);
-    const queueUpdatePromise = updateQueueAndSource(song, initialQueue, source);
+    const playPromise = playSongLogicRef.current!(song);
+    const queueUpdatePromise = updateQueueAndSourceRef.current(song, initialQueue, source);
     const [{ newSource }] = await Promise.all([queueUpdatePromise, playPromise]);
-    
+
     try {
       await Promise.all([
         storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song)),
@@ -92,7 +100,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     catch (error) {
       console.error('Error persisting playback data:', error);
     }
-  };
+  }, [setCurrentSong]);
 
   const playNext = useCallback(() => {
     const nextSong = getNextSong(currentSong);
@@ -115,7 +123,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     togglePlayPause,
     pause,
     seekTo,
-    playSongLogic,
+    playSongLogicRef,
     cancelDownload,
     cleanupLocalFile
   } = useAudioPlayer(
@@ -127,6 +135,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isOnline,
     isFavorite
   );
+
+  setIsIntendingToPlayRef.current = setIsIntendingToPlay;
 
   const togglePlayPauseRef = useRef(togglePlayPause);
   const playNextRef = useRef(playNext);
@@ -313,47 +323,58 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
-  const onToggleShuffle = () => toggleShuffle(currentSong);
+  const onToggleShuffle = useCallback(() => toggleShuffle(currentSong), [toggleShuffle, currentSong]);
+
+  const contextValue = useMemo(() => ({
+    isMaximized,
+    setIsMaximized,
+    currentSong,
+    setCurrentSong,
+    playSong,
+    favorites,
+    favoriteArtists,
+    recentPlayed,
+    mostPlayed,
+    artistPlays,
+    songPlays,
+    toggleFavorite,
+    toggleFavoriteArtist,
+    isFavorite,
+    isFavoriteArtist,
+    queue,
+    setQueue,
+    playNext,
+    playPrevious,
+    isShuffle,
+    toggleShuffle: onToggleShuffle,
+    repeatMode,
+    toggleRepeat,
+    isPlaying,
+    isIntendingToPlay,
+    togglePlayPause,
+    pause,
+    progress,
+    duration,
+    seekTo,
+    isLoading,
+    sleepTimer,
+    setSleepTimer,
+    showDownloadBanner,
+    streak,
+    pendingArtistOverlay,
+    openArtistOverlay,
+    closeArtistOverlay,
+  }), [
+    isMaximized, currentSong, playSong, favorites, favoriteArtists, recentPlayed, mostPlayed,
+    toggleFavorite, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
+    queue, setQueue, playNext, playPrevious, isShuffle, onToggleShuffle, repeatMode, toggleRepeat,
+    isPlaying, isIntendingToPlay, togglePlayPause, pause, progress, duration, seekTo,
+    isLoading, sleepTimer, setSleepTimer, showDownloadBanner, streak, artistPlays, songPlays,
+    pendingArtistOverlay, openArtistOverlay, closeArtistOverlay,
+  ]);
 
   return (
-    <PlayerContext.Provider value={{ 
-      isMaximized, 
-      setIsMaximized, 
-      currentSong, 
-      setCurrentSong,
-      playSong,
-      favorites,
-      favoriteArtists,
-      recentPlayed,
-      mostPlayed,
-      toggleFavorite,
-      toggleFavoriteArtist,
-      isFavorite,
-      isFavoriteArtist,
-      queue,
-      setQueue,
-      playNext,
-      playPrevious,
-      isShuffle,
-      toggleShuffle: onToggleShuffle,
-      repeatMode,
-      toggleRepeat,
-      isPlaying,
-      isIntendingToPlay,
-      togglePlayPause,
-      pause,
-      progress,
-      duration,
-      seekTo,
-      isLoading,
-      sleepTimer,
-      setSleepTimer,
-      showDownloadBanner,
-      streak,
-      pendingArtistOverlay,
-      openArtistOverlay,
-      closeArtistOverlay,
-    }}>
+    <PlayerContext.Provider value={contextValue}>
       {children}
     </PlayerContext.Provider>
   );

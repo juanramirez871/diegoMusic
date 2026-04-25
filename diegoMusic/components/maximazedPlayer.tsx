@@ -17,7 +17,6 @@ import { useVideoPlayer } from 'expo-video';
 import { useEventListener } from 'expo';
 import { youtubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
-import { SongData } from '@/interfaces/Song';
 import { PlayerCarousel } from './PlayerCarousel';
 import { DownloadBanner } from './DownloadBanner';
 import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps, UseVideoPlaybackArgs } from '@/interfaces/player';
@@ -208,6 +207,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const [seekProgress, setSeekProgress] = useState(0);
   const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const isVideoFullscreenRef = useRef(false);
+  const lastGestureUpdateRef = useRef<number>(0);
 
   useEffect(() => {
     if (isVideoFullscreen) {
@@ -256,6 +256,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
 
   const lyrics = useLyrics(currentSong, isOnline);
+  const lyricsDefaultQuery = lyrics.lyricsQuery;
   const currentIndex = queue.findIndex(s => s.id === currentSong?.id);
   const hasNextOrPrev = queue.length > 1 && currentIndex !== -1;
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
@@ -395,6 +396,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     .failOffsetY([-20, 20])
     .onUpdate((event) => {
       if (activeDuration > 0) {
+        const now = Date.now();
+        if (now - lastGestureUpdateRef.current < 50) return;
+        lastGestureUpdateRef.current = now;
         setIsSeeking(true);
         const newProgress = Math.min(Math.max((event.x / (width - 48)) * activeDuration, 0), activeDuration);
         setSeekProgress(newProgress);
@@ -558,6 +562,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               currentLineIndex={lyrics.getCurrentLineIndex(currentDisplayProgress)}
               onSeek={handleSeek}
               onExpand={() => setShowLyrics(true)}
+              onManualSearch={lyrics.manualSearch}
+              manualSearchDefaultQuery={lyricsDefaultQuery}
             />
           </ScrollView>
         </LinearGradient>
@@ -572,6 +578,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             currentLineIndex={lyrics.getCurrentLineIndex(currentDisplayProgress)}
             onSeek={handleSeek}
             onClose={() => setShowLyrics(false)}
+            onManualSearch={lyrics.manualSearch}
+            manualSearchDefaultQuery={lyricsDefaultQuery}
           />
         )}
 

@@ -1,21 +1,69 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { LoadingSpinner } from './LoadingSpinner';
 import { LyricsPanelProps, LyricsViewProps } from '@/interfaces/Song';
 
+const ManualSearchInput = ({ defaultQuery, onSearch }: { defaultQuery?: string; onSearch: (q: string) => void }) => {
+  const [query, setQuery] = useState(defaultQuery ?? '');
+  return (
+    <View style={searchStyles.row}>
+      <TextInput
+        style={searchStyles.input}
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Artista - Canción"
+        placeholderTextColor="#555"
+        onSubmitEditing={() => query.trim() && onSearch(query.trim())}
+        returnKeyType="search"
+        selectTextOnFocus
+      />
+      <TouchableOpacity
+        onPress={() => query.trim() && onSearch(query.trim())}
+        style={searchStyles.btn}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="search" size={16} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const searchStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 10,
+    width: '100%',
+  },
+  input: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 13,
+    paddingVertical: 6,
+  },
+  btn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+});
+
 
 
 const COMPACT_LINE_HEIGHT = 50;
-const PANEL_VISIBLE_HEIGHT = COMPACT_LINE_HEIGHT * 9;
 
 export function LyricsPanel({
   syncedLyrics,
@@ -26,32 +74,49 @@ export function LyricsPanel({
   currentLineIndex,
   onSeek,
   onExpand,
+  onManualSearch,
+  manualSearchDefaultQuery,
 }: LyricsPanelProps) {
 
   const scrollRef = useRef<ScrollView>(null);
-  const scrollOffsetRef = useRef(0);
+  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
-    if (!syncedLyrics || currentLineIndex < 0) return;
-    const lineTop = currentLineIndex * COMPACT_LINE_HEIGHT;
-    const lineBottom = lineTop + COMPACT_LINE_HEIGHT;
-    const visibleTop = scrollOffsetRef.current;
-    const visibleBottom = visibleTop + PANEL_VISIBLE_HEIGHT;
-    if (lineTop < visibleTop || lineBottom > visibleBottom)
-    {
-      const y = Math.max(0, currentLineIndex - 4) * COMPACT_LINE_HEIGHT;
-      scrollRef.current?.scrollTo({ y, animated: true });
-    }
-  }, [currentLineIndex, syncedLyrics]);
+    if (loading) setShowEdit(false);
+  }, [loading]);
+
+  useEffect(() => {
+    if (syncedLyrics || plainLyrics) setShowEdit(false);
+  }, [syncedLyrics, plainLyrics]);
+
+  const showSearchInput = onManualSearch && (showEdit || (!loading && isOnline && notFound));
 
   return (
     <View style={panel.container}>
       <View style={panel.header}>
         <Text style={panel.label}>LYRICS</Text>
-        <TouchableOpacity onPress={onExpand} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="expand-outline" size={16} color="#b3b3b3" />
-        </TouchableOpacity>
+        <View style={panel.headerActions}>
+          {onManualSearch && (
+            <TouchableOpacity
+              onPress={() => setShowEdit(s => !s)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="pencil-outline" size={14} color={showEdit ? '#fff' : '#b3b3b3'} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={onExpand} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="expand-outline" size={16} color="#b3b3b3" />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {showSearchInput && (
+        <ManualSearchInput
+          key={manualSearchDefaultQuery}
+          defaultQuery={manualSearchDefaultQuery}
+          onSearch={onManualSearch}
+        />
+      )}
 
       {loading && (
         <View style={panel.center}>
@@ -67,7 +132,7 @@ export function LyricsPanel({
 
       {!loading && isOnline && notFound && (
         <View style={panel.center}>
-          <Text style={panel.emptyText}>Lyrics not found</Text>
+          <Text style={panel.emptyText}>Letra no encontrada</Text>
         </View>
       )}
 
@@ -78,8 +143,6 @@ export function LyricsPanel({
           showsVerticalScrollIndicator={false}
           scrollEnabled
           nestedScrollEnabled
-          scrollEventThrottle={16}
-          onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
         >
           {syncedLyrics.map((item, index) => {
             const isActive = index === currentLineIndex;
@@ -118,6 +181,11 @@ const panel = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   label: {
     color: '#b3b3b3',
     fontSize: 10,
@@ -151,7 +219,6 @@ const panel = StyleSheet.create({
 });
 
 
-const FULL_LINE_HEIGHT = 38 + 8;
 export function LyricsView({
   syncedLyrics,
   plainLyrics,
@@ -161,24 +228,22 @@ export function LyricsView({
   currentLineIndex,
   onSeek,
   onClose,
+  onManualSearch,
+  manualSearchDefaultQuery,
 }: LyricsViewProps) {
 
   const scrollRef = useRef<ScrollView>(null);
-  const scrollOffsetRef = useRef(0);
-  const visibleHeightRef = useRef(0);
+  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
-    if (!syncedLyrics || currentLineIndex < 0 || visibleHeightRef.current === 0) return;
-    const lineTop = currentLineIndex * FULL_LINE_HEIGHT;
-    const lineBottom = lineTop + FULL_LINE_HEIGHT;
-    const visibleTop = scrollOffsetRef.current;
-    const visibleBottom = visibleTop + visibleHeightRef.current;
-    if (lineTop < visibleTop || lineBottom > visibleBottom)
-    {
-      const y = Math.max(0, currentLineIndex - 2) * FULL_LINE_HEIGHT;
-      scrollRef.current?.scrollTo({ y, animated: true });
-    }
-  }, [currentLineIndex, syncedLyrics]);
+    if (loading) setShowEdit(false);
+  }, [loading]);
+
+  useEffect(() => {
+    if (syncedLyrics || plainLyrics) setShowEdit(false);
+  }, [syncedLyrics, plainLyrics]);
+
+  const showSearchInput = onManualSearch && (showEdit || (!loading && isOnline && notFound));
 
   return (
     <View style={full.overlay}>
@@ -186,7 +251,26 @@ export function LyricsView({
         <Ionicons name="chevron-down" size={28} color="#fff" />
       </TouchableOpacity>
 
-      <Text style={full.heading}>LYRICS</Text>
+      <View style={full.headingRow}>
+        <Text style={full.heading}>LYRICS</Text>
+        {onManualSearch && (
+          <TouchableOpacity
+            onPress={() => setShowEdit(s => !s)}
+            style={full.editBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="pencil-outline" size={16} color={showEdit ? '#fff' : '#b3b3b3'} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {showSearchInput && (
+        <ManualSearchInput
+          key={manualSearchDefaultQuery}
+          defaultQuery={manualSearchDefaultQuery}
+          onSearch={onManualSearch}
+        />
+      )}
 
       {loading && (
         <View style={full.center}>
@@ -213,9 +297,6 @@ export function LyricsView({
           ref={scrollRef}
           contentContainerStyle={full.listContent}
           showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y; }}
-          onLayout={(e) => { visibleHeightRef.current = e.nativeEvent.layout.height; }}
         >
           {syncedLyrics.map((item, index) => {
             const isActive = index === currentLineIndex;
@@ -258,13 +339,24 @@ const full = StyleSheet.create({
     padding: 8,
     zIndex: 11,
   },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    position: 'relative',
+  },
   heading: {
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
     letterSpacing: 1,
     textAlign: 'center',
-    marginBottom: 24,
+  },
+  editBtn: {
+    position: 'absolute',
+    right: 0,
+    padding: 4,
   },
   center: {
     flex: 1,

@@ -25,33 +25,22 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
   fadeAnim,
 }) => {
   const insets = useSafeAreaInsets();
-  const { mostPlayed, recentPlayed, favorites, streak } = usePlayer();
+  const { favorites, streak, artistPlays, songPlays } = usePlayer();
 
   if (!isVisible) return null;
 
-  const totalMinutes = mostPlayed.reduce((acc, song) => {
-    const durationMs = parseDuration(song.duration_formatted);
-    const plays = song.timesPlayed || 1;
-    return acc + (durationMs * plays) / 60000;
+  const allSongs = Object.values(songPlays).sort((a, b) => b.timesPlayed - a.timesPlayed);
+  const totalPlays = allSongs.reduce((acc, s) => acc + s.timesPlayed, 0);
+  const totalMinutes = allSongs.reduce((acc, song) => {
+    const durationMs = parseDuration(song.duration_formatted || '');
+    return acc + (durationMs * song.timesPlayed) / 60000;
   }, 0);
 
-  const topArtistMap = new Map<string, { name: string; avatar: string; count: number }>();
-  for (const song of mostPlayed) {
-    const name = song.channel.name;
-    const avatar = song.channel.avatar || song.channel.icon || "";
-    const plays = song.timesPlayed || 1;
-    const existing = topArtistMap.get(name);
-    if (existing) existing.count += plays;
-    else {
-      topArtistMap.set(name, { name, avatar, count: plays });
-    }
-  }
-  const topArtists = Array.from(topArtistMap.values())
+  const topArtists = Object.values(artistPlays)
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
 
-  const topSongs = [...mostPlayed].slice(0, 5);
-  const totalPlays = mostPlayed.reduce((acc, s) => acc + (s.timesPlayed || 1), 0);
+  const topSongs = allSongs.slice(0, 5);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>

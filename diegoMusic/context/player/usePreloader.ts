@@ -11,7 +11,7 @@ export const usePreloader = () => {
   const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number, isOnline: boolean = true) => {
 
     const currentSong = currentQueue[currentIndex];
-    const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 4);
+    const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 2);
     const idsToKeep = new Set([currentSong.id, ...nextSongs.map(s => s.id)]);
 
     for (const [id, player] of preloadedSoundsRef.current.entries())
@@ -45,7 +45,8 @@ export const usePreloader = () => {
             console.log(`[PRELOADED] Cargando player para ${song.id} desde archivo local`);
             const player = createAudioPlayer({ uri: localUri });
             preloadedSoundsRef.current.set(song.id, player);
-          } else if (isOnline) {
+          }
+          else if (isOnline) {
             console.log(`[PRELOADED] Cargando player para ${song.id} desde URL directa`);
             const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
             const player = createAudioPlayer({ uri: directUrl });

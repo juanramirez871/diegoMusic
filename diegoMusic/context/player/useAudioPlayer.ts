@@ -40,6 +40,8 @@ export const useAudioPlayer = (
   const playbackSafetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
   const playSongLogicRef = useRef<((song: SongData, isRetry?: boolean) => Promise<void>) | null>(null);
+  const lastProgressUpdateRef = useRef<number>(0);
+  const lastMediaControlUpdateRef = useRef<number>(0);
 
   const stableSetIsPlaying = (value: boolean) => {
     setIsPlaying(value);
@@ -148,17 +150,19 @@ export const useAudioPlayer = (
 
     const currentTimeMs = (status.currentTime ?? 0) * 1000;
     const actualPosition = currentTimeMs;
+    if (now - lastProgressUpdateRef.current >= 200) {
+      lastProgressUpdateRef.current = now;
+      setProgress(actualPosition);
 
-    setProgress(actualPosition);
-    const song = currentSongRef.current;
-
-    if (song?.duration_formatted && song.duration_formatted !== "00:00") {
-      const parsed = parseDuration(song.duration_formatted);
-      if (parsed > 0) setDuration(parsed);
-    }
-    else {
-      const durationMs = (status.duration ?? 0) * 1000;
-      if (durationMs > 0) setDuration(durationMs);
+      const song = currentSongRef.current;
+      if (song?.duration_formatted && song.duration_formatted !== "00:00") {
+        const parsed = parseDuration(song.duration_formatted);
+        if (parsed > 0) setDuration(parsed);
+      }
+      else {
+        const durationMs = (status.duration ?? 0) * 1000;
+        if (durationMs > 0) setDuration(durationMs);
+      }
     }
 
     if (status.didJustFinish) {
@@ -172,11 +176,11 @@ export const useAudioPlayer = (
       }
     }
 
-    const state = status.playing
-      ? PlaybackState.PLAYING
-      : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
-
-    SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
+    if (now - lastMediaControlUpdateRef.current >= 500) {
+      lastMediaControlUpdateRef.current = now;
+      const state = status.playing ? PlaybackState.PLAYING : (status.isBuffering ? PlaybackState.BUFFERING : PlaybackState.PAUSED);
+      SafeMediaControl.updatePlaybackState(state, actualPosition / 1000).catch(() => {});
+    }
   };
 
   const attachStatusListener = (player: AudioPlayer) => {
@@ -217,6 +221,9 @@ export const useAudioPlayer = (
       playbackSafetyTimerRef.current = null;
     }
 
+    lastProgressUpdateRef.current = 0;
+    lastMediaControlUpdateRef.current = 0;
+    lastSeekTimeRef.current = 0;
     const dyingPlayer = soundRef.current;
     const currentSequence = ++playSequenceRef.current;
     const preloadedSound = preloadedSoundsRef.current.get(song.id);
@@ -484,7 +491,13 @@ export const useAudioPlayer = (
           playbackSafetyTimerRef.current = setTimeout(() => {
             playbackSafetyTimerRef.current = null;
             if (currentSequence !== playSequenceRef.current) return;
-            if (!soundRef.current || isPlayingRef.current) return;
+            if (!soundRef.current) return;
+
+            if (soundRef.current.playing) {
+              stableSetIsPlaying(true);
+              stableSetIsLoading(false);
+              return;
+            }
 
             console.warn('[SAFETY] Playback no detectado tras timeout. soundRef.playing=', soundRef.current?.playing, '| isPlayingRef=', isPlayingRef.current);
             try {
@@ -592,6 +605,7 @@ export const useAudioPlayer = (
     pause,
     seekTo,
     playSongLogic,
+    playSongLogicRef,
     cancelDownload,
     cleanupLocalFile
   };

@@ -7,7 +7,7 @@ import RecentPlayed from "@/components/RecentPlayed";
 import { StatsOverlay } from "@/components/StatsOverlay";
 import { useNetwork } from "@/context/NetworkContext";
 import { usePlayer } from "@/context/PlayerContext";
-import { ArtistData } from "@/interfaces/Song";
+import { ArtistData, SongData } from "@/interfaces/Song";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useRef, useState } from "react";
 import { Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -17,7 +17,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function HomeScreen() {
   
   const [selectedTag, setSelectedTag] = useState("Music");
-  const { favoriteArtists, mostPlayed } = usePlayer();
+  const { favoriteArtists, songPlays } = usePlayer();
+  const mostPlayed = useMemo(
+    () =>
+      (Object.values(songPlays) as unknown as SongData[])
+        .sort((a, b) => ((b as any).timesPlayed || 0) - ((a as any).timesPlayed || 0))
+        .slice(0, 10),
+    [songPlays]
+  );
   const [selectedArtist, setSelectedArtist] = useState<ArtistData | null>(null);
   const [isArtistOverlayVisible, setIsArtistOverlayVisible] = useState(false);
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
@@ -128,7 +135,7 @@ export default function HomeScreen() {
                   <RecentPlayed />
                 </View>
                 
-                {/* Todo: Add music you might like for V.2 DiegoMusic */}
+                {/* Todo: Add music you might like for V.4 DiegoMusic */}
                 {/* <View>
                   <Text style={styles.title}>Music you might like</Text>
                   <CarouselPlayer />

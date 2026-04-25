@@ -1,5 +1,6 @@
 import { youtubeService } from '@/services/api';
 import storage from '@/services/storage';
+import { sendDownloadCompleteNotification } from '@/services/notifications';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
@@ -9,6 +10,10 @@ import {
     MOST_PLAYED_KEY,
     RECENT_PLAYED_KEY,
     ACTIVE_DAYS_KEY,
+    ARTIST_PLAYS_KEY,
+    SONG_PLAYS_KEY,
+    ArtistPlayData,
+    SongPlayData,
 } from './types';
 import { ArtistData, SongData } from '@/interfaces/Song';
 
@@ -18,6 +23,8 @@ export const usePlayerStorage = () => {
   const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
   const [mostPlayed, setMostPlayed] = useState<SongData[]>([]);
+  const [artistPlays, setArtistPlays] = useState<Record<string, ArtistPlayData>>({});
+  const [songPlays, setSongPlays] = useState<Record<string, SongPlayData>>({});
   const [showDownloadBanner, setShowDownloadBanner] = useState(false);
   const [streak, setStreak] = useState(0);
 
@@ -74,12 +81,14 @@ export const usePlayerStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays] = await Promise.all([
+        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays, savedArtistPlays, savedSongPlays] = await Promise.all([
           storage.getItem(FAVORITES_KEY),
           storage.getItem(FAVORITE_ARTISTS_KEY),
           storage.getItem(RECENT_PLAYED_KEY),
           storage.getItem(MOST_PLAYED_KEY),
           storage.getItem(ACTIVE_DAYS_KEY),
+          storage.getItem(ARTIST_PLAYS_KEY),
+          storage.getItem(SONG_PLAYS_KEY),
         ]);
 
         if (savedFavorites) {
@@ -91,6 +100,8 @@ export const usePlayerStorage = () => {
         if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
         if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
         if (savedMostPlayed) setMostPlayed(JSON.parse(savedMostPlayed));
+        if (savedArtistPlays) setArtistPlays(JSON.parse(savedArtistPlays));
+        if (savedSongPlays) setSongPlays(JSON.parse(savedSongPlays));
         if (savedActiveDays) {
           const days: string[] = JSON.parse(savedActiveDays);
           setStreak(computeStreak(days));
@@ -138,7 +149,12 @@ export const usePlayerStorage = () => {
           }
           console.log(`[FAVORITE] Iniciando descarga de audio: ${song.title}`);
           const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
-          const downloadResumable = FileSystem.createDownloadResumable(downloadUrl, persistentUri, {});
+          const downloadResumable = FileSystem.createDownloadResumable(
+            downloadUrl,
+            persistentUri,
+            { sessionType: FileSystem.FileSystemSessionType.BACKGROUND }
+          );
+
           downloadResumable.downloadAsync().then(async (result) => {
             if (!result?.uri) {
               console.error(`[FAVORITE] Descarga falló sin resultado: ${song.title}`);
@@ -153,7 +169,9 @@ export const usePlayerStorage = () => {
             }
             console.log(`[FAVORITE] Descarga de audio completada (${(info as any).size} bytes): ${song.title}`);
             triggerDownloadBanner();
-          }).catch(err => {
+            sendDownloadCompleteNotification(song.title);
+          })
+          .catch(err => {
             console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
             FileSystem.deleteAsync(persistentUri, { idempotent: true }).catch(() => {});
             Alert.alert('Error de descarga', `No se pudo guardar "${song.title}" para escuchar sin internet.`);
@@ -172,7 +190,8 @@ export const usePlayerStorage = () => {
             console.log(`[FAVORITE] Iniciando descarga de portada: ${song.title}`);
             thumbDownload.downloadAsync().then(() => {
               console.log(`[FAVORITE] Descarga de portada completada: ${song.title}`);
-            }).catch(err => {
+            })
+            .catch(err => {
               console.error(`[FAVORITE] Error descargando portada ${song.title}:`, err);
             });
           }
@@ -239,7 +258,7 @@ export const usePlayerStorage = () => {
 
     const existingSongIndex = mostPlayed.findIndex(s => s.id === song.id);
     let updated;
-    
+
     if (existingSongIndex !== -1)
     {
       updated = [...mostPlayed];
@@ -255,8 +274,40 @@ export const usePlayerStorage = () => {
     updated.sort((a, b) => (b.timesPlayed || 0) - (a.timesPlayed || 0));
     const limited = updated.slice(0, 10);
     setMostPlayed(limited);
+
+    const artistKey = song.channel.name;
+    const existingArtist = artistPlays[artistKey];
+    const updatedArtistPlays: Record<string, ArtistPlayData> = {
+      ...artistPlays,
+      [artistKey]: {
+        name: song.channel.name,
+        avatar: existingArtist?.avatar || song.channel.avatar || song.channel.icon || '',
+        count: (existingArtist?.count || 0) + 1,
+      },
+    };
+
+    setArtistPlays(updatedArtistPlays);
+    const existingSong = songPlays[song.id];
+    const updatedSongPlays: Record<string, SongPlayData> = {
+      ...songPlays,
+      [song.id]: {
+        id: song.id,
+        url: song.url,
+        title: song.title,
+        duration_formatted: song.duration_formatted,
+        thumbnail: song.thumbnail,
+        channel: { name: song.channel.name },
+        timesPlayed: (existingSong?.timesPlayed || 0) + 1,
+      },
+    };
+
+    setSongPlays(updatedSongPlays);
     try {
-      await storage.setItem(MOST_PLAYED_KEY, JSON.stringify(limited));
+      await Promise.all([
+        storage.setItem(MOST_PLAYED_KEY, JSON.stringify(limited)),
+        storage.setItem(ARTIST_PLAYS_KEY, JSON.stringify(updatedArtistPlays)),
+        storage.setItem(SONG_PLAYS_KEY, JSON.stringify(updatedSongPlays)),
+      ]);
     }
     catch (err) {
       console.error('Error saving most played:', err);
@@ -268,6 +319,8 @@ export const usePlayerStorage = () => {
     favoriteArtists,
     recentPlayed,
     mostPlayed,
+    artistPlays,
+    songPlays,
     showDownloadBanner,
     streak,
     toggleFavorite,

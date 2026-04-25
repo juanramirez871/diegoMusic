@@ -2,7 +2,7 @@
   "expo": {
     "name": "DiegoMusic",
     "slug": "DiegoMusic",
-    "version": "2.4.2",
+    "version": "3.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "diegomusic",
@@ -65,7 +65,13 @@
       ],
       "expo-audio",
       "expo-video",
-      "expo-screen-orientation"
+      "expo-screen-orientation",
+      [
+        "expo-notifications",
+        {
+          "color": "#2c5af3"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

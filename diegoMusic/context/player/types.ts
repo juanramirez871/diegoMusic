@@ -14,7 +14,25 @@ export const QUEUE_SOURCE_KEY = '@player_queue_source';
 export const SHUFFLE_KEY = '@player_shuffle';
 export const REPEAT_KEY = '@player_repeat';
 export const ACTIVE_DAYS_KEY = '@player_active_days';
+export const ARTIST_PLAYS_KEY = '@artist_plays';
+export const SONG_PLAYS_KEY = '@song_plays';
 export type RepeatMode = 'off' | 'all' | 'one';
+
+export interface ArtistPlayData {
+  name: string;
+  avatar: string;
+  count: number;
+}
+
+export interface SongPlayData {
+  id: string;
+  url: string;
+  title: string;
+  duration_formatted: string;
+  thumbnail: { url: string };
+  channel: { name: string };
+  timesPlayed: number;
+}
 
 export interface PlayerContextType {
   isMaximized: boolean;
@@ -50,6 +68,8 @@ export interface PlayerContextType {
   setSleepTimer: (minutes: number | null) => void;
   showDownloadBanner: boolean;
   streak: number;
+  artistPlays: Record<string, ArtistPlayData>;
+  songPlays: Record<string, SongPlayData>;
   pendingArtistOverlay: { id: string; name: string } | null;
   openArtistOverlay: (artist: { id: string; name: string }) => void;
   closeArtistOverlay: () => void;

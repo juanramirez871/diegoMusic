@@ -58,6 +58,8 @@ export interface LyricsBaseProps {
   isOnline: boolean;
   currentLineIndex: number;
   onSeek: (ms: number) => void;
+  onManualSearch?: (query: string) => void;
+  manualSearchDefaultQuery?: string;
 }
 
 export interface LyricsViewProps extends LyricsBaseProps {
