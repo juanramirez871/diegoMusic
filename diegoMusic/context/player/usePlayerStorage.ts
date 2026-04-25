@@ -3,7 +3,7 @@ import storage from '@/services/storage';
 import { sendDownloadCompleteNotification } from '@/services/notifications';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import {
     FAVORITES_KEY,
     FAVORITE_ARTISTS_KEY,
@@ -174,10 +174,12 @@ export const usePlayerStorage = () => {
             }
             console.log(`[FAVORITE] Descarga de audio completada (${(info as any).size} bytes): ${song.title}`);
             triggerDownloadBanner();
-            sendDownloadCompleteNotification(
-              t('download.notificationTitle'),
-              t('download.notificationBody', { title: song.title })
-            );
+            if (AppState.currentState !== 'active') {
+              sendDownloadCompleteNotification(
+                t('download.notificationTitle'),
+                t('download.notificationBody', { title: song.title })
+              );
+            }
           })
           .catch(err => {
             console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
