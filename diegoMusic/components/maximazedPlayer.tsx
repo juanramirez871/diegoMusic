@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   footerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 75,
   },
   carouselWrapper: {
     marginHorizontal: -20,
