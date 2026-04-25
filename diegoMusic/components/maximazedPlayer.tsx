@@ -17,6 +17,7 @@ import { useVideoPlayer } from 'expo-video';
 import { useEventListener } from 'expo';
 import { youtubeService } from '@/services/api';
 import { useNetwork } from '@/context/NetworkContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { PlayerCarousel } from './PlayerCarousel';
 import { DownloadBanner } from './DownloadBanner';
 import { AudioStateBeforeVideo, MaximazedPlayerProps, PlayerCarouselProps, UseVideoPlaybackArgs } from '@/interfaces/player';
@@ -38,7 +39,7 @@ const MarqueeText = ({ text, style }: { text: string; style: any }) => {
   );
 };
 
-const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs) => {
+const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, videoOfflineMessage, audio }: UseVideoPlaybackArgs) => {
 
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
@@ -139,7 +140,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
 
     if (!showVideoRef.current) {
       if (!isOnline) {
-        Alert.alert('Modo video', 'El video solo se puede reproducir con internet.');
+        Alert.alert(videoOfflineTitle, videoOfflineMessage);
         return;
       }
 
@@ -199,6 +200,7 @@ const useVideoPlayback = ({ currentSong, isOnline, audio }: UseVideoPlaybackArgs
 export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const { isOnline } = useNetwork();
+  const { t } = useLanguage();
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
@@ -244,6 +246,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const video = useVideoPlayback({
     currentSong,
     isOnline,
+    videoOfflineTitle: t('player.videoOfflineTitle'),
+    videoOfflineMessage: t('player.videoOfflineMessage'),
     audio: {
       isPlaying,
       progress,
@@ -372,7 +376,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     if (!currentSong) return;
     try {
       await Share.share({
-        message: `¡Escucha "${currentSong.title}" de ${currentSong.channel.name} en Diego Music!\nhttps://www.youtube.com/watch?v=${currentSong.id}`,
+        message: t('player.shareMessage', {
+          title: currentSong.title,
+          artist: currentSong.channel.name,
+          id: currentSong.id,
+        }),
         url: `https://www.youtube.com/watch?v=${currentSong.id}`,
         title: currentSong.title,
       });
@@ -456,7 +464,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="chevron-down" size={32} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>NOW PLAYING</Text>
+            <Text style={styles.headerTitle}>{t('player.nowPlaying')}</Text>
             <TouchableOpacity 
               style={styles.menuButton}
               onPress={() => setIsOptionsVisible(true)}

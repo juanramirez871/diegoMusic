@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import Song from "@/components/Song";
 import { usePlayer } from "@/context/PlayerContext";
+import { useLanguage } from "@/context/LanguageContext";
 import React, { useState, useMemo } from "react";
 import Animated, {
   useSharedValue,
@@ -25,6 +26,7 @@ export default function FavoriteScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const { favorites, playSong, isShuffle, toggleShuffle } = usePlayer();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredFavorites = useMemo(() => {
@@ -141,7 +143,7 @@ export default function FavoriteScreen() {
             { paddingTop: insets.top },
           ]}
         >
-          <Text style={styles.headerTitle}>Liked Songs</Text>
+          <Text style={styles.headerTitle}>{t('favorite.title')}</Text>
         </Animated.View>
         <View
           style={[styles.contentContainer, { paddingTop: insets.top + 10 }]}
@@ -156,7 +158,7 @@ export default function FavoriteScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Find in liked songs"
+                placeholder={t('favorite.findIn')}
                 placeholderTextColor="#b3b3b3"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -172,8 +174,8 @@ export default function FavoriteScreen() {
           </Animated.View>
 
           <Animated.View style={[styles.titleContainer, titleAnimatedStyle]}>
-            <Text style={styles.title}>Liked Songs</Text>
-            <Text style={styles.count}>{favorites.length} songs</Text>
+            <Text style={styles.title}>{t('favorite.title')}</Text>
+            <Text style={styles.count}>{t('favorite.songCount', { count: favorites.length })}</Text>
           </Animated.View>
         </View>
       </Animated.View>
@@ -213,7 +215,7 @@ export default function FavoriteScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="heart-outline" size={60} color="#333" />
               <Text style={styles.emptyStateText}>
-                {searchQuery ? "No results found" : "No liked songs yet"}
+                {searchQuery ? t('favorite.noResults') : t('favorite.noSongs')}
               </Text>
             </View>
           )}

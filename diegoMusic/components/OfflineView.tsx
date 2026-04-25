@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface OfflineViewProps {
   onRetry?: () => Promise<boolean>;
@@ -8,18 +9,16 @@ interface OfflineViewProps {
   message?: string;
 }
 
-export const OfflineView = ({ 
-  onRetry, 
-  title = "No internet connection", 
-  message = "Please check your network settings and try again." 
-}: OfflineViewProps) => {
-
+export const OfflineView = ({ onRetry, title, message }: OfflineViewProps) => {
+  const { t } = useLanguage();
+  const resolvedTitle = title ?? t('offline.title');
+  const resolvedMessage = message ?? t('offline.message');
 
   return (
     <View style={styles.container}>
       <Ionicons name="cloud-offline-outline" size={80} color="#666" />
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      <Text style={styles.title}>{resolvedTitle}</Text>
+      <Text style={styles.message}>{resolvedMessage}</Text>
     </View>
   );
 };

@@ -16,12 +16,12 @@ export async function requestNotificationPermission(): Promise<void> {
   await Notifications.requestPermissionsAsync();
 }
 
-export async function sendDownloadCompleteNotification(songTitle: string): Promise<void> {
+export async function sendDownloadCompleteNotification(title: string, body: string): Promise<void> {
   try {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Descarga completada',
-        body: `"${songTitle}" ya está disponible`,
+        title,
+        body,
         sound: false,
       },
       trigger: null,

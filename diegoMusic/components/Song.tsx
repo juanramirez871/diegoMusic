@@ -4,6 +4,7 @@ import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
 import SongOptionsModal from "./SongOptionsModal";
 import { usePlayer } from "@/context/PlayerContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
 import { SongProps } from "@/interfaces/Song";
 
@@ -11,12 +12,13 @@ import { SongProps } from "@/interfaces/Song";
 export default function Song({ data, onPress }: SongProps) {
 
   const { currentSong, isPlaying, isLoading } = usePlayer();
+  const { t } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const thumbnailSource = useThumbnail(data?.id, data?.thumbnail?.url);
   
   const isCurrentSong = currentSong?.id === data?.id;
-  const title = data?.title || "Sin título";
-  const artist = data?.channel?.name || "Sin artista";
+  const title = data?.title || t('song.untitled');
+  const artist = data?.channel?.name || t('song.unknownArtist');
 
   const handlePress = () => {
     if (onPress && data) {

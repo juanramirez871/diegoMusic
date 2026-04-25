@@ -1,14 +1,16 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { usePlayer } from "@/context/PlayerContext";
 import { FavoriteArtistsProps } from "@/interfaces/artists";
+import { useLanguage } from "@/context/LanguageContext";
 
 
 export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps) {
-  const { favoriteArtists } = usePlayer();
 
+  const { favoriteArtists } = usePlayer();
+  const { t } = useLanguage();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favorite Artists</Text>
+      <Text style={styles.title}>{t('favoriteArtists.title')}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -35,7 +37,7 @@ export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps)
       </ScrollView>
       {favoriteArtists.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No favorite artists yet (ㆆ_ㆆ)</Text>
+            <Text style={styles.emptyText}>{t('favoriteArtists.empty')}</Text>
           </View>
       )}
     </View>
@@ -88,4 +90,3 @@ const styles = StyleSheet.create({
     fontSize: 12,
   }
 });
-

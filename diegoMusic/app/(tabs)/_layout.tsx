@@ -5,10 +5,12 @@ import { StyleSheet, Platform, Animated, View } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GenreOverlay } from '@/components/GenreOverlay';
 import { usePlayer } from '@/context/PlayerContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function TabLayout() {
 
   const { pendingArtistOverlay, closeArtistOverlay } = usePlayer();
+  const { t } = useLanguage();
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
   const prevArtistRef = useRef<string | null>(null);
   const pathname = usePathname();
@@ -21,7 +23,8 @@ export default function TabLayout() {
         prevArtistRef.current = null;
         closeArtistOverlay();
       });
-    } else {
+    }
+    else {
       prevPathnameRef.current = pathname;
     }
   }, [pathname]);
@@ -65,28 +68,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="favorite"
         options={{
-          title: 'Favorite',
+          title: t('tabs.favorite'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
+          title: t('tabs.search'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
         }}
       />

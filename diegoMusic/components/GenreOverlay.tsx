@@ -14,6 +14,7 @@ import { youtubeService } from "../services/api";
 import { usePlayer } from "../context/PlayerContext";
 import { Skeleton } from "./Skeleton";
 import { GenreOverlayProps, SongData } from "@/interfaces/Song";
+import { useLanguage } from "@/context/LanguageContext";
 
 
 const SongSkeleton = () => (
@@ -30,12 +31,14 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
   isVisible,
   onClose,
   genreTitle,
+  searchQuery,
   channelId,
   fadeAnim,
   bottomOffset = 0,
 }) => {
 
   const { playSong } = usePlayer();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +52,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
           if (channelId) {
             data = await youtubeService.getChannelVideos(channelId);
           } else {
-            const query = `best ${genreTitle} songs`;
+            const query = `best ${searchQuery ?? genreTitle} songs`;
             data = await youtubeService.searchVideos(query, 41);
           }
           setResults(data);
@@ -114,7 +117,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>No se encontraron canciones</Text>
+            <Text style={styles.emptyStateTitle}>{t('genre.noSongsFound')}</Text>
           </View>
         )}
       </ScrollView>

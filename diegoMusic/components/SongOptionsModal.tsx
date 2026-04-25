@@ -18,6 +18,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { usePlayer } from "@/context/PlayerContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { SongOptionsModalProps } from "@/interfaces/Song";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -30,6 +31,7 @@ export default function SongOptionsModal({
 }: SongOptionsModalProps) {
 
   const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = usePlayer();
+  const { t } = useLanguage();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.4);
   const startOpenAnimation = () => {
@@ -111,10 +113,10 @@ export default function SongOptionsModal({
           <View style={styles.handle} />
           
           <View style={styles.header}>
-            <Text style={styles.title} numberOfLines={1}>
-              {song?.title || "Sin título"}
-            </Text>
-          </View>
+              <Text style={styles.title} numberOfLines={1}>
+              {song?.title || t('songOptions.untitled')}
+              </Text>
+            </View>
 
           <View style={styles.optionsList}>
             <TouchableOpacity 
@@ -130,7 +132,7 @@ export default function SongOptionsModal({
                 color={favoriteStatus ? "#2c5af3ff" : "#fff"} 
               />
               <Text style={styles.optionText}>
-                {favoriteStatus ? "Remove from favorites" : "Add to favorites"}
+                {favoriteStatus ? t('songOptions.removeFromFavorites') : t('songOptions.addToFavorites')}
               </Text>
             </TouchableOpacity>
 
@@ -147,7 +149,7 @@ export default function SongOptionsModal({
                 color={artistFavoriteStatus ? "#2c5af3ff" : "#fff"} 
               />
               <Text style={styles.optionText}>
-                {artistFavoriteStatus ? "Remove artist from favorites" : "Add artist to favorites"}
+                {artistFavoriteStatus ? t('songOptions.removeArtistFromFavorites') : t('songOptions.addArtistToFavorites')}
               </Text>
             </TouchableOpacity>
 
@@ -159,7 +161,7 @@ export default function SongOptionsModal({
               }}
             >
               <Ionicons name="videocam-outline" size={24} color="#fff" />
-              <Text style={styles.optionText}>Open original video</Text>
+              <Text style={styles.optionText}>{t('songOptions.openOriginalVideo')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

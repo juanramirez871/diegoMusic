@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
 import {
   ActivityIndicator,
   Platform,
@@ -14,14 +15,16 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { LyricsPanelProps, LyricsViewProps } from '@/interfaces/Song';
 
 const ManualSearchInput = ({ defaultQuery, onSearch }: { defaultQuery?: string; onSearch: (q: string) => void }) => {
+
   const [query, setQuery] = useState(defaultQuery ?? '');
+  const { t } = useLanguage();
   return (
     <View style={searchStyles.row}>
       <TextInput
         style={searchStyles.input}
         value={query}
         onChangeText={setQuery}
-        placeholder="Artista - Canción"
+        placeholder={t('lyrics.searchPlaceholder')}
         placeholderTextColor="#555"
         onSubmitEditing={() => query.trim() && onSearch(query.trim())}
         returnKeyType="search"
@@ -80,6 +83,7 @@ export function LyricsPanel({
 
   const scrollRef = useRef<ScrollView>(null);
   const [showEdit, setShowEdit] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (loading) setShowEdit(false);
@@ -94,7 +98,7 @@ export function LyricsPanel({
   return (
     <View style={panel.container}>
       <View style={panel.header}>
-        <Text style={panel.label}>LYRICS</Text>
+        <Text style={panel.label}>{t('lyrics.title')}</Text>
         <View style={panel.headerActions}>
           {onManualSearch && (
             <TouchableOpacity
@@ -126,13 +130,13 @@ export function LyricsPanel({
 
       {!loading && !isOnline && (
         <View style={panel.center}>
-          <Text style={panel.emptyText}>Offline</Text>
+          <Text style={panel.emptyText}>{t('lyrics.offline')}</Text>
         </View>
       )}
 
       {!loading && isOnline && notFound && (
         <View style={panel.center}>
-          <Text style={panel.emptyText}>Letra no encontrada</Text>
+          <Text style={panel.emptyText}>{t('lyrics.notFound')}</Text>
         </View>
       )}
 
@@ -234,6 +238,7 @@ export function LyricsView({
 
   const scrollRef = useRef<ScrollView>(null);
   const [showEdit, setShowEdit] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (loading) setShowEdit(false);
@@ -252,7 +257,7 @@ export function LyricsView({
       </TouchableOpacity>
 
       <View style={full.headingRow}>
-        <Text style={full.heading}>LYRICS</Text>
+        <Text style={full.heading}>{t('lyrics.title')}</Text>
         {onManualSearch && (
           <TouchableOpacity
             onPress={() => setShowEdit(s => !s)}
@@ -281,14 +286,14 @@ export function LyricsView({
       {!loading && !isOnline && (
         <View style={full.center}>
           <Ionicons name="cloud-offline-outline" size={36} color="#b3b3b3" />
-          <Text style={full.emptyText}>Sin conexión a internet</Text>
+          <Text style={full.emptyText}>{t('lyrics.noConnection')}</Text>
         </View>
       )}
 
       {!loading && isOnline && notFound && (
         <View style={full.center}>
           <Ionicons name="musical-notes-outline" size={36} color="#b3b3b3" />
-          <Text style={full.emptyText}>Letra no disponible</Text>
+          <Text style={full.emptyText}>{t('lyrics.notAvailable')}</Text>
         </View>
       )}
 

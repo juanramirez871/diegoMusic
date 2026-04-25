@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NetworkProvider } from '@/context/NetworkContext';
 import { DownloadBanner } from '@/components/DownloadBanner';
 import { requestNotificationPermission } from '@/services/notifications';
+import { LanguageProvider } from '@/context/LanguageContext';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -38,11 +39,13 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <NetworkProvider>
-      <PlayerProvider>
-        <RootLayoutContent />
-        <DownloadBanner />
-      </PlayerProvider>
-    </NetworkProvider>
+    <LanguageProvider>
+      <NetworkProvider>
+        <PlayerProvider>
+          <RootLayoutContent />
+          <DownloadBanner />
+        </PlayerProvider>
+      </NetworkProvider>
+    </LanguageProvider>
   );
 }

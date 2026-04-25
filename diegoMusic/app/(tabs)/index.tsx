@@ -7,6 +7,7 @@ import RecentPlayed from "@/components/RecentPlayed";
 import { StatsOverlay } from "@/components/StatsOverlay";
 import { useNetwork } from "@/context/NetworkContext";
 import { usePlayer } from "@/context/PlayerContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { ArtistData, SongData } from "@/interfaces/Song";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useRef, useState } from "react";
@@ -16,7 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   
-  const [selectedTag, setSelectedTag] = useState("Music");
+  const [selectedTag, setSelectedTag] = useState('music');
+  const { t } = useLanguage();
   const { favoriteArtists, songPlays } = usePlayer();
   const mostPlayed = useMemo(
     () =>
@@ -104,18 +106,18 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[
                   styles.tag,
-                  selectedTag === "Music" && styles.selectedTag,
+                  selectedTag === 'music' && styles.selectedTag,
                 ]}
-                onPress={() => setSelectedTag("Music")}
+                onPress={() => setSelectedTag('music')}
                 activeOpacity={0.7}
               >
                 <Text
                   style={[
                     styles.tagText,
-                    selectedTag === "Music" && styles.selectedTagText,
+                    selectedTag === 'music' && styles.selectedTagText,
                   ]}
                 >
-                  Music
+                  {t('home.musicTag')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -129,7 +131,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.content}>
-            {selectedTag === "Music" && (
+            {selectedTag === 'music' && (
               <View style={styles.recentPlayedWrapper}>
                 <View>
                   <RecentPlayed />
@@ -152,12 +154,12 @@ export default function HomeScreen() {
                 </View>
 
                 <View>
-                  <Text style={styles.title}>Your most played music</Text>
+                  <Text style={styles.title}>{t('home.mostPlayedTitle')}</Text>
                   {mostPlayed.length > 0 ? (
                     <ListPlayer data={mostPlayed} />
                   ) : (
                     <View style={styles.emptyContainer}>
-                      <Text style={styles.emptyText}>No most played music yet ( ˘︹˘ )</Text>
+                      <Text style={styles.emptyText}>{t('home.noMostPlayed')}</Text>
                     </View>
                   )}
                 </View>

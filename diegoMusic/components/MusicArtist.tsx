@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import CarouselPlayer from "./ListPlayer";
 import { MusicArtistProps } from "@/interfaces/artists";
+import { useLanguage } from "@/context/LanguageContext";
 
 
 export default function MusicArtist({ artist }: MusicArtistProps) {
+  
+  const { t } = useLanguage();
   return (
     <View style={styles.container}>
       <View style={styles.itemContainer}>
@@ -16,7 +19,7 @@ export default function MusicArtist({ artist }: MusicArtistProps) {
             />
         </View>
         <View>
-            <Text style={styles.title}>For fans of</Text>
+            <Text style={styles.title}>{t('musicArtist.forFansOf')}</Text>
             <Text style={styles.author}>{artist.name}</Text>
         </View>
       </View>

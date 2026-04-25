@@ -3,6 +3,7 @@ import { OfflineView } from "@/components/OfflineView";
 import { HistoryItem, SearchOverlay } from "@/components/SearchOverlay";
 import CATEGORIES from "@/constants/categories";
 import { useNetwork } from "@/context/NetworkContext";
+import { useLanguage } from "@/context/LanguageContext";
 import storage from '@/services/storage';
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
@@ -27,9 +28,10 @@ export default function TabTwoScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<{ title: string; query: string } | null>(null);
   const [isGenreVisible, setIsGenreVisible] = useState(false);
   const { isOnline, isNetworkChecked, isApiReachable } = useNetwork();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -67,8 +69,8 @@ export default function TabTwoScreen() {
     }).start();
   };
 
-  const handleOpenGenre = (genreTitle: string) => {
-    setSelectedGenre(genreTitle);
+  const handleOpenGenre = (genreTitle: string, query: string) => {
+    setSelectedGenre({ title: genreTitle, query });
     setIsGenreVisible(true);
     Animated.timing(genreFadeAnim, {
       toValue: 1,
@@ -121,7 +123,7 @@ export default function TabTwoScreen() {
               source={require("@/assets/images/avatar.jpg")}
               style={styles.avatar}
             />
-            <Text style={styles.headerTitle}>Search</Text>
+            <Text style={styles.headerTitle}>{t('search.title')}</Text>
           </View>
 
           <View style={styles.searchSection}>
@@ -138,23 +140,23 @@ export default function TabTwoScreen() {
                 style={styles.searchIcon}
               />
               <Text style={[styles.placeholderText, isDisabled && styles.placeholderDisabled]}>
-                {isDisabled ? "Not available offline" : "What do you want to listen to?"}
+                {isDisabled ? t('search.placeholderOffline') : t('search.placeholder')}
               </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.browseAllSection}>
-            <Text style={styles.sectionTitle}>Browse all</Text>
+            <Text style={styles.sectionTitle}>{t('search.browseAll')}</Text>
             <View style={styles.categoriesGrid}>
               {CATEGORIES.map((category) => (
                 <TouchableOpacity
                   key={category.id}
                   style={[styles.categoryCard, { backgroundColor: category.color }, isDisabled && styles.categoryCardDisabled]}
-                  onPress={isDisabled ? undefined : () => handleOpenGenre(category.title)}
+                  onPress={isDisabled ? undefined : () => handleOpenGenre(t(`genres.${category.key}`), category.query)}
                   disabled={isDisabled}
                   activeOpacity={isDisabled ? 1 : 0.7}
                 >
-                  <Text style={styles.categoryTitle}>{category.title}</Text>
+                  <Text style={styles.categoryTitle}>{t(`genres.${category.key}`)}</Text>
                   <Image
                     source={category.image}
                     style={[styles.categoryIcon, isDisabled && styles.categoryIconDisabled]}
@@ -179,7 +181,8 @@ export default function TabTwoScreen() {
       <GenreOverlay 
         isVisible={isGenreVisible}
         onClose={handleCloseGenre}
-        genreTitle={selectedGenre || ""}
+        genreTitle={selectedGenre?.title || ''}
+        searchQuery={selectedGenre?.query}
         fadeAnim={genreFadeAnim}
       />
     </SafeAreaView>

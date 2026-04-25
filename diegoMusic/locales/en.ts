@@ -1,0 +1,276 @@
+export interface Translations {
+  tabs: {
+    home: string;
+    favorite: string;
+    search: string;
+    settings: string;
+  };
+  favorite: {
+    title: string;
+    findIn: string;
+    songCount: string;
+    noResults: string;
+    noSongs: string;
+  };
+  search: {
+    title: string;
+    placeholder: string;
+    placeholderOffline: string;
+    browseAll: string;
+  };
+  searchOverlay: {
+    placeholder: string;
+    cancel: string;
+    noResults: string;
+    noResultsSub: string;
+    emptyTitle: string;
+    emptySub: string;
+    recentSearches: string;
+    clearAll: string;
+  };
+  lyrics: {
+    title: string;
+    offline: string;
+    notFound: string;
+    noConnection: string;
+    notAvailable: string;
+    searchPlaceholder: string;
+  };
+  offline: {
+    title: string;
+    message: string;
+  };
+  settings: {
+    title: string;
+    language: string;
+  };
+  home: {
+    musicTag: string;
+    mostPlayedTitle: string;
+    noMostPlayed: string;
+  };
+  stats: {
+    title: string;
+    totalPlays: string;
+    minutes: string;
+    liked: string;
+    dayStreak: string;
+    keepGoing: string;
+    playToday: string;
+    topArtists: string;
+    mostPlayed: string;
+    empty: string;
+    plays: string;
+  };
+  player: {
+    nowPlaying: string;
+    videoOfflineTitle: string;
+    videoOfflineMessage: string;
+    shareMessage: string;
+  };
+  queue: {
+    title: string;
+    shuffle: string;
+  };
+  sleepTimer: {
+    title: string;
+    active: string;
+    disable: string;
+    minutesOption: string;
+    hourOption: string;
+    hoursOption: string;
+  };
+  genre: {
+    noSongsFound: string;
+  };
+  download: {
+    songDownloaded: string;
+    notificationTitle: string;
+    notificationBody: string;
+  };
+  musicArtist: {
+    forFansOf: string;
+  };
+  favoriteArtists: {
+    title: string;
+    empty: string;
+  };
+  songOptions: {
+    untitled: string;
+    addToFavorites: string;
+    removeFromFavorites: string;
+    addArtistToFavorites: string;
+    removeArtistFromFavorites: string;
+    openOriginalVideo: string;
+  };
+  song: {
+    untitled: string;
+    unknownArtist: string;
+  };
+  errors: {
+    offlineTitle: string;
+    offlineSongUnavailable: string;
+    playbackTitle: string;
+    playbackFailed: string;
+    retry: string;
+    cancel: string;
+    downloadTitle: string;
+    downloadFailed: string;
+  };
+  genres: Record<string, string>;
+}
+
+const en: Translations = {
+  tabs: {
+    home: 'Home',
+    favorite: 'Favorite',
+    search: 'Search',
+    settings: 'Settings',
+  },
+  favorite: {
+    title: 'Liked Songs',
+    findIn: 'Find in liked songs',
+    songCount: '{count} songs',
+    noResults: 'No results found',
+    noSongs: 'No liked songs yet',
+  },
+  search: {
+    title: 'Search',
+    placeholder: 'What do you want to listen to?',
+    placeholderOffline: 'Not available offline',
+    browseAll: 'Browse all',
+  },
+  searchOverlay: {
+    placeholder: 'What do you want to listen to?',
+    cancel: 'Cancel',
+    noResults: 'No results found',
+    noResultsSub: 'Try searching for something else.',
+    emptyTitle: 'Play what you love',
+    emptySub: 'Search for artists, songs, podcasts, and more.',
+    recentSearches: 'Recent searches',
+    clearAll: 'Clear all',
+  },
+  lyrics: {
+    title: 'LYRICS',
+    offline: 'Offline',
+    notFound: 'Lyrics not found',
+    noConnection: 'No internet connection',
+    notAvailable: 'Lyrics not available',
+    searchPlaceholder: 'Artist - Song',
+  },
+  offline: {
+    title: 'No internet connection',
+    message: 'Please check your network settings and try again.',
+  },
+  settings: {
+    title: 'Settings',
+    language: 'Language',
+  },
+  home: {
+    musicTag: 'Music',
+    mostPlayedTitle: 'Your most played music',
+    noMostPlayed: 'No most played music yet ( ˘︹˘ )',
+  },
+  stats: {
+    title: 'Your Stats',
+    totalPlays: 'Total plays',
+    minutes: 'Minutes',
+    liked: 'Liked',
+    dayStreak: 'Day streak',
+    keepGoing: 'Keep it going!',
+    playToday: 'Play today to start a streak',
+    topArtists: 'Top artists',
+    mostPlayed: 'Most played',
+    empty: 'Play some music to see your stats',
+    plays: '{count} plays',
+  },
+  player: {
+    nowPlaying: 'NOW PLAYING',
+    videoOfflineTitle: 'Video mode',
+    videoOfflineMessage: 'Video can only be played with internet.',
+    shareMessage: 'Listen to "{title}" by {artist} on Diego Music!\nhttps://www.youtube.com/watch?v={id}',
+  },
+  queue: {
+    title: 'Queue',
+    shuffle: 'Shuffle',
+  },
+  sleepTimer: {
+    title: 'Sleep Timer',
+    active: 'Active: {time}',
+    disable: 'Disable',
+    minutesOption: '{count} minutes',
+    hourOption: '{count} hour',
+    hoursOption: '{count} hours',
+  },
+  genre: {
+    noSongsFound: 'No songs found',
+  },
+  download: {
+    songDownloaded: 'Song downloaded',
+    notificationTitle: 'Download complete',
+    notificationBody: '"{title}" is now available',
+  },
+  musicArtist: {
+    forFansOf: 'For fans of',
+  },
+  favoriteArtists: {
+    title: 'Favorite Artists',
+    empty: 'No favorite artists yet (ㆆ_ㆆ)',
+  },
+  songOptions: {
+    untitled: 'Untitled',
+    addToFavorites: 'Add to favorites',
+    removeFromFavorites: 'Remove from favorites',
+    addArtistToFavorites: 'Add artist to favorites',
+    removeArtistFromFavorites: 'Remove artist from favorites',
+    openOriginalVideo: 'Open original video',
+  },
+  song: {
+    untitled: 'Untitled',
+    unknownArtist: 'Unknown artist',
+  },
+  errors: {
+    offlineTitle: 'Offline',
+    offlineSongUnavailable: 'This song is not available offline. Save it to favorites to listen offline.',
+    playbackTitle: 'Playback error',
+    playbackFailed: 'Could not play "{title}"',
+    retry: 'Retry',
+    cancel: 'Cancel',
+    downloadTitle: 'Download error',
+    downloadFailed: 'Could not save "{title}" for offline listening.',
+  },
+  genres: {
+    rock: 'Rock',
+    pop: 'Pop',
+    hipHop: 'Hip-Hop',
+    reggaeton: 'Reggaeton',
+    electronic: 'Electronic',
+    trap: 'Trap',
+    rnb: 'R&B',
+    jazz: 'Jazz',
+    blues: 'Blues',
+    country: 'Country',
+    classical: 'Classical',
+    salsa: 'Salsa',
+    bachata: 'Bachata',
+    merengue: 'Merengue',
+    kpop: 'K-Pop',
+    metal: 'Metal',
+    punk: 'Punk',
+    indie: 'Indie',
+    funk: 'Funk',
+    disco: 'Disco',
+    house: 'House',
+    techno: 'Techno',
+    gospel: 'Gospel',
+    soul: 'Soul',
+    flamenco: 'Flamenco',
+    reggae: 'Reggae',
+    ska: 'Ska',
+    drill: 'Drill',
+    afrobeat: 'Afrobeat',
+    lofi: 'Lo-fi',
+  },
+};
+
+export default en;

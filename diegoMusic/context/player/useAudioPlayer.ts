@@ -6,6 +6,7 @@ import { Alert, AppState } from 'react-native';
 import { PlaybackState, SafeMediaControl } from './mediaControls';
 import { parseDuration } from './utils';
 import { SongData } from '@/interfaces/Song';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const useAudioPlayer = (
   currentSong: SongData | null,
@@ -16,6 +17,8 @@ export const useAudioPlayer = (
   isOnline: boolean = true,
   isFavorite: (id: string) => boolean
 ) => {
+
+  const { t } = useLanguage();
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [isIntendingToPlay, setIsIntendingToPlay] = useState(false);
@@ -138,13 +141,28 @@ export const useAudioPlayer = (
   };
 
   const onPlaybackStatusUpdate = (status: any) => {
+
     const now = Date.now();
+    if (status.didJustFinish) {
+      const elapsedMs = now - playStartTimeRef.current;
+      if (elapsedMs < 3000) {
+        console.warn(`[PLAYBACK] didJustFinish ignorado — playback duró solo ${elapsedMs}ms (posible archivo corrupto o vacío)`);
+      }
+      else {
+        console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
+        setTimeout(() => playNextRef.current(), 0);
+      }
+
+      return;
+    }
+
     if (now - lastSeekTimeRef.current < 800) return;
 
     if (status.playing) {
       if (isLoadingRef.current) stableSetIsLoading(false);
       stableSetIsPlaying(true);
-    } else if (!isLoadingRef.current && isPlayingRef.current && (Date.now() - playStartTimeRef.current > 2000)) {
+    }
+    else if (!isLoadingRef.current && isPlayingRef.current && (Date.now() - playStartTimeRef.current > 2000)) {
       stableSetIsPlaying(false);
     }
 
@@ -162,17 +180,6 @@ export const useAudioPlayer = (
       else {
         const durationMs = (status.duration ?? 0) * 1000;
         if (durationMs > 0) setDuration(durationMs);
-      }
-    }
-
-    if (status.didJustFinish) {
-      const elapsedMs = Date.now() - playStartTimeRef.current;
-      if (elapsedMs < 3000) {
-        console.warn(`[PLAYBACK] didJustFinish ignorado — playback duró solo ${elapsedMs}ms (posible archivo corrupto o vacío)`);
-      }
-      else {
-        console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
-        playNextRef.current();
       }
     }
 
@@ -270,8 +277,8 @@ export const useAudioPlayer = (
       if (!isOnline && !localUri) {
         console.warn('[OFFLINE] Sin conexión y sin archivo local para:', song.id);
         Alert.alert(
-          'Sin conexión',
-          'Esta canción no está disponible sin internet. Guárdala en favoritos para escucharla offline.'
+          t('errors.offlineTitle'),
+          t('errors.offlineSongUnavailable')
         );
 
         stableSetIsLoading(false);
@@ -468,11 +475,11 @@ export const useAudioPlayer = (
         retryCountRef.current = 0;
         stableSetIsLoading(false);
         Alert.alert(
-          'Error de reproducción',
-          `No se pudo reproducir "${song.title}"`,
+          t('errors.playbackTitle'),
+          t('errors.playbackFailed', { title: song.title }),
           [
-            { text: 'Reintentar', onPress: () => playSongLogicRef.current?.(song) },
-            { text: 'Cancelar', style: 'cancel' },
+            { text: t('errors.retry'), onPress: () => playSongLogicRef.current?.(song) },
+            { text: t('errors.cancel'), style: 'cancel' },
           ]
         );
       }

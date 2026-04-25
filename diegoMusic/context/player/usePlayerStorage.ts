@@ -16,9 +16,11 @@ import {
     SongPlayData,
 } from './types';
 import { ArtistData, SongData } from '@/interfaces/Song';
+import { useLanguage } from '@/context/LanguageContext';
 
 export const usePlayerStorage = () => {
 
+  const { t } = useLanguage();
   const [favorites, setFavorites] = useState<SongData[]>([]);
   const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
@@ -164,17 +166,26 @@ export const usePlayerStorage = () => {
             if (!info.exists || (info as any).size <= 5000) {
               console.error(`[FAVORITE] Archivo inválido tras descarga (${(info as any).size ?? 0} bytes): ${song.title}`);
               await FileSystem.deleteAsync(result.uri, { idempotent: true });
-              Alert.alert('Error de descarga', `No se pudo guardar "${song.title}" para escuchar sin internet.`);
+              Alert.alert(
+                t('errors.downloadTitle'),
+                t('errors.downloadFailed', { title: song.title })
+              );
               return;
             }
             console.log(`[FAVORITE] Descarga de audio completada (${(info as any).size} bytes): ${song.title}`);
             triggerDownloadBanner();
-            sendDownloadCompleteNotification(song.title);
+            sendDownloadCompleteNotification(
+              t('download.notificationTitle'),
+              t('download.notificationBody', { title: song.title })
+            );
           })
           .catch(err => {
             console.error(`[FAVORITE] Error descargando audio ${song.title}:`, err);
             FileSystem.deleteAsync(persistentUri, { idempotent: true }).catch(() => {});
-            Alert.alert('Error de descarga', `No se pudo guardar "${song.title}" para escuchar sin internet.`);
+            Alert.alert(
+              t('errors.downloadTitle'),
+              t('errors.downloadFailed', { title: song.title })
+            );
           });
         }
 

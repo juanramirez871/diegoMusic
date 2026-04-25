@@ -1,16 +1,20 @@
 import { usePlayer } from '@/context/PlayerContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 export function DownloadBanner() {
+  
   const { showDownloadBanner } = usePlayer();
+  const { t } = useLanguage();
   const opacity = useSharedValue(0);
 
   useEffect(() => {
     if (showDownloadBanner) {
       opacity.value = withTiming(1, { duration: 200 });
-    } else {
+    }
+    else {
       opacity.value = withDelay(0, withTiming(0, { duration: 300 }));
     }
   }, [showDownloadBanner]);
@@ -19,7 +23,7 @@ export function DownloadBanner() {
 
   return (
     <Animated.View style={[styles.banner, animStyle]} pointerEvents="none">
-      <Text style={styles.bannerText}>Canción descargada</Text>
+      <Text style={styles.bannerText}>{t('download.songDownloaded')}</Text>
     </Animated.View>
   );
 }

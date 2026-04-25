@@ -35,6 +35,7 @@ export interface GenreOverlayProps {
   isVisible: boolean;
   onClose: () => void;
   genreTitle: string;
+  searchQuery?: string;
   channelId?: string;
   fadeAnim: Animated.Value;
   bottomOffset?: number;

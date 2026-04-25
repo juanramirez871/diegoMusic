@@ -23,9 +23,9 @@ import Animated, {
 import { QueueModalProps } from "@/interfaces/player";
 import { SongData } from "@/interfaces/Song";
 import { useThumbnail } from "@/hooks/useThumbnail";
+import { useLanguage } from "@/context/LanguageContext";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-
 const QueueItem = React.memo(function QueueItem({
   item,
   isCurrent,
@@ -78,7 +78,9 @@ const QueueItem = React.memo(function QueueItem({
 });
 
 export default function QueueModal({ visible, onClose }: QueueModalProps) {
+
   const { queue, setQueue, currentSong, playSong, isShuffle, toggleShuffle } = usePlayer();
+  const { t } = useLanguage();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const backdropOpacity = useSharedValue(0);
@@ -87,9 +89,9 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
     if (visible) {
       translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.quad) });
       backdropOpacity.value = withTiming(1, { duration: 400 });
-    } else {
-      setSelectedIndex(null);
     }
+    else setSelectedIndex(null);
+
   }, [visible]);
 
   const handleClose = () => {
@@ -151,7 +153,7 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
             <View style={styles.header}>
               <View style={styles.headerHandle} />
               <View style={styles.headerTop}>
-                <Text style={styles.headerTitle}>Queue</Text>
+                <Text style={styles.headerTitle}>{t('queue.title')}</Text>
                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                   <Ionicons name="close" size={24} color="#fff" />
                 </TouchableOpacity>
@@ -163,7 +165,7 @@ export default function QueueModal({ visible, onClose }: QueueModalProps) {
                 >
                   <Ionicons name="shuffle" size={24} color={isShuffle ? "#fff" : "#b3b3b3"} />
                   <Text style={[styles.controlText, isShuffle && styles.activeControlText]}>
-                    Shuffle
+                    {t('queue.shuffle')}
                   </Text>
                 </TouchableOpacity>
               </View>

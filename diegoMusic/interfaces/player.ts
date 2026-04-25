@@ -93,6 +93,8 @@ export type PlayerCarouselProps = {
 export type UseVideoPlaybackArgs = {
   currentSong: SongData | null;
   isOnline: boolean;
+  videoOfflineTitle: string;
+  videoOfflineMessage: string;
   audio: {
     isPlaying: boolean;
     progress: number;

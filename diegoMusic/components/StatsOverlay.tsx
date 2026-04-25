@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePlayer } from "@/context/PlayerContext";
 import { parseDuration } from "@/context/player/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StatsOverlayProps {
   isVisible: boolean;
@@ -25,6 +26,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
   fadeAnim,
 }) => {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const { favorites, streak, artistPlays, songPlays } = usePlayer();
 
   if (!isVisible) return null;
@@ -48,7 +50,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Stats</Text>
+        <Text style={styles.headerTitle}>{t('stats.title')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -60,17 +62,17 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
           <View style={styles.card}>
             <Ionicons name="musical-notes" size={24} color="#2c5af3ff" />
             <Text style={styles.cardNumber}>{totalPlays}</Text>
-            <Text style={styles.cardLabel}>Total plays</Text>
+            <Text style={styles.cardLabel}>{t('stats.totalPlays')}</Text>
           </View>
           <View style={styles.card}>
             <Ionicons name="time" size={24} color="#2c5af3ff" />
             <Text style={styles.cardNumber}>{Math.round(totalMinutes)}</Text>
-            <Text style={styles.cardLabel}>Minutes</Text>
+            <Text style={styles.cardLabel}>{t('stats.minutes')}</Text>
           </View>
           <View style={styles.card}>
             <Ionicons name="heart" size={24} color="#2c5af3ff" />
             <Text style={styles.cardNumber}>{favorites.length}</Text>
-            <Text style={styles.cardLabel}>Liked</Text>
+            <Text style={styles.cardLabel}>{t('stats.liked')}</Text>
           </View>
         </View>
 
@@ -78,9 +80,9 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
           <View style={styles.streakLeft}>
             <Text style={styles.streakFlame}>🔥</Text>
             <View>
-              <Text style={styles.streakLabel}>Day streak</Text>
+              <Text style={styles.streakLabel}>{t('stats.dayStreak')}</Text>
               <Text style={styles.streakSub}>
-                {streak > 0 ? "Keep it going!" : "Play today to start a streak"}
+                {streak > 0 ? t('stats.keepGoing') : t('stats.playToday')}
               </Text>
             </View>
           </View>
@@ -89,7 +91,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
 
         {topArtists.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Top artists</Text>
+            <Text style={styles.sectionTitle}>{t('stats.topArtists')}</Text>
             <View style={styles.artistsRow}>
               {topArtists.map((artist, i) => {
                 const thumb = artist.avatar ? { uri: artist.avatar } : { uri: "https://i.pinimg.com/736x/47/cb/be/47cbbee4df2bc1fccc63c3b0f9af46aa.jpg" };
@@ -98,7 +100,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
                     {i === 0 && <View style={styles.crownBadge}><Text style={styles.crownText}>👑</Text></View>}
                     <Image source={thumb} style={styles.artistAvatar} />
                     <Text style={styles.artistName} numberOfLines={1}>{artist.name}</Text>
-                    <Text style={styles.artistPlays}>{artist.count} plays</Text>
+                    <Text style={styles.artistPlays}>{t('stats.plays', { count: artist.count })}</Text>
                   </View>
                 );
               })}
@@ -108,7 +110,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
 
         {topSongs.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Most played</Text>
+            <Text style={styles.sectionTitle}>{t('stats.mostPlayed')}</Text>
             {topSongs.map((song, i) => {
               const thumb = song.thumbnail?.url ? { uri: song.thumbnail.url } : require("@/assets/images/cover.jpg");
               return (
@@ -131,7 +133,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
         {totalPlays === 0 && favorites.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="bar-chart-outline" size={60} color="#333" />
-            <Text style={styles.emptyText}>Play some music to see your stats</Text>
+            <Text style={styles.emptyText}>{t('stats.empty')}</Text>
           </View>
         )}
       </ScrollView>

@@ -14,6 +14,7 @@ import Song from "./Song";
 import { youtubeService } from "../services/api";
 import { Skeleton } from "./Skeleton";
 import { usePlayer } from "../context/PlayerContext";
+import { useLanguage } from "../context/LanguageContext";
 import { DownloadBanner } from "./DownloadBanner";
 import { SongData } from "@/interfaces/Song";
 
@@ -92,6 +93,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
 }) => {
 
   const { playSong } = usePlayer();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -186,7 +188,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             <TextInput
               autoFocus
               style={styles.activeSearchInput}
-              placeholder="What do you want to listen to?"
+              placeholder={t('searchOverlay.placeholder')}
               placeholderTextColor="#b3b3b3"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -195,7 +197,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             {isLoading && <SearchLoadingIndicator />}
           </View>
           <TouchableOpacity onPress={onClose} style={styles.cancelButtonWrapper}>
-            <Text style={styles.cancelButton}>Cancel</Text>
+            <Text style={styles.cancelButton}>{t('searchOverlay.cancel')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -222,23 +224,23 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
               ))}
               {!isLoading && results.length === 0 && searchQuery.trim() === lastSearchedQuery && (
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateTitle}>No results found</Text>
-                  <Text style={styles.emptyStateSub}>Try searching for something else.</Text>
+                  <Text style={styles.emptyStateTitle}>{t('searchOverlay.noResults')}</Text>
+                  <Text style={styles.emptyStateSub}>{t('searchOverlay.noResultsSub')}</Text>
                 </View>
               )}
             </ScrollView>
           )
         ) : recentSearches.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Play what you love</Text>
-            <Text style={styles.emptyStateSub}>Search for artists, songs, podcasts, and more.</Text>
+            <Text style={styles.emptyStateTitle}>{t('searchOverlay.emptyTitle')}</Text>
+            <Text style={styles.emptyStateSub}>{t('searchOverlay.emptySub')}</Text>
           </View>
         ) : (
           <View style={styles.recentSearchesContainer}>
             <View style={styles.recentSearchesHeader}>
-              <Text style={styles.recentSearchesTitle}>Recent searches</Text>
+              <Text style={styles.recentSearchesTitle}>{t('searchOverlay.recentSearches')}</Text>
               <TouchableOpacity onPress={clearAllHistory}>
-                <Text style={styles.clearRecentText}>Clear all</Text>
+                <Text style={styles.clearRecentText}>{t('searchOverlay.clearAll')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView 

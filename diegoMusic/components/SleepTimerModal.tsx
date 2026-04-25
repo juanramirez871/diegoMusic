@@ -17,6 +17,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { usePlayer } from "@/context/PlayerContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { SleepTimerModalProps } from "@/interfaces/player";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -28,6 +29,7 @@ export default function SleepTimerModal({
 }: SleepTimerModalProps) {
 
   const { sleepTimer, setSleepTimer } = usePlayer();
+  const { t } = useLanguage();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.5);
   const startOpenAnimation = () => {
@@ -71,16 +73,27 @@ export default function SleepTimerModal({
     }
   }, [visible]);
 
+  const formatDuration = (minutes: number) => {
+    if (minutes >= 60) {
+      const hours = minutes / 60;
+      return hours === 1
+        ? t('sleepTimer.hourOption', { count: hours })
+        : t('sleepTimer.hoursOption', { count: hours });
+    }
+    
+    return t('sleepTimer.minutesOption', { count: minutes });
+  };
+
   const timerOptions = [
-    { label: "Disable", value: null },
-    { label: "5 minutes", value: 5 },
-    { label: "15 minutes", value: 15 },
-    { label: "30 minutes", value: 30 },
-    { label: "45 minutes", value: 45 },
-    { label: "1 hour", value: 60 },
-    { label: "2 hours", value: 120 },
-    { label: "3 hours", value: 180 },
-    { label: "4 hours", value: 240 },
+    { label: t('sleepTimer.disable'), value: null },
+    { label: formatDuration(5), value: 5 },
+    { label: formatDuration(15), value: 15 },
+    { label: formatDuration(30), value: 30 },
+    { label: formatDuration(45), value: 45 },
+    { label: formatDuration(60), value: 60 },
+    { label: formatDuration(120), value: 120 },
+    { label: formatDuration(180), value: 180 },
+    { label: formatDuration(240), value: 240 },
   ];
 
   return (
@@ -99,10 +112,10 @@ export default function SleepTimerModal({
           <View style={styles.handle} />
           
           <View style={styles.header}>
-            <Text style={styles.title}>Sleep Timer</Text>
+            <Text style={styles.title}>{t('sleepTimer.title')}</Text>
             {sleepTimer && (
               <Text style={styles.subtitle}>
-                Activo: {sleepTimer >= 60 ? `${Math.floor(sleepTimer / 60)}h ${sleepTimer % 60}m` : `${sleepTimer}m`}
+                {t('sleepTimer.active', { time: formatDuration(sleepTimer) })}
               </Text>
             )}
           </View>
