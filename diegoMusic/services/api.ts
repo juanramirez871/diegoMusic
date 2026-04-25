@@ -111,8 +111,8 @@ export const youtubeService = {
   prefetchAudio: (url: string): void => {
     fetch(`${BASE_URL}/youtube/audio/prefetch?url=${encodeURIComponent(url)}`).catch(() => {});
   },
-  getVideoStreamUrl: (url: string) => {
-    return `${BASE_URL}/youtube/video/stream?url=${encodeURIComponent(url)}`;
+  getVideoStreamUrl: (url: string, quality: 'low' | 'medium' | 'high' = 'low') => {
+    return `${BASE_URL}/youtube/video/stream?url=${encodeURIComponent(url)}&quality=${quality}`;
   },
 };
 

@@ -45,6 +45,10 @@ const es: Translations = {
   settings: {
     title: 'Ajustes',
     language: 'Idioma',
+    videoQuality: 'Calidad de video',
+    videoQualityLow: 'Baja',
+    videoQualityMedium: 'Media',
+    videoQualityHigh: 'Alta',
   },
   home: {
     musicTag: 'Musica',

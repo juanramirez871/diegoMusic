@@ -226,24 +226,31 @@ export const downloadAudio = (url, startSeconds = 0) => {
 };
 
 
-export const getVideoDirectSource = async (url) => {
+const VIDEO_QUALITY_FORMAT = {
+  low: "18/best[height<=360][ext=mp4]/best[height<=360]/best",
+  medium: "18/22/best[ext=mp4]/best",
+  high: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best",
+};
+
+export const getVideoDirectSource = async (url, quality = 'low') => {
 
   const videoId = extractVideoId(url);
-  const cacheKey = `video:${videoId}`;
+  const cacheKey = `video:${videoId}:${quality}`;
 
   const cached = urlCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < URL_CACHE_TTL) {
-    console.log(`[getVideoDirectSource] Cache hit: ${videoId}`);
+    console.log(`[getVideoDirectSource] Cache hit: ${videoId} (${quality})`);
     return cached.data;
   }
 
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const formatSelector = VIDEO_QUALITY_FORMAT[quality] ?? VIDEO_QUALITY_FORMAT.low;
 
-  console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId}`);
+  console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId} (calidad: ${quality})`);
 
   const args = [
     ...getYtdlpBaseArgs(),
-    "-f", "18/22/best[ext=mp4]/best",
+    "-f", formatSelector,
     "-g",
     videoUrl,
   ];

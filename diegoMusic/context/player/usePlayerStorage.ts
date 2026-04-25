@@ -12,8 +12,10 @@ import {
     ACTIVE_DAYS_KEY,
     ARTIST_PLAYS_KEY,
     SONG_PLAYS_KEY,
+    VIDEO_QUALITY_KEY,
     ArtistPlayData,
     SongPlayData,
+    VideoQuality,
 } from './types';
 import { ArtistData, SongData } from '@/interfaces/Song';
 import { useLanguage } from '@/context/LanguageContext';
@@ -29,6 +31,7 @@ export const usePlayerStorage = () => {
   const [songPlays, setSongPlays] = useState<Record<string, SongPlayData>>({});
   const [showDownloadBanner, setShowDownloadBanner] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [videoQuality, setVideoQualityState] = useState<VideoQuality>('low');
 
   const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -83,7 +86,7 @@ export const usePlayerStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays, savedArtistPlays, savedSongPlays] = await Promise.all([
+        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays, savedArtistPlays, savedSongPlays, savedVideoQuality] = await Promise.all([
           storage.getItem(FAVORITES_KEY),
           storage.getItem(FAVORITE_ARTISTS_KEY),
           storage.getItem(RECENT_PLAYED_KEY),
@@ -91,6 +94,7 @@ export const usePlayerStorage = () => {
           storage.getItem(ACTIVE_DAYS_KEY),
           storage.getItem(ARTIST_PLAYS_KEY),
           storage.getItem(SONG_PLAYS_KEY),
+          storage.getItem(VIDEO_QUALITY_KEY),
         ]);
 
         if (savedFavorites) {
@@ -107,6 +111,9 @@ export const usePlayerStorage = () => {
         if (savedActiveDays) {
           const days: string[] = JSON.parse(savedActiveDays);
           setStreak(computeStreak(days));
+        }
+        if (savedVideoQuality && ['low', 'medium', 'high'].includes(savedVideoQuality)) {
+          setVideoQualityState(savedVideoQuality as VideoQuality);
         }
       }
       catch (error) {
@@ -327,6 +334,11 @@ export const usePlayerStorage = () => {
     }
   };
 
+  const setVideoQuality = async (quality: VideoQuality) => {
+    setVideoQualityState(quality);
+    await storage.setItem(VIDEO_QUALITY_KEY, quality);
+  };
+
   return {
     favorites,
     favoriteArtists,
@@ -336,6 +348,8 @@ export const usePlayerStorage = () => {
     songPlays,
     showDownloadBanner,
     streak,
+    videoQuality,
+    setVideoQuality,
     toggleFavorite,
     isFavorite,
     toggleFavoriteArtist,

@@ -37,6 +37,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     songPlays,
     showDownloadBanner,
     streak,
+    videoQuality,
+    setVideoQuality,
     toggleFavorite,
     isFavorite,
     toggleFavoriteArtist,
@@ -361,6 +363,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSleepTimer,
     showDownloadBanner,
     streak,
+    videoQuality,
+    setVideoQuality,
     pendingArtistOverlay,
     openArtistOverlay,
     closeArtistOverlay,
@@ -370,7 +374,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     queue, setQueue, playNext, playPrevious, isShuffle, onToggleShuffle, repeatMode, toggleRepeat,
     isPlaying, isIntendingToPlay, togglePlayPause, pause, progress, duration, seekTo,
     isLoading, sleepTimer, setSleepTimer, showDownloadBanner, streak, artistPlays, songPlays,
-    pendingArtistOverlay, openArtistOverlay, closeArtistOverlay,
+    videoQuality, setVideoQuality, pendingArtistOverlay, openArtistOverlay, closeArtistOverlay,
   ]);
 
   return (

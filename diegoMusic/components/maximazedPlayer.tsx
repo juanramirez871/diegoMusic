@@ -39,7 +39,7 @@ const MarqueeText = ({ text, style }: { text: string; style: any }) => {
   );
 };
 
-const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, videoOfflineMessage, audio }: UseVideoPlaybackArgs) => {
+const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, videoOfflineMessage, videoQuality, audio }: UseVideoPlaybackArgs) => {
 
   const [showVideo, setShowVideo] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
@@ -153,7 +153,7 @@ const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, videoOffli
       setIsVideoPlaying(false);
       isVideoPlayingRef.current = false;
       await audio.pause();
-      await player.replaceAsync({ uri: youtubeService.getVideoStreamUrl(currentSong.url) });
+      await player.replaceAsync({ uri: youtubeService.getVideoStreamUrl(currentSong.url, videoQuality) });
       player.play();
       setShowVideo(true);
       showVideoRef.current = true;
@@ -241,6 +241,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     isLoading,
     sleepTimer,
     openArtistOverlay,
+    videoQuality,
   } = usePlayer();
 
   const video = useVideoPlayback({
@@ -248,6 +249,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     isOnline,
     videoOfflineTitle: t('player.videoOfflineTitle'),
     videoOfflineMessage: t('player.videoOfflineMessage'),
+    videoQuality,
     audio: {
       isPlaying,
       progress,

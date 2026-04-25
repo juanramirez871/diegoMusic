@@ -95,6 +95,7 @@ export type UseVideoPlaybackArgs = {
   isOnline: boolean;
   videoOfflineTitle: string;
   videoOfflineMessage: string;
+  videoQuality: 'low' | 'medium' | 'high';
   audio: {
     isPlaying: boolean;
     progress: number;

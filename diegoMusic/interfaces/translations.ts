@@ -43,6 +43,10 @@ export interface Translations {
   settings: {
     title: string;
     language: string;
+    videoQuality: string;
+    videoQualityLow: string;
+    videoQualityMedium: string;
+    videoQualityHigh: string;
   };
   home: {
     musicTag: string;

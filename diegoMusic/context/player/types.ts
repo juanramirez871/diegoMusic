@@ -16,7 +16,9 @@ export const REPEAT_KEY = '@player_repeat';
 export const ACTIVE_DAYS_KEY = '@player_active_days';
 export const ARTIST_PLAYS_KEY = '@artist_plays';
 export const SONG_PLAYS_KEY = '@song_plays';
+export const VIDEO_QUALITY_KEY = '@video_quality';
 export type RepeatMode = 'off' | 'all' | 'one';
+export type VideoQuality = 'low' | 'medium' | 'high';
 
 export interface ArtistPlayData {
   name: string;
@@ -68,6 +70,8 @@ export interface PlayerContextType {
   setSleepTimer: (minutes: number | null) => void;
   showDownloadBanner: boolean;
   streak: number;
+  videoQuality: VideoQuality;
+  setVideoQuality: (quality: VideoQuality) => void;
   artistPlays: Record<string, ArtistPlayData>;
   songPlays: Record<string, SongPlayData>;
   pendingArtistOverlay: { id: string; name: string } | null;

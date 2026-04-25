@@ -72,11 +72,12 @@ const downloadAudio = async (req, res) => {
 
 const streamVideo = async (req, res) => {
   try {
-    const { url } = req.query;
+    const { url, quality } = req.query;
     if (!url) return res.status(400).json({ error: "url es requerido" });
     const rangeHeader = req.headers.range;
+    const safeQuality = ['low', 'medium', 'high'].includes(quality) ? quality : 'low';
 
-    const { directUrl, mimeType } = await youtubeService.getVideoDirectSource(url);
+    const { directUrl, mimeType } = await youtubeService.getVideoDirectSource(url, safeQuality);
     await youtubeService.proxyVideoStream(res, directUrl, mimeType, rangeHeader);
   }
   catch (error) {

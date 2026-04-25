@@ -45,6 +45,10 @@ const ja: Translations = {
   settings: {
     title: '設定',
     language: '言語',
+    videoQuality: '動画画質',
+    videoQualityLow: '低画質',
+    videoQualityMedium: '中画質',
+    videoQualityHigh: '高画質',
   },
   home: {
     musicTag: '音楽',

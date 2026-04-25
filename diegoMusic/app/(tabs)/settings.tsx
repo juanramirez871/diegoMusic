@@ -2,7 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePlayer } from '@/context/PlayerContext';
 import type { Locale } from '@/interfaces/language';
+import type { VideoQuality } from '@/context/player/types';
 
 const LANGUAGES: { locale: Locale; label: string; nativeLabel: string; flag: ImageSourcePropType }[] = [
   { locale: 'en', label: 'English', nativeLabel: 'English', flag: require('../../assets/images/english.png') },
@@ -10,8 +12,21 @@ const LANGUAGES: { locale: Locale; label: string; nativeLabel: string; flag: Ima
   { locale: 'ja', label: '日本語', nativeLabel: '日本語', flag: require('../../assets/images/japanese.png') },
 ];
 
+const QUALITY_ICONS: Record<VideoQuality, string> = {
+  low: 'cellular-outline',
+  medium: 'cellular-outline',
+  high: 'cellular',
+};
+
 export default function SettingsScreen() {
   const { t, locale, setLocale } = useLanguage();
+  const { videoQuality, setVideoQuality } = usePlayer();
+
+  const QUALITIES: { value: VideoQuality; label: string }[] = [
+    { value: 'low', label: t('settings.videoQualityLow') },
+    { value: 'medium', label: t('settings.videoQualityMedium') },
+    { value: 'high', label: t('settings.videoQualityHigh') },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -34,6 +49,36 @@ export default function SettingsScreen() {
                     <Image style={styles.optionFlag} source={lang.flag} />
                     <Text style={[styles.optionLabel, isActive && styles.optionLabelActive]}>
                       {lang.nativeLabel}
+                    </Text>
+                    {isActive && (
+                      <Ionicons name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{t('settings.videoQuality')}</Text>
+            <View style={styles.optionsContainer}>
+              {QUALITIES.map((q) => {
+                const isActive = videoQuality === q.value;
+                return (
+                  <TouchableOpacity
+                    key={q.value}
+                    style={[styles.option, isActive && styles.optionActive]}
+                    onPress={() => setVideoQuality(q.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={QUALITY_ICONS[q.value] as any}
+                      size={22}
+                      color={isActive ? '#2c5af3' : '#b3b3b3'}
+                      style={styles.qualityIcon}
+                    />
+                    <Text style={[styles.optionLabel, isActive && styles.optionLabelActive]}>
+                      {q.label}
                     </Text>
                     {isActive && (
                       <Ionicons name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
@@ -77,12 +122,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: '#b3b3b3',
     textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  sectionDesc: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   optionsContainer: {
     gap: 10,
@@ -105,6 +145,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 20,
     borderRadius: 4,
+    marginRight: 14,
+  },
+  qualityIcon: {
     marginRight: 14,
   },
   optionLabel: {
