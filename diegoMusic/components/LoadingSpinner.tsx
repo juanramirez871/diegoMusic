@@ -8,11 +8,7 @@ import Animated, {
   Easing,
   cancelAnimation
 } from 'react-native-reanimated';
-
-interface LoadingSpinnerProps {
-  size?: number;
-  color?: string;
-}
+import type { LoadingSpinnerProps } from '@/interfaces/ui';
 
 export const LoadingSpinner = ({ size = 24, color = "#fff" }: LoadingSpinnerProps) => {
   const rotation = useSharedValue(0);

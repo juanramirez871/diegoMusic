@@ -1,9 +1,10 @@
 import { GenreOverlay } from "@/components/GenreOverlay";
 import { OfflineView } from "@/components/OfflineView";
-import { HistoryItem, SearchOverlay } from "@/components/SearchOverlay";
+import { SearchOverlay } from "@/components/SearchOverlay";
 import CATEGORIES from "@/constants/categories";
 import { useNetwork } from "@/context/NetworkContext";
 import { useLanguage } from "@/context/LanguageContext";
+import type { HistoryItem } from '@/interfaces/ui';
 import storage from '@/services/storage';
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";

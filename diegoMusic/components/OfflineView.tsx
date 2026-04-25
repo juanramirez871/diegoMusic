@@ -2,12 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
-
-interface OfflineViewProps {
-  onRetry?: () => Promise<boolean>;
-  title?: string;
-  message?: string;
-}
+import type { OfflineViewProps } from '@/interfaces/ui';
 
 export const OfflineView = ({ onRetry, title, message }: OfflineViewProps) => {
   const { t } = useLanguage();

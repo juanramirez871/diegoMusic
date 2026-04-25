@@ -1,26 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import storage from '@/services/storage';
-import en, { Translations } from '@/locales/en';
+import en from '@/locales/en';
 import es from '@/locales/es';
 import ja from '@/locales/ja';
+import type { Translations } from '@/interfaces/translations';
+import type { LanguageContextValue, Locale, TranslationKey } from '@/interfaces/language';
 
-export type Locale = 'en' | 'es' | 'ja';
 const LOCALE_KEY = '@app_language';
 const locales: Record<Locale, Translations> = { en, es, ja };
-
-type DotKeys<T> = {
-  [K in keyof T & string]: T[K] extends string
-    ? K
-    : `${K}.${DotKeys<T[K]>}`;
-}[keyof T & string];
-
-type TranslationKey = DotKeys<Translations>;
-
-interface LanguageContextValue {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
-  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
-}
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 

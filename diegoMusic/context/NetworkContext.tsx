@@ -1,13 +1,13 @@
 import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 import React, {
   createContext,
-  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
+import type { NetworkContextType, NetworkProviderProps } from '@/interfaces/network';
 
 const API_PROBE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api') + '/health';
 const API_PROBE_TIMEOUT_MS = 4000;
@@ -38,11 +38,9 @@ NetInfo.configure({
   useNativeReachability: false,
 });
 
-type NetworkContextType = { isOnline: boolean; isNetworkChecked: boolean; isApiReachable: boolean };
 const NetworkContext = createContext<NetworkContextType>({ isOnline: true, isNetworkChecked: false, isApiReachable: true });
-interface Props { children: ReactNode }
 
-export function NetworkProvider({ children }: Props) {
+export function NetworkProvider({ children }: NetworkProviderProps) {
 
   const [isOnline, setIsOnline] = useState(true);
   const [isNetworkChecked, setIsNetworkChecked] = useState(false);

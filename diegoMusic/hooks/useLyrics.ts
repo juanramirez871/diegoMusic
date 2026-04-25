@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SongData } from '@/interfaces/Song';
+import type { LyricLine } from '@/interfaces/lyrics';
 import storage from '@/services/storage';
-
-export type LyricLine = { time: number; text: string };
 
 const LYRICS_QUERIES_KEY = '@lyrics_custom_queries';
 

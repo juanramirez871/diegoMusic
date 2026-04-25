@@ -1,4 +1,4 @@
-import { LyricLine } from '@/hooks/useLyrics';
+import type { LyricLine } from '@/interfaces/lyrics';
 import {
   Animated,
 } from "react-native";

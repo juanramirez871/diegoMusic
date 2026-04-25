@@ -13,12 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePlayer } from "@/context/PlayerContext";
 import { parseDuration } from "@/context/player/utils";
 import { useLanguage } from "@/context/LanguageContext";
-
-interface StatsOverlayProps {
-  isVisible: boolean;
-  onClose: () => void;
-  fadeAnim: Animated.Value;
-}
+import type { StatsOverlayProps } from '@/interfaces/ui';
 
 export const StatsOverlay: React.FC<StatsOverlayProps> = ({
   isVisible,

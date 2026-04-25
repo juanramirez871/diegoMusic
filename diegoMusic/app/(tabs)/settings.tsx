@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Locale, useLanguage } from '@/context/LanguageContext';
+import { useLanguage } from '@/context/LanguageContext';
+import type { Locale } from '@/interfaces/language';
 
 const LANGUAGES: { locale: Locale; label: string; nativeLabel: string; flag: ImageSourcePropType }[] = [
   { locale: 'en', label: 'English', nativeLabel: 'English', flag: require('../../assets/images/english.png') },

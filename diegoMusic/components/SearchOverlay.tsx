@@ -17,21 +17,7 @@ import { usePlayer } from "../context/PlayerContext";
 import { useLanguage } from "../context/LanguageContext";
 import { DownloadBanner } from "./DownloadBanner";
 import { SongData } from "@/interfaces/Song";
-
-export interface HistoryItem {
-  id: string;
-  text: string;
-}
-
-export interface SearchOverlayProps {
-  isVisible: boolean;
-  onClose: () => void;
-  fadeAnim: Animated.Value;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-  recentSearches: HistoryItem[];
-  setRecentSearches: (searches: HistoryItem[]) => void;
-}
+import type { HistoryItem, SearchOverlayProps } from '@/interfaces/ui';
 
 const SongSkeleton = () => (
   <View style={styles.skeletonContainer}>

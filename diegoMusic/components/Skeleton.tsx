@@ -1,12 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Animated, ViewStyle, DimensionValue } from 'react-native';
-
-interface SkeletonProps {
-  width?: DimensionValue;
-  height?: DimensionValue;
-  borderRadius?: number;
-  style?: ViewStyle;
-}
+import { StyleSheet, Animated } from 'react-native';
+import type { SkeletonProps } from '@/interfaces/ui';
 
 export const Skeleton: React.FC<SkeletonProps> = ({ 
   width = '100%', 
