@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
   optionActive: {
     backgroundColor: 'rgba(44,90,243,0.12)',
     borderColor: '#2c5af3',
+    borderWidth: 0,
   },
   optionFlag: {
     width: 30,
