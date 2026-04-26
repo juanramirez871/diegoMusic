@@ -77,50 +77,21 @@ export function LyricsPanel({
   currentLineIndex,
   onSeek,
   onExpand,
-  onManualSearch,
-  manualSearchDefaultQuery,
 }: LyricsPanelProps) {
 
   const scrollRef = useRef<ScrollView>(null);
-  const [showEdit, setShowEdit] = useState(false);
   const { t } = useLanguage();
-
-  useEffect(() => {
-    if (loading) setShowEdit(false);
-  }, [loading]);
-
-  useEffect(() => {
-    if (syncedLyrics || plainLyrics) setShowEdit(false);
-  }, [syncedLyrics, plainLyrics]);
-
-  const showSearchInput = onManualSearch && (showEdit || (!loading && isOnline && notFound));
 
   return (
     <View style={panel.container}>
       <View style={panel.header}>
         <Text style={panel.label}>{t('lyrics.title')}</Text>
         <View style={panel.headerActions}>
-          {onManualSearch && (
-            <TouchableOpacity
-              onPress={() => setShowEdit(s => !s)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="pencil-outline" size={14} color={showEdit ? '#fff' : '#b3b3b3'} />
-            </TouchableOpacity>
-          )}
           <TouchableOpacity onPress={onExpand} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="expand-outline" size={16} color="#b3b3b3" />
           </TouchableOpacity>
         </View>
       </View>
-
-      {showSearchInput && (
-        <ManualSearchInput
-          key={manualSearchDefaultQuery}
-          defaultQuery={manualSearchDefaultQuery}
-          onSearch={onManualSearch}
-        />
-      )}
 
       {loading && (
         <View style={panel.center}>
