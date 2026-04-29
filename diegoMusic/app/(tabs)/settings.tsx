@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePlayer } from '@/context/PlayerContext';
 import type { Locale } from '@/interfaces/language';
 import type { VideoQuality } from '@/context/player/types';
-import { styles } from '../styles/SettingsScreen.styles';
+import { styles } from '@/styles/SettingsScreen.styles';
 
 const LANGUAGES: { locale: Locale; label: string; nativeLabel: string; flag: ImageSourcePropType }[] = [
   { locale: 'en', label: 'English', nativeLabel: 'English', flag: require('../../assets/images/english.png') },

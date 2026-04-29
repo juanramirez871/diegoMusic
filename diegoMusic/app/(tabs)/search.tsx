@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../styles/SearchTab.styles";
+import { styles } from "@/styles/SearchTab.styles";
 
 const RECENT_SEARCHES_KEY = '@recent_searches';
 

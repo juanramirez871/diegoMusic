@@ -12,7 +12,7 @@ import Song from "@/components/Song";
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import React, { useState, useMemo } from "react";
-import { styles } from "../styles/FavoriteScreen.styles";
+import { styles } from "@/styles/FavoriteScreen.styles";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -180,17 +180,6 @@ export default function FavoriteScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
-        <Animated.View style={shuffleAnimatedStyle}>
-          <TouchableOpacity onPress={toggleShuffle}>
-            <Ionicons name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
-          </TouchableOpacity>
-        </Animated.View>
-        <TouchableOpacity onPress={() => filteredFavorites.length > 0 && playSong(filteredFavorites[0], filteredFavorites, 'favorites')}>
-          <Ionicons name="play-circle" size={55} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View>
-
       <Animated.ScrollView
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -221,6 +210,22 @@ export default function FavoriteScreen() {
           )}
         </View>
       </Animated.ScrollView>
+
+      <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
+        <Animated.View style={shuffleAnimatedStyle}>
+          <TouchableOpacity onPress={toggleShuffle}>
+            <Ionicons name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
+          </TouchableOpacity>
+        </Animated.View>
+        <TouchableOpacity onPress={() => {
+          if (filteredFavorites.length === 0) return;
+          const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
+          const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
+          playSong(startSong, filteredFavorites, 'favorites');
+        }}>
+          <Ionicons name="play-circle" size={55} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }

@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useRef, useState } from "react";
 import { Animated, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../styles/HomeScreen.styles";
+import { styles } from "@/styles/HomeScreen.styles";
 
 
 export default function HomeScreen() {
