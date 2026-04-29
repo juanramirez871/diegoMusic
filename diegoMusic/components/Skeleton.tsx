@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Animated } from 'react-native';
+import { Animated } from 'react-native';
 import type { SkeletonProps } from '@/interfaces/ui';
+import { styles } from './styles/Skeleton.styles';
 
 export const Skeleton: React.FC<SkeletonProps> = ({ 
   width = '100%', 
@@ -50,9 +51,3 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     />
   );
 };
-
-const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: '#333',
-  },
-});

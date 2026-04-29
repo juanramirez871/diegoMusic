@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -9,6 +9,7 @@ import Animated, {
   cancelAnimation
 } from 'react-native-reanimated';
 import type { LoadingSpinnerProps } from '@/interfaces/ui';
+import { styles } from './styles/LoadingSpinner.styles';
 
 export const LoadingSpinner = ({ size = 24, color = "#fff" }: LoadingSpinnerProps) => {
   const rotation = useSharedValue(0);
@@ -50,10 +51,3 @@ export const LoadingSpinner = ({ size = 24, color = "#fff" }: LoadingSpinnerProp
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

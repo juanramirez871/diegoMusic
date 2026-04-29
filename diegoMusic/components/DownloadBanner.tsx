@@ -1,8 +1,9 @@
 import { usePlayer } from '@/context/PlayerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import { styles } from './styles/DownloadBanner.styles';
 
 export function DownloadBanner() {
   
@@ -27,22 +28,3 @@ export function DownloadBanner() {
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  banner: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 30,
-    backgroundColor: '#138e3eff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  bannerText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});

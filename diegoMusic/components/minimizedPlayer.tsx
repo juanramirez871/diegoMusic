@@ -1,4 +1,4 @@
-import { View, StyleSheet, Image, Text, Platform, TouchableOpacity } from "react-native";
+import { View, Image, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePlayer } from "@/context/PlayerContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
@@ -10,6 +10,7 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
+import { styles } from './styles/MinimizedPlayer.styles';
 
 
 export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
@@ -108,71 +109,3 @@ export const MinimizedPlayer = ({ onPress, style }: MinimizedPlayerProps) => {
     </GestureDetector>
   );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#141414ff',
-        padding: 8,
-        borderRadius: 8,
-        position: 'absolute',
-        bottom: Platform.OS === 'ios' ? 65 : 75,
-        zIndex: 1000,
-        width: '100%',
-    },
-    infoArea: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    cover: {
-        width: 48,
-        height: 48,
-        borderRadius: 4,
-    },
-    info: {
-        flex: 1,
-        marginLeft: 12,
-        justifyContent: 'center',
-    },
-    title: {
-        fontSize: 14,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    artist: {
-        fontSize: 12,
-        color: "#b3b3b3",
-    },
-    controls: {
-        paddingHorizontal: 8,
-    },
-    progressContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderBottomLeftRadius: 8,
-        borderBottomRightRadius: 8,
-        overflow: 'hidden',
-    },
-    bgBar: {
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    progressBar: {
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        backgroundColor: '#fff',
-        zIndex: 1,
-    }
-});

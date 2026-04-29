@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Modal,
   TouchableOpacity,
   Pressable,
@@ -20,6 +19,7 @@ import Animated, {
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SongOptionsModalProps } from "@/interfaces/Song";
+import { styles } from './styles/SongOptionsModal.styles';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -107,7 +107,7 @@ export default function SongOptionsModal({
     >
       <View style={styles.modalContainer}>
         <Animated.View style={[styles.overlay, overlayStyle]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+          <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} onPress={handleClose} />
         </Animated.View>
         <Animated.View style={[styles.content, contentStyle]}>
           <View style={styles.handle} />
@@ -169,56 +169,3 @@ export default function SongOptionsModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  content: {
-    backgroundColor: "#282828",
-    height: SCREEN_HEIGHT * 0.4,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    zIndex: 1,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#555",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-  },
-  header: {
-    marginBottom: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#444",
-    paddingBottom: 15,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  optionsList: {
-    gap: 10,
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    gap: 15,
-  },
-  optionText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-});

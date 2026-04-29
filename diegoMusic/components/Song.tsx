@@ -1,4 +1,4 @@
-import { View, StyleSheet, Image, Text, TouchableOpacity } from "react-native";
+import { View, Image, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Foundation from '@expo/vector-icons/Foundation';
 import { useState } from "react";
@@ -7,6 +7,7 @@ import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
 import { SongProps } from "@/interfaces/Song";
+import { styles } from './styles/Song.styles';
 
 
 export default function Song({ data, onPress }: SongProps) {
@@ -94,66 +95,3 @@ export default function Song({ data, onPress }: SongProps) {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  songContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    width: "100%",
-  },
-  image: {
-    width: 50,
-    height: 50,
-    borderRadius: 4,
-  },
-  imageWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 4,
-    overflow: 'hidden',
-    backgroundColor: '#1a1a1a',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoContainer: {
-    flex: 1,
-    marginLeft: 15,
-    justifyContent: "center",
-  },
-  title: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  metadataContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  videoBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    color: "#b3b3b3",
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 2,
-    gap: 2,
-  },
-  artist: {
-    color: "#b3b3b3",
-    fontSize: 13,
-    flex: 1,
-  },
-  menuButton: {
-    padding: 10,
-  },
-});

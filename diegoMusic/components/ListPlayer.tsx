@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { youtubeService } from "@/services/api";
 import { usePlayer } from "@/context/PlayerContext";
@@ -6,6 +6,7 @@ import { useNetwork } from "@/context/NetworkContext";
 import { Skeleton } from "./Skeleton";
 import { CarouselPlayerProps } from "@/interfaces/player";
 import { SongData } from "@/interfaces/Song";
+import { styles } from './styles/ListPlayer.styles';
 
 
 export default function ListPlayer({ channelId, query, data }: CarouselPlayerProps) {
@@ -104,36 +105,3 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginTop: 10,
-  },
-  scrollContent: {
-    gap: 16,
-    paddingRight: 16,
-  },
-  songItem: {
-    width: 140,
-  },
-  image: {
-    width: 140,
-    height: 140,
-    borderRadius: 8,
-    backgroundColor: "#333",
-  },
-  infoContainer: {
-    marginTop: 8,
-  },
-  titleSong: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  subtitleSong: {
-    fontSize: 12,
-    marginTop: 2,
-    color: "#b3b3b3",
-  },
-});

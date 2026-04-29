@@ -1,12 +1,13 @@
 import Foundation from '@expo/vector-icons/Foundation';
 import { VideoView } from 'expo-video';
-import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 import { useThumbnail } from '@/hooks/useThumbnail';
 import { LoadingSpinner } from './LoadingSpinner';
 import React, { useEffect } from 'react';
 import { PlayerCarouselProps } from '@/interfaces/player';
+import { styles } from './styles/PlayerCarousel.styles';
 
 const { width } = Dimensions.get('window');
 const IMAGE_SIZE = width - 48;
@@ -145,78 +146,3 @@ export function PlayerCarousel({ songs, video, audio, onEnterFullscreen }: Playe
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  carouselContainer: {
-    width: width,
-    height: IMAGE_SIZE,
-    overflow: 'visible',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imagesWrapper: {
-    flexDirection: 'row',
-    width: width * 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageContainer: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 15,
-    position: 'relative',
-  },
-  imageContainerWrapper: {
-    width: width,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cover: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    borderRadius: 12,
-  },
-  videoLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  icon: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    zIndex: 10,
-    elevation: 10,
-    borderRadius: 12,
-    padding: 4,
-  },
-  imageWrapper: {
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-  },
-  loadingBarTrack: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    overflow: 'hidden',
-    zIndex: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  loadingBarFill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: IMAGE_SIZE * 0.45,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: '#2c5af3',
-  },
-});
