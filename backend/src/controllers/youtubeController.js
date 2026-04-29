@@ -78,6 +78,9 @@ const streamVideo = async (req, res) => {
     const safeQuality = ['low', 'medium', 'high'].includes(quality) ? quality : 'low';
 
     const { directUrl, mimeType } = await youtubeService.getVideoDirectSource(url, safeQuality);
+    if (mimeType === 'application/vnd.apple.mpegurl') {
+      return res.redirect(302, directUrl);
+    }
     await youtubeService.proxyVideoStream(res, directUrl, mimeType, rangeHeader);
   }
   catch (error) {

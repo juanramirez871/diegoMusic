@@ -229,7 +229,7 @@ export const downloadAudio = (url, startSeconds = 0) => {
 const VIDEO_QUALITY_FORMAT = {
   low: "18/best[height<=360][ext=mp4]/best[height<=360]/best",
   medium: "18/22/best[ext=mp4]/best",
-  high: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best",
+  high: "22/best[height<=1080][ext=mp4][acodec!=none]/best[height<=720][ext=mp4][acodec!=none]/best[ext=mp4]/18/best",
 };
 
 export const getVideoDirectSource = async (url, quality = 'low') => {
@@ -268,11 +268,14 @@ export const getVideoDirectSource = async (url, quality = 'low') => {
     proc.on("close", (code) => {
       if (code === 0) {
         const lines = stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        console.log(`[getVideoDirectSource] yt-dlp retornó ${lines.length} línea(s)`);
+        if (lines.length > 1) console.warn(`[getVideoDirectSource] ADVERTENCIA: múltiples URLs (formato merged). Líneas: ${lines.join(' | ')}`);
         const firstUrl = lines.find((l) => /^https?:\/\//i.test(l));
         if (!firstUrl) {
           console.error(`[getVideoDirectSource] Error: No se obtuvo URL directa del video. stdout: ${stdout}, stderr: ${stderr}`);
           return reject(new Error("No se obtuvo URL directa del video"));
         }
+        console.log(`[getVideoDirectSource] URL seleccionada: ${firstUrl.substring(0, 80)}...`);
         resolve(firstUrl);
       }
       else {
@@ -288,8 +291,10 @@ export const getVideoDirectSource = async (url, quality = 'low') => {
   });
 
   const lower = String(directUrl).toLowerCase();
-  const mimeType =
-    lower.includes(".webm") || lower.includes("mime=video%2Fwebm")
+  const isHls = lower.includes("hls_playlist") || lower.includes(".m3u8") || lower.includes("manifest.googlevideo");
+  const mimeType = isHls
+    ? "application/vnd.apple.mpegurl"
+    : lower.includes(".webm") || lower.includes("mime=video%2Fwebm")
       ? "video/webm"
       : "video/mp4";
 
