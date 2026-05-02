@@ -150,7 +150,7 @@ export const useAudioPlayer = (
       }
       else {
         console.log('[PLAYBACK] Canción terminada. Reproduciendo siguiente...');
-        setTimeout(() => playNextRef.current(), 0);
+        setTimeout(() => playNextRef.current(), 300);
       }
 
       return;
@@ -494,28 +494,28 @@ export const useAudioPlayer = (
           stableSetIsPlaying(true);
         }
         else if (soundRef.current) {
-          console.log(`[PSL_FINALLY] → soundRef existe pero no playing. Activando safety timer 1500ms`);
-          playbackSafetyTimerRef.current = setTimeout(() => {
-            playbackSafetyTimerRef.current = null;
-            if (currentSequence !== playSequenceRef.current) return;
-            if (!soundRef.current) return;
-
-            if (soundRef.current.playing) {
-              stableSetIsPlaying(true);
-              stableSetIsLoading(false);
-              return;
-            }
-
-            console.warn('[SAFETY] Playback no detectado tras timeout. soundRef.playing=', soundRef.current?.playing, '| isPlayingRef=', isPlayingRef.current);
-            try {
-              soundRef.current.play();
-              stableSetIsPlaying(true);
-              stableSetIsLoading(false);
-            }
-            catch (e) {
-              console.error('[SAFETY] Retry play falló:', e);
-            }
-          }, 1500);
+          console.log(`[PSL_FINALLY] → soundRef existe pero no playing. Activando safety timer 2500ms`);
+          const scheduleSafetyRetry = (delay: number, attempt: number) => {
+            playbackSafetyTimerRef.current = setTimeout(() => {
+              playbackSafetyTimerRef.current = null;
+              if (currentSequence !== playSequenceRef.current) return;
+              if (!soundRef.current) return;
+              if (soundRef.current.playing) {
+                stableSetIsPlaying(true);
+                stableSetIsLoading(false);
+                return;
+              }
+              console.warn(`[SAFETY] Intento ${attempt}: playback no detectado. soundRef.playing=`, soundRef.current?.playing);
+              try { soundRef.current.play(); } catch (e) { console.error('[SAFETY] play() falló:', e); }
+              if (attempt < 3) {
+                scheduleSafetyRetry(2000, attempt + 1);
+              } else {
+                stableSetIsPlaying(true);
+                stableSetIsLoading(false);
+              }
+            }, delay);
+          };
+          scheduleSafetyRetry(2500, 1);
         }
         else {
           console.log(`[PSL_FINALLY] → soundRef es null (falló o fue abortado)`);
