@@ -1,12 +1,10 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import styles from './styles';
 
-
 export function LoginScreen() {
-  
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const { t } = useLanguage();
 
   return (
@@ -20,11 +18,20 @@ export function LoginScreen() {
       <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
 
       <View style={styles.actions}>
-        <TouchableOpacity style={styles.googleBtn} onPress={login} activeOpacity={0.85}>
-          <View style={styles.googleIcon}>
-            <Text style={styles.googleIconText}>G</Text>
-          </View>
-          <Text style={styles.googleText}>{t('login.continueWithGoogle')}</Text>
+        <TouchableOpacity
+          style={[styles.googleBtn, loading && styles.googleBtnDisabled]}
+          onPress={login}
+          activeOpacity={0.85}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#111" />
+          ) : (
+            <>
+              <GoogleIcon />
+              <Text style={styles.googleText}>{t('login.continueWithGoogle')}</Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.terms}>
@@ -38,4 +45,10 @@ export function LoginScreen() {
   );
 }
 
-
+function GoogleIcon() {
+  return (
+    <View style={styles.googleIcon}>
+      <Text style={styles.googleIconText}>G</Text>
+    </View>
+  );
+}

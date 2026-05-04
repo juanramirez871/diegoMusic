@@ -44,6 +44,9 @@ export default StyleSheet.create({
     borderRadius: 999,
     gap: 12,
   },
+  googleBtnDisabled: {
+    opacity: 0.7,
+  },
   googleIcon: {
     width: 22,
     height: 22,

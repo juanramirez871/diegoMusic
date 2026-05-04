@@ -17,6 +17,13 @@
         },
         "UIBackgroundModes": [
           "audio"
+        ],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.824421180412-21a4barbkfjt7lbqo4a6jpnifk9qouk4"
+            ]
+          }
         ]
       }
     },
@@ -36,7 +43,10 @@
         "WAKE_LOCK"
       ],
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "notification": {
+        "color": "#2c5af3"
+      }
     },
     "web": {
       "output": "static",
@@ -66,12 +76,7 @@
       "expo-audio",
       "expo-video",
       "expo-screen-orientation",
-      [
-        "expo-notifications",
-        {
-          "color": "#2c5af3"
-        }
-      ]
+      "./plugins/withoutPushEntitlement"
     ],
     "experiments": {
       "typedRoutes": true,

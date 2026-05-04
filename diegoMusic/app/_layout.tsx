@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { MinimizedPlayer } from '@/components/minimizedPlayer';
 import { MaximazedPlayer } from '@/components/maximazedPlayer';
 import { PlayerProvider, usePlayer } from '@/context/PlayerContext';
@@ -21,8 +21,16 @@ export const unstable_settings = {
 };
 
 function RootLayoutContent() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading } = useAuth();
   const { isMaximized, setIsMaximized } = usePlayer();
+
+  if (loading) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#252424' }} />
+      </GestureHandlerRootView>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
