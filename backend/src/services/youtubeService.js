@@ -32,19 +32,19 @@ const getYtdlpBaseArgs = () => {
   const cookiesPath = path.join(process.cwd(), "cookies.txt");
   const hasCookies = existsSync(cookiesPath);
   
-  let denoPath = "/usr/bin/deno";
+  let nodePath = "/usr/local/bin/node";
   try {
-    denoPath = execSync("which deno").toString().trim();
+    nodePath = execSync("which node").toString().trim();
   } catch (e) {
-    console.warn("[yt-dlp] Deno no encontrado, se intentará usar el valor por defecto");
+    console.warn("[yt-dlp] Node no encontrado, usando ruta por defecto");
   }
 
   const args = [
     "--no-playlist",
     "--no-part",
-    "--js-runtimes", `deno:${denoPath}`,
+    "--js-runtimes", `node:${nodePath}`,
     "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "--extractor-args", "youtube:player_client=web_safari,web",
+    "--extractor-args", "youtube:player_client=android,web",
   ];
 
   if (hasCookies) {

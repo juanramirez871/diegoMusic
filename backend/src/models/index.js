@@ -16,6 +16,9 @@ Settings.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(SongPlayed, { foreignKey: 'userId', onDelete: 'CASCADE' });
 SongPlayed.belongsTo(User, { foreignKey: 'userId' });
 
+Song.hasMany(SongPlayed, { foreignKey: 'songId', onDelete: 'CASCADE' });
+SongPlayed.belongsTo(Song, { foreignKey: 'songId' });
+
 User.hasMany(FavoriteSong, { foreignKey: 'userId', onDelete: 'CASCADE' });
 FavoriteSong.belongsTo(User, { foreignKey: 'userId' });
 

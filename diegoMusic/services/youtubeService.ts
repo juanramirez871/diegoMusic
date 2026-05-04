@@ -1,4 +1,5 @@
 import apiFetch from './api';
+import { Platform } from 'react-native';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
 const searchCache = new Map<string, any[]>();
@@ -79,6 +80,9 @@ export const youtubeService = {
   },
 
   getAudioDirectUrl: async (url: string): Promise<{ url: string; mimeType: string }> => {
+    if (Platform.OS === 'web') {
+      return { url: `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}`, mimeType: 'audio/mp4' };
+    }
     return apiFetch<{ url: string; mimeType: string }>(`/youtube/audio/url?url=${encodeURIComponent(url)}`);
   },
 

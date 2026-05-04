@@ -23,6 +23,10 @@ const SongPlayed = sequelize.define('SongPlayed', {
   lyricsQuery: {
     type: DataTypes.STRING,
   },
+  lastPlayedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   tableName: 'songsPlayed',
 });

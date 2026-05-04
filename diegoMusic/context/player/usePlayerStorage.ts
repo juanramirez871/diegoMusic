@@ -21,6 +21,7 @@ import { ArtistData, SongData } from '@/interfaces/Song';
 import { useLanguage } from '@/context/LanguageContext';
 import { favoriteArtistsService } from '@/services/favoriteArtistsService';
 import { favoriteSongsService } from '@/services/favoriteSongsService';
+import { songsPlayedService } from '@/services/songsPlayedService';
 
 export const usePlayerStorage = () => {
 
@@ -138,6 +139,33 @@ export const usePlayerStorage = () => {
         setFavorites(songs);
         storage.setItem(FAVORITES_KEY, JSON.stringify(songs)).catch(() => {});
         syncThumbnails(songs);
+      }
+    });
+    songsPlayedService.fetchStats().then((stats) => {
+      if (!stats) return;
+      if (stats.recentPlayed.length > 0) {
+        setRecentPlayed(stats.recentPlayed);
+        storage.setItem(RECENT_PLAYED_KEY, JSON.stringify(stats.recentPlayed)).catch(() => {});
+      }
+
+      if (stats.mostPlayed.length > 0) {
+        setMostPlayed(stats.mostPlayed);
+        storage.setItem(MOST_PLAYED_KEY, JSON.stringify(stats.mostPlayed)).catch(() => {});
+      }
+
+      if (Object.keys(stats.artistPlays).length > 0) {
+        setArtistPlays(stats.artistPlays);
+        storage.setItem(ARTIST_PLAYS_KEY, JSON.stringify(stats.artistPlays)).catch(() => {});
+      }
+
+      if (Object.keys(stats.songPlays).length > 0) {
+        setSongPlays(stats.songPlays);
+        storage.setItem(SONG_PLAYS_KEY, JSON.stringify(stats.songPlays)).catch(() => {});
+      }
+      
+      if (stats.activeDays.length > 0) {
+        setStreak(computeStreak(stats.activeDays));
+        storage.setItem(ACTIVE_DAYS_KEY, JSON.stringify(stats.activeDays)).catch(() => {});
       }
     });
   }, []);
@@ -296,6 +324,7 @@ export const usePlayerStorage = () => {
       console.error('Error saving recent played:', err);
     }
     recordActiveDay();
+    songsPlayedService.recordPlay(song);
   };
 
   const addMostPlayed = async (song: SongData) => {
