@@ -3,7 +3,7 @@ import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform, View } from 'react-native';
 import { MinimizedPlayer } from '@/components/minimizedPlayer';
 import { MaximazedPlayer } from '@/components/maximazedPlayer';
@@ -12,17 +12,36 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NetworkProvider } from '@/context/NetworkContext';
 import { DownloadBanner } from '@/components/DownloadBanner';
 import { requestNotificationPermission } from '@/services/notifications';
-import { LanguageProvider } from '@/context/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LoginScreen } from '@/components/LoginScreen';
+import { settingsService } from '@/services/settingsService';
+import type { Locale } from '@/interfaces/language';
+import type { VideoQuality } from '@/context/player/types';
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
 function RootLayoutContent() {
-  const { isLoggedIn, loading } = useAuth();
-  const { isMaximized, setIsMaximized } = usePlayer();
+  const { isLoggedIn, loading, user } = useAuth();
+  const { isMaximized, setIsMaximized, setVideoQuality } = usePlayer();
+  const { setLocale } = useLanguage();
+  const settingsApplied = useRef(false);
+
+  useEffect(() => {
+    if (!user) { settingsApplied.current = false; return; }
+    if (settingsApplied.current) return;
+    settingsApplied.current = true;
+    settingsService.fetch(String(user.id)).then((settings) => {
+      if (settings?.language && ['en', 'es', 'ja'].includes(settings.language)) {
+        setLocale(settings.language as Locale);
+      }
+      if (settings?.videoQuality && ['low', 'medium', 'high'].includes(settings.videoQuality)) {
+        setVideoQuality(settings.videoQuality as VideoQuality);
+      }
+    });
+  }, [user?.id]);
 
   if (loading) {
     return (

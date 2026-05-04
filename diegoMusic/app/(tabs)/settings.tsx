@@ -3,9 +3,11 @@ import { Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlayer } from '@/context/PlayerContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Locale } from '@/interfaces/language';
 import type { VideoQuality } from '@/context/player/types';
 import { styles } from '@/styles/SettingsScreen.styles';
+import { settingsService } from '@/services/settingsService';
 
 const LANGUAGES: { locale: Locale; label: string; nativeLabel: string; flag: ImageSourcePropType }[] = [
   { locale: 'en', label: 'English', nativeLabel: 'English', flag: require('../../assets/images/english.png') },
@@ -20,8 +22,19 @@ const QUALITY_ICONS: Record<VideoQuality, string> = {
 };
 
 export default function SettingsScreen() {
+
   const { t, locale, setLocale } = useLanguage();
   const { videoQuality, setVideoQuality } = usePlayer();
+  const { user } = useAuth();
+  const handleSetLocale = (l: Locale) => {
+    setLocale(l);
+    if (user) settingsService.update(String(user.id), { language: l });
+  };
+
+  const handleSetVideoQuality = (q: VideoQuality) => {
+    setVideoQuality(q);
+    if (user) settingsService.update(String(user.id), { videoQuality: q });
+  };
 
   const QUALITIES: { value: VideoQuality; label: string }[] = [
     { value: 'low', label: t('settings.videoQualityLow') },
@@ -44,7 +57,7 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     key={lang.locale}
                     style={[styles.option, isActive && styles.optionActive]}
-                    onPress={() => setLocale(lang.locale)}
+                    onPress={() => handleSetLocale(lang.locale)}
                     activeOpacity={0.7}
                   >
                     <Image style={styles.optionFlag} source={lang.flag} />
@@ -69,7 +82,7 @@ export default function SettingsScreen() {
                   <TouchableOpacity
                     key={q.value}
                     style={[styles.option, isActive && styles.optionActive]}
-                    onPress={() => setVideoQuality(q.value)}
+                    onPress={() => handleSetVideoQuality(q.value)}
                     activeOpacity={0.7}
                   >
                     <IconSymbol
