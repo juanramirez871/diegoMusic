@@ -2,6 +2,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'expo-router';
 import { Modal, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -27,9 +28,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const { isOnline } = useNetwork();
   const { t } = useLanguage();
+  const pathname = usePathname();
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
+
+  useEffect(() => {
+    setIsOptionsVisible(false);
+    setIsQueueVisible(false);
+    setIsSleepTimerVisible(false);
+  }, [pathname]);
   const [showLyrics, setShowLyrics] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);

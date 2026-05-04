@@ -2,6 +2,7 @@ import { usePlayer } from '@/context/PlayerContext';
 import { IconSymbol } from '@/components/IconSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'expo-router';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -22,9 +23,16 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const { isOnline } = useNetwork();
   const { t } = useLanguage();
+  const pathname = usePathname();
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
+
+  useEffect(() => {
+    setIsOptionsVisible(false);
+    setIsQueueVisible(false);
+    setIsSleepTimerVisible(false);
+  }, [pathname]);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
   const [showLyricsEdit, setShowLyricsEdit] = useState(false);
