@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from '@/components/IconSymbol';
 import Song from "@/components/Song";
-import { youtubeService } from "@/services/api";
+import { youtubeService } from "@/services/youtubeService";
 import { Skeleton } from "@/components/Skeleton";
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";

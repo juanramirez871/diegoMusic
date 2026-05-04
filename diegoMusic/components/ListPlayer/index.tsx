@@ -1,6 +1,6 @@
 import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
-import { youtubeService } from "@/services/api";
+import { youtubeService } from "@/services/youtubeService";
 import { usePlayer } from "@/context/PlayerContext";
 import { useNetwork } from "@/context/NetworkContext";
 import { Skeleton } from "@/components/Skeleton";

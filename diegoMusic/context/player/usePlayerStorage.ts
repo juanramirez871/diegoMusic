@@ -1,4 +1,4 @@
-import { youtubeService } from '@/services/api';
+import { youtubeService } from '@/services/youtubeService';
 import storage from '@/services/storage';
 import { sendDownloadCompleteNotification } from '@/services/notifications';
 import * as FileSystem from '@/utils/fileSystem';

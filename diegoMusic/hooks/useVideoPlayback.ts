@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { useVideoPlayer } from 'expo-video';
 import { useEventListener } from 'expo';
-import { youtubeService } from '@/services/api';
+import { youtubeService } from '@/services/youtubeService';
 import { AudioStateBeforeVideo, UseVideoPlaybackArgs } from '@/interfaces/player';
 
 export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, videoOfflineMessage, videoQuality, audio }: UseVideoPlaybackArgs) => {

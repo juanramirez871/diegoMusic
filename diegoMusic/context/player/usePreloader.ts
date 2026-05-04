@@ -1,5 +1,5 @@
 import { SongData } from '@/interfaces/Song';
-import { youtubeService } from '@/services/api';
+import { youtubeService } from '@/services/youtubeService';
 import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from '@/utils/fileSystem';
 import { useRef } from 'react';
