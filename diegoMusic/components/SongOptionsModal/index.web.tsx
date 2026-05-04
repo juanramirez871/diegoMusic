@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Animated, Linking, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from '@/components/IconSymbol';
 import { usePlayer } from "@/context/PlayerContext";
@@ -36,7 +37,7 @@ export default function SongOptionsModal({ visible, onClose, song }: SongOptions
   const favoriteStatus = song ? isFavorite(song.id) : false;
   const artistFavoriteStatus = song?.channel?.id ? isFavoriteArtist(song.channel.id) : false;
 
-  return (
+  return createPortal(
     <View style={styles.root}>
       <Animated.View style={[styles.backdrop, { opacity }]}>
         <Pressable style={{ flex: 1 }} onPress={handleClose} />
@@ -67,7 +68,8 @@ export default function SongOptionsModal({ visible, onClose, song }: SongOptions
           </TouchableOpacity>
         </View>
       </Animated.View>
-    </View>
+    </View>,
+    document.body
   );
 }
 
