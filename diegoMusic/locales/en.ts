@@ -123,6 +123,14 @@ const en: Translations = {
     downloadTitle: 'Download error',
     downloadFailed: 'Could not save "{title}" for offline listening.',
   },
+  login: {
+    subtitle: 'Listen to anything, anywhere.',
+    continueWithGoogle: 'Continue with Google',
+    agreementPrefix: 'By continuing, you agree to our',
+    termsOfService: 'Terms of Service',
+    agreementMiddle: 'and',
+    privacyPolicy: 'Privacy Policy',
+  },
   genres: {
     rock: 'Rock',
     pop: 'Pop',

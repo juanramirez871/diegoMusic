@@ -95,7 +95,8 @@ const getAudioUrl = async (req, res) => {
     if (!url) return res.status(400).json({ error: 'url is required' });
     const result = await youtubeService.getAudioDirectUrl(url);
     res.json(result);
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Error in getAudioUrl:', error);
     if (!res.headersSent) res.status(500).json({ error: error.message });
   }

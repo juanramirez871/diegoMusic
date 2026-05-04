@@ -1,7 +1,7 @@
 import { youtubeService } from '@/services/api';
 import storage from '@/services/storage';
 import { sendDownloadCompleteNotification } from '@/services/notifications';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from '@/utils/fileSystem';
 import { useEffect, useState } from 'react';
 import { Alert, AppState } from 'react-native';
 import {

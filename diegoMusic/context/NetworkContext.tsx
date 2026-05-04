@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import type { NetworkContextType, NetworkProviderProps } from '@/interfaces/network';
 
-const API_PROBE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api') + '/health';
+const API_PROBE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api') + '/status';
 const API_PROBE_TIMEOUT_MS = 4000;
 
 const probeApi = async (): Promise<boolean> => {

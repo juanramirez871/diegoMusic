@@ -123,6 +123,14 @@ const ja: Translations = {
     downloadTitle: 'ダウンロードエラー',
     downloadFailed: '「{title}」をオフライン再生用に保存できませんでした。',
   },
+  login: {
+    subtitle: 'どこでも、何でも聴ける。',
+    continueWithGoogle: 'Googleで続ける',
+    agreementPrefix: '続けることで、',
+    termsOfService: '利用規約',
+    agreementMiddle: 'および',
+    privacyPolicy: 'プライバシーポリシー',
+  },
   genres: {
     rock: 'ロック',
     pop: 'ポップ',

@@ -77,4 +77,6 @@ export interface PlayerContextType {
   pendingArtistOverlay: { id: string; name: string } | null;
   openArtistOverlay: (artist: { id: string; name: string }) => void;
   closeArtistOverlay: () => void;
+  volume: number;
+  setVolume: (vol: number) => void;
 }

@@ -1,4 +1,4 @@
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, Platform, StyleSheet } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 44) / 2;
@@ -6,7 +6,7 @@ const ITEM_WIDTH = (width - 44) / 2;
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#252424ff',
+    backgroundColor: Platform.OS === 'web' ? '#121212' : '#252424ff',
   },
   scrollContainer: {
     flexGrow: 1,

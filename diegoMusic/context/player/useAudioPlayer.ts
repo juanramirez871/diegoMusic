@@ -1,6 +1,6 @@
 import { youtubeService } from '@/services/api';
 import { createAudioPlayer, AudioPlayer } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from '@/utils/fileSystem';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, AppState } from 'react-native';
 import { PlaybackState, SafeMediaControl } from './mediaControls';
@@ -25,6 +25,7 @@ export const useAudioPlayer = (
   const [isLoading, _setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolumeState] = useState(1);
 
   const soundRef = useRef<AudioPlayer | null>(null);
   const statusSubscriptionRef = useRef<any>(null);
@@ -600,6 +601,14 @@ export const useAudioPlayer = (
 
   playSongLogicRef.current = playSongLogic;
 
+  const setVolume = (vol: number) => {
+    const clamped = Math.min(1, Math.max(0, vol));
+    setVolumeState(clamped);
+    if (soundRef.current) {
+      try { soundRef.current.volume = clamped; } catch {}
+    }
+  };
+
   return {
     isPlaying,
     isIntendingToPlay,
@@ -614,6 +623,8 @@ export const useAudioPlayer = (
     playSongLogic,
     playSongLogicRef,
     cancelDownload,
-    cleanupLocalFile
+    cleanupLocalFile,
+    volume,
+    setVolume,
   };
 };

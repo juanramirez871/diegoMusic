@@ -6,11 +6,12 @@ import { useNetwork } from "@/context/NetworkContext";
 import { useLanguage } from "@/context/LanguageContext";
 import type { HistoryItem } from '@/interfaces/ui';
 import storage from '@/services/storage';
-import { Ionicons } from "@expo/vector-icons";
+import { IconSymbol } from '@/components/IconSymbol';
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Image,
+  Platform,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -20,6 +21,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/styles/SearchTab.styles";
 
 const RECENT_SEARCHES_KEY = '@recent_searches';
+const webGridStyle = {
+  display: 'grid' as any,
+  gridTemplateColumns: 'repeat(auto-fill, minmax(max(180px, 25% - 12px), 1fr))' as any,
+};
 
 export default function TabTwoScreen() {
 
@@ -116,40 +121,44 @@ export default function TabTwoScreen() {
         contentContainerStyle={styles.scrollContainer}
       >
         <View style={styles.container}>
-          <View style={styles.containerHeader}>
-            <Image
-              source={require("@/assets/images/avatar.jpg")}
-              style={styles.avatar}
-            />
-            <Text style={styles.headerTitle}>{t('search.title')}</Text>
-          </View>
-
-          <View style={styles.searchSection}>
-            <TouchableOpacity
-              activeOpacity={isDisabled ? 1 : 0.9}
-              style={[styles.inputWrapper, isDisabled && styles.inputWrapperDisabled]}
-              onPress={isDisabled ? undefined : handleOpenSearch}
-              disabled={isDisabled}
-            >
-              <Ionicons
-                name="search"
-                size={22}
-                color={isDisabled ? "#aaa" : "#252424"}
-                style={styles.searchIcon}
+          {Platform.OS !== 'web' && (
+            <View style={styles.containerHeader}>
+              <Image
+                source={require("@/assets/images/avatar.jpg")}
+                style={styles.avatar}
               />
-              <Text style={[styles.placeholderText, isDisabled && styles.placeholderDisabled]}>
-                {isDisabled ? t('search.placeholderOffline') : t('search.placeholder')}
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={styles.headerTitle}>{t('search.title')}</Text>
+            </View>
+          )}
+
+          {Platform.OS !== 'web' && (
+            <View style={styles.searchSection}>
+              <TouchableOpacity
+                activeOpacity={isDisabled ? 1 : 0.9}
+                style={[styles.inputWrapper, isDisabled && styles.inputWrapperDisabled]}
+                onPress={isDisabled ? undefined : handleOpenSearch}
+                disabled={isDisabled}
+              >
+                <IconSymbol
+                  name="search"
+                  size={22}
+                  color={isDisabled ? "#aaa" : "#252424"}
+                  style={styles.searchIcon}
+                />
+                <Text style={[styles.placeholderText, isDisabled && styles.placeholderDisabled]}>
+                  {isDisabled ? t('search.placeholderOffline') : t('search.placeholder')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.browseAllSection}>
             <Text style={styles.sectionTitle}>{t('search.browseAll')}</Text>
-            <View style={styles.categoriesGrid}>
+            <View style={[styles.categoriesGrid, Platform.OS === 'web' && webGridStyle]}>
               {CATEGORIES.map((category) => (
                 <TouchableOpacity
                   key={category.id}
-                  style={[styles.categoryCard, { backgroundColor: category.color }, isDisabled && styles.categoryCardDisabled]}
+                  style={[styles.categoryCard, Platform.OS === 'web' && { width: '100%' as any }, { backgroundColor: category.color }, isDisabled && styles.categoryCardDisabled]}
                   onPress={isDisabled ? undefined : () => handleOpenGenre(t(`genres.${category.key}`), category.query)}
                   disabled={isDisabled}
                   activeOpacity={isDisabled ? 1 : 0.7}

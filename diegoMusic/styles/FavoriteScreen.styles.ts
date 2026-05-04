@@ -1,9 +1,9 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#252424ff',
+    backgroundColor: Platform.OS === 'web' ? '#121212' : '#252424ff',
   },
   headerContainer: {
     position: 'absolute',
@@ -86,6 +86,14 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 20,
     zIndex: 20,
+  },
+  webPlayBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,

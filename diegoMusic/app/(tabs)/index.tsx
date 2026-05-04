@@ -9,10 +9,11 @@ import { useNetwork } from "@/context/NetworkContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { ArtistData, SongData } from "@/interfaces/Song";
-import { Ionicons } from "@expo/vector-icons";
+import { IconSymbol } from '@/components/IconSymbol';
 import React, { useMemo, useRef, useState } from "react";
-import { Animated, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Image, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "@/styles/HomeScreen.styles";
 
 
@@ -89,7 +90,14 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
+      {Platform.OS === 'web' && (
+        <LinearGradient
+          colors={['rgba(44,90,243,0.18)', 'rgba(44,90,243,0.04)', 'transparent']}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, zIndex: 0 }}
+          pointerEvents="none"
+        />
+      )}
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
@@ -126,7 +134,7 @@ export default function HomeScreen() {
                 onPress={handleOpenStats}
                 activeOpacity={0.7}
               >
-                <Ionicons name="trophy-outline" size={18} color="#E0E0E0" />
+                <IconSymbol name="trophy-outline" size={18} color="#E0E0E0" />
               </TouchableOpacity>
             </View>
           </View>

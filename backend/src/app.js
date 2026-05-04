@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import routes from './routes/index.js';
+import { sequelize } from './models/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,8 +28,22 @@ process.on('uncaughtException', (err) => {
   console.error('[Process] Uncaught exception:', err);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT} (ɔ◔‿◔)ɔ ♥`);
-});
+async function start() {
+  try {
+    await sequelize.authenticate();
+    console.log('[DB] PostgreSQL connected');
+    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    console.log('[DB] Models synced');
+  }
+  catch (err) {
+    console.error('[DB] Connection failed:', err.message);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT} (ɔ◔‿◔)ɔ ♥`);
+  });
+}
+
+start();
 
 export default app;

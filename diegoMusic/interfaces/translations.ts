@@ -122,4 +122,12 @@ export interface Translations {
     downloadFailed: string;
   };
   genres: Record<string, string>;
+  login: {
+    subtitle: string;
+    continueWithGoogle: string;
+    agreementPrefix: string;
+    termsOfService: string;
+    agreementMiddle: string;
+    privacyPolicy: string;
+  };
 }

@@ -1,7 +1,7 @@
 import { SongData } from '@/interfaces/Song';
 import { youtubeService } from '@/services/api';
 import { createAudioPlayer, AudioPlayer } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from '@/utils/fileSystem';
 import { useRef } from 'react';
 
 

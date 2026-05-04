@@ -123,6 +123,14 @@ const es: Translations = {
     downloadTitle: 'Error de descarga',
     downloadFailed: 'No se pudo guardar "{title}" para escuchar sin internet.',
   },
+  login: {
+    subtitle: 'Escucha lo que quieras, donde quieras.',
+    continueWithGoogle: 'Continuar con Google',
+    agreementPrefix: 'Al continuar, aceptas nuestros',
+    termsOfService: 'Términos de servicio',
+    agreementMiddle: 'y',
+    privacyPolicy: 'Política de privacidad',
+  },
   genres: {
     rock: 'Rock',
     pop: 'Pop',

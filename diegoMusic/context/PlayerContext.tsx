@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
 import { setAudioModeAsync } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from '@/utils/fileSystem';
 import storage from '@/services/storage';
 import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
 import { SafeMediaControl, Command, PlaybackState } from './player/mediaControls';
@@ -127,7 +127,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     seekTo,
     playSongLogicRef,
     cancelDownload,
-    cleanupLocalFile
+    cleanupLocalFile,
+    volume,
+    setVolume,
   } = useAudioPlayer(
     currentSong,
     playNext,
@@ -368,6 +370,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     pendingArtistOverlay,
     openArtistOverlay,
     closeArtistOverlay,
+    volume,
+    setVolume,
   }), [
     isMaximized, currentSong, playSong, favorites, favoriteArtists, recentPlayed, mostPlayed,
     toggleFavorite, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
@@ -375,6 +379,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isPlaying, isIntendingToPlay, togglePlayPause, pause, progress, duration, seekTo,
     isLoading, sleepTimer, setSleepTimer, showDownloadBanner, streak, artistPlays, songPlays,
     videoQuality, setVideoQuality, pendingArtistOverlay, openArtistOverlay, closeArtistOverlay,
+    volume, setVolume,
   ]);
 
   return (

@@ -1,11 +1,12 @@
 import {
+  Platform,
   Text,
   View,
   TextInput,
   TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { IconSymbol } from '@/components/IconSymbol';
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import Song from "@/components/Song";
@@ -133,7 +134,7 @@ export default function FavoriteScreen() {
       <StatusBar style="light" translucent />
       <Animated.View style={[styles.headerContainer, headerGradientStyle]}>
           <LinearGradient
-            colors={["#2c5af3ff", "#252424ff"]}
+            colors={["#2c5af3ff", Platform.OS === 'web' ? '#121212' : '#252424ff']}
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
           />
         <Animated.View
@@ -150,7 +151,7 @@ export default function FavoriteScreen() {
         >
           <Animated.View style={[styles.containerSearch, searchAnimatedStyle]}>
             <View style={styles.inputWrapper}>
-              <Ionicons
+              <IconSymbol
                 name="search"
                 size={20}
                 color="#b3b3b3"
@@ -167,7 +168,7 @@ export default function FavoriteScreen() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons name="close-circle" size={18} color="#b3b3b3" />
+                  <IconSymbol name="close-circle" size={18} color="#b3b3b3" />
                 </TouchableOpacity>
               )}
             </View>
@@ -202,7 +203,7 @@ export default function FavoriteScreen() {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="heart-outline" size={60} color="#333" />
+              <IconSymbol name="heart-outline" size={60} color="#333" />
               <Text style={styles.emptyStateText}>
                 {searchQuery ? t('favorite.noResults') : t('favorite.noSongs')}
               </Text>
@@ -214,16 +215,19 @@ export default function FavoriteScreen() {
       <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
         <Animated.View style={shuffleAnimatedStyle}>
           <TouchableOpacity onPress={toggleShuffle}>
-            <Ionicons name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
+            <IconSymbol name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
           </TouchableOpacity>
         </Animated.View>
-        <TouchableOpacity onPress={() => {
-          if (filteredFavorites.length === 0) return;
-          const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
-          const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
-          playSong(startSong, filteredFavorites, 'favorites');
-        }}>
-          <Ionicons name="play-circle" size={55} color="#fff" />
+        <TouchableOpacity
+          style={Platform.OS === 'web' ? styles.webPlayBtn : undefined}
+          onPress={() => {
+            if (filteredFavorites.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
+            const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
+            playSong(startSong, filteredFavorites, 'favorites');
+          }}
+        >
+          <IconSymbol name={Platform.OS === 'web' ? 'play' : 'play-circle'} size={Platform.OS === 'web' ? 28 : 55} color={Platform.OS === 'web' ? '#000' : '#fff'} />
         </TouchableOpacity>
       </Animated.View>
     </View>

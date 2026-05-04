@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from '@/utils/fileSystem';
 import { usePlayer } from '@/context/PlayerContext';
 
 export const useThumbnail = (songId: string | undefined, remoteUrl: string | undefined) => {
@@ -15,10 +15,12 @@ export const useThumbnail = (songId: string | undefined, remoteUrl: string | und
         try {
           const info = await FileSystem.getInfoAsync(thumbUri);
           if (isMounted) setLocalExists(info.exists);
-        } catch (e) {
+        }
+        catch (e) {
           if (isMounted) setLocalExists(false);
         }
-      } else {
+      }
+      else {
         if (isMounted) setLocalExists(false);
       }
     }
@@ -26,13 +28,8 @@ export const useThumbnail = (songId: string | undefined, remoteUrl: string | und
     return () => { isMounted = false; };
   }, [songId, favoriteStatus]);
 
-  if (localExists && songId) {
-    return { uri: `${FileSystem.documentDirectory}${songId}_thumb.jpg` };
-  }
-  
-  if (remoteUrl) {
-    return { uri: remoteUrl };
-  }
+  if (localExists && songId) return { uri: `${FileSystem.documentDirectory}${songId}_thumb.jpg` };
+  if (remoteUrl) return { uri: remoteUrl };
 
   return require("@/assets/images/cover.jpg");
 };

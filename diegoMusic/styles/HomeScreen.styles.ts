@@ -1,9 +1,9 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#252424ff',
+    backgroundColor: Platform.OS === 'web' ? '#121212' : '#252424ff',
   },
   scrollContainer: {
     flexGrow: 1,

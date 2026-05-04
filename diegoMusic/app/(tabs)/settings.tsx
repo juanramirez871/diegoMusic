@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { IconSymbol } from '@/components/IconSymbol';
 import { Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
@@ -52,7 +52,7 @@ export default function SettingsScreen() {
                       {lang.nativeLabel}
                     </Text>
                     {isActive && (
-                      <Ionicons name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
+                      <IconSymbol name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
                     )}
                   </TouchableOpacity>
                 );
@@ -72,7 +72,7 @@ export default function SettingsScreen() {
                     onPress={() => setVideoQuality(q.value)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons
+                    <IconSymbol
                       name={QUALITY_ICONS[q.value] as any}
                       size={22}
                       color={isActive ? '#2c5af3' : '#b3b3b3'}
@@ -82,7 +82,7 @@ export default function SettingsScreen() {
                       {q.label}
                     </Text>
                     {isActive && (
-                      <Ionicons name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
+                      <IconSymbol name="checkmark-circle" size={20} color="#2c5af3" style={styles.checkIcon} />
                     )}
                   </TouchableOpacity>
                 );
