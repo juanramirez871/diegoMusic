@@ -8,6 +8,7 @@ export interface PlayStats {
   artistPlays: Record<string, ArtistPlayData>;
   songPlays: Record<string, SongPlayData>;
   activeDays: string[];
+  lyricsQueries: Record<string, string>;
 }
 
 export const songsPlayedService = {
@@ -35,6 +36,18 @@ export const songsPlayedService = {
       return await apiFetch<PlayStats>('/songs/played/stats');
     } catch {
       return null;
+    }
+  },
+
+  async updateLyricsQuery(youtubeId: string, query: string): Promise<void> {
+    try {
+      await apiFetch('/songs/played/lyrics-query', {
+        method: 'PATCH',
+        body: JSON.stringify({ youtubeId, query }),
+      });
+    }
+    catch (err) {
+      console.warn('[SongsPlayed] Failed to update lyrics query:', err);
     }
   },
 };

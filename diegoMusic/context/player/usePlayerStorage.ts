@@ -167,6 +167,9 @@ export const usePlayerStorage = () => {
         setStreak(computeStreak(stats.activeDays));
         storage.setItem(ACTIVE_DAYS_KEY, JSON.stringify(stats.activeDays)).catch(() => {});
       }
+      if (stats.lyricsQueries && Object.keys(stats.lyricsQueries).length > 0) {
+        storage.setItem('@lyrics_custom_queries', JSON.stringify(stats.lyricsQueries)).catch(() => {});
+      }
     });
   }, []);
 

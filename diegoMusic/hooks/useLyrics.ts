@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SongData } from '@/interfaces/Song';
 import type { LyricLine } from '@/interfaces/lyrics';
 import storage from '@/services/storage';
+import { songsPlayedService } from '@/services/songsPlayedService';
 
 const LYRICS_QUERIES_KEY = '@lyrics_custom_queries';
 
@@ -127,6 +128,7 @@ export function useLyrics(currentSong: SongData | null, isOnline: boolean) {
     queryCacheRef.current[currentSong.id] = query;
     setLyricsQuery(query);
     storage.setItem(LYRICS_QUERIES_KEY, JSON.stringify(queryCacheRef.current)).catch(() => {});
+    songsPlayedService.updateLyricsQuery(currentSong.id, query);
 
     setSyncedLyrics(null);
     setPlainLyrics(null);

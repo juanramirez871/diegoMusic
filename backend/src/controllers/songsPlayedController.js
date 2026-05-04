@@ -1,4 +1,3 @@
-import { Op } from 'sequelize';
 import { Artist, Song, SongPlayed } from '../models/index.js';
 
 export async function recordPlay(req, res) {
@@ -117,10 +116,41 @@ export async function getStats(req, res) {
         .map(r => new Date(r.lastPlayedAt).toISOString().slice(0, 10))
     )];
 
-    res.json({ recentPlayed, mostPlayed, artistPlays, songPlays, activeDays });
+    const lyricsQueries = {};
+    for (const r of records) {
+      if (r.Song?.youtubeId && r.lyricsQuery) {
+        lyricsQueries[r.Song.youtubeId] = r.lyricsQuery;
+      }
+    }
+
+    res.json({ recentPlayed, mostPlayed, artistPlays, songPlays, activeDays, lyricsQueries });
   }
   catch (err) {
     console.error('[SongsPlayed] Stats error:', err);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+}
+
+export async function updateLyricsQuery(req, res) {
+  const userId = req.user.id;
+  const { youtubeId, query } = req.body;
+  if (!youtubeId || !query) return res.status(400).json({ error: 'youtubeId and query required' });
+
+  try {
+    const song = await Song.findOne({ where: { youtubeId } });
+    if (!song) return res.status(404).json({ error: 'Song not found' });
+
+    const record = await SongPlayed.findOne({ where: { userId, songId: song.id } });
+    if (record) {
+      await record.update({ lyricsQuery: query });
+    } else {
+      await SongPlayed.create({ userId, songId: song.id, times: 0, lyricsQuery: query });
+    }
+
+    res.json({ ok: true });
+  }
+  catch (err) {
+    console.error('[SongsPlayed] LyricsQuery error:', err);
+    res.status(500).json({ error: 'Failed to update lyrics query' });
   }
 }
