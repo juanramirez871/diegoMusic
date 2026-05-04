@@ -34,6 +34,9 @@ services:
       - DB_PASSWORD=postgres
     volumes:
       - ./temp:/tmp
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       postgres:
         condition: service_healthy
