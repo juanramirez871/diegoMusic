@@ -70,6 +70,14 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const lyrics = useLyrics(currentSong, isOnline);
   const lyricsDefaultQuery = lyrics.lyricsQuery;
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
+  const [thumbError, setThumbError] = useState(false);
+
+  const hiResThumbnailSource = (() => {
+    const src = thumbnailSource as any;
+    if (!src?.uri) return thumbnailSource;
+    const hiResUri = src.uri.replace(/\/[^/]+\.jpg(\?.*)?$/, '/maxresdefault.jpg');
+    return hiResUri !== src.uri ? { uri: hiResUri } : thumbnailSource;
+  })();
   const lyricsScrollRef = useRef<ScrollView>(null);
   const playTint = useSharedValue(0);
 
@@ -87,6 +95,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     setSeekProgress(0);
     setIsSeeking(false);
     setShowLyricsEdit(false);
+    setThumbError(false);
   }, [currentSong?.id]);
 
   useEffect(() => {
@@ -190,7 +199,11 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                     </TouchableOpacity>
                   </>
                 ) : (
-                  <Image source={thumbnailSource} style={styles.coverImage} />
+                  <Image
+                    source={thumbError ? thumbnailSource : hiResThumbnailSource}
+                    style={styles.coverImage}
+                    onError={() => setThumbError(true)}
+                  />
                 )}
               </View>
 
