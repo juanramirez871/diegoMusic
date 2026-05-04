@@ -7,9 +7,18 @@ const Artist = sequelize.define('Artist', {
     autoIncrement: true,
     primaryKey: true,
   },
+  channelId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  avatar: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
 }, {
   tableName: 'artists',

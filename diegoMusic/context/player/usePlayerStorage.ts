@@ -19,6 +19,7 @@ import {
 } from './types';
 import { ArtistData, SongData } from '@/interfaces/Song';
 import { useLanguage } from '@/context/LanguageContext';
+import { favoriteArtistsService } from '@/services/favoriteArtistsService';
 
 export const usePlayerStorage = () => {
 
@@ -105,6 +106,7 @@ export const usePlayerStorage = () => {
 
         if (savedArtists) setFavoriteArtists(JSON.parse(savedArtists));
         if (savedRecent) setRecentPlayed(JSON.parse(savedRecent));
+
         if (savedMostPlayed) setMostPlayed(JSON.parse(savedMostPlayed));
         if (savedArtistPlays) setArtistPlays(JSON.parse(savedArtistPlays));
         if (savedSongPlays) setSongPlays(JSON.parse(savedSongPlays));
@@ -121,6 +123,15 @@ export const usePlayerStorage = () => {
       }
     };
     loadData();
+  }, []);
+
+  useEffect(() => {
+    favoriteArtistsService.fetchAll().then((artists) => {
+      if (artists.length > 0) {
+        setFavoriteArtists(artists);
+        storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(artists)).catch(() => {});
+      }
+    });
   }, []);
 
   const toggleFavorite = async (song: SongData) => {
@@ -232,14 +243,16 @@ export const usePlayerStorage = () => {
     const newFavoriteArtists = isAlreadyFavorite
       ? favoriteArtists.filter(f => f.id !== artist.id)
       : [...favoriteArtists, artist];
-    
+
     setFavoriteArtists(newFavoriteArtists);
     try {
       await storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(newFavoriteArtists));
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error persisting favorite artists:', error);
     }
+
+    if (isAlreadyFavorite) favoriteArtistsService.remove(artist.id);
+    else favoriteArtistsService.add(artist);
   };
 
   const isFavoriteArtist = (artistId: string) => {

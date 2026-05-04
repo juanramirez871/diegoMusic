@@ -11,16 +11,9 @@ const FavoriteArtist = sequelize.define('FavoriteArtist', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  channelId: {
-    type: DataTypes.STRING,
+  artistId: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  avatar: {
-    type: DataTypes.TEXT,
   },
 }, {
   tableName: 'favoriteArtists',

@@ -10,6 +10,7 @@ const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api';
 
 const AUTH_STORAGE_KEY = '@auth_user';
+const TOKEN_STORAGE_KEY = '@auth_token';
 
 export interface AuthUser {
   id: string;
@@ -21,6 +22,7 @@ export interface AuthUser {
 interface AuthContextType {
   isLoggedIn: boolean;
   user: AuthUser | null;
+  token: string | null;
   loading: boolean;
   login: () => void;
   logout: () => Promise<void>;
@@ -31,6 +33,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [, response, promptAsync] = Google.useAuthRequest({
@@ -39,8 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    AsyncStorage.getItem(AUTH_STORAGE_KEY).then(raw => {
-      if (raw) setUser(JSON.parse(raw));
+    Promise.all([
+      AsyncStorage.getItem(AUTH_STORAGE_KEY),
+      AsyncStorage.getItem(TOKEN_STORAGE_KEY),
+    ]).then(([rawUser, savedToken]) => {
+      if (rawUser) setUser(JSON.parse(rawUser));
+      if (savedToken) setToken(savedToken);
       setLoading(false);
     });
   }, []);
@@ -64,9 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!backendRes.ok) throw new Error('Backend auth failed');
 
-      const { user: userData } = await backendRes.json();
+      const { user: userData, token: jwt } = await backendRes.json();
       setUser(userData);
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData));
+      setToken(jwt);
+      await Promise.all([
+        AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(userData)),
+        AsyncStorage.setItem(TOKEN_STORAGE_KEY, jwt),
+      ]);
     }
     catch (err) {
       console.error('[Auth] Google auth failed:', err);
@@ -83,11 +94,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     setUser(null);
-    await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+    setToken(null);
+    await Promise.all([
+      AsyncStorage.removeItem(AUTH_STORAGE_KEY),
+      AsyncStorage.removeItem(TOKEN_STORAGE_KEY),
+    ]);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn: !!user, user, loading, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn: !!user, user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

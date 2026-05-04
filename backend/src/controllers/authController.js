@@ -1,4 +1,7 @@
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function googleAuth(req, res) {
 
@@ -18,7 +21,17 @@ export async function googleAuth(req, res) {
     });
 
     if (user.name !== name || user.avatar !== avatar) await user.update({ name, avatar });
-    res.json({ user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar } });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+      },
+      token,
+    });
   }
   catch (err) {
     console.error('[Auth] Google auth error:', err);

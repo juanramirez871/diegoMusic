@@ -22,4 +22,7 @@ FavoriteSong.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(FavoriteArtist, { foreignKey: 'userId', onDelete: 'CASCADE' });
 FavoriteArtist.belongsTo(User, { foreignKey: 'userId' });
 
+Artist.hasMany(FavoriteArtist, { foreignKey: 'artistId', onDelete: 'CASCADE' });
+FavoriteArtist.belongsTo(Artist, { foreignKey: 'artistId' });
+
 export { sequelize, User, Artist, Song, Settings, SongPlayed, FavoriteSong, FavoriteArtist };

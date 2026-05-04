@@ -6,22 +6,24 @@ export interface UserSettings {
 }
 
 export const settingsService = {
-  async fetch(userId: string): Promise<UserSettings | null> {
+  async fetch(): Promise<UserSettings | null> {
     try {
-      const data = await apiFetch<{ settings: UserSettings | null }>(`/settings/${userId}`);
+      const data = await apiFetch<{ settings: UserSettings | null }>('/settings');
       return data.settings ?? null;
-    } catch {
+    }
+    catch {
       return null;
     }
   },
 
-  async update(userId: string, data: UserSettings): Promise<void> {
+  async update(data: UserSettings): Promise<void> {
     try {
-      await apiFetch(`/settings/${userId}`, {
+      await apiFetch('/settings', {
         method: 'PUT',
         body: JSON.stringify(data),
       });
-    } catch (err) {
+    }
+    catch (err) {
       console.warn('[Settings] Failed to save to DB:', err);
     }
   },

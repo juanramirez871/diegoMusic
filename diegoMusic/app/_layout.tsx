@@ -33,7 +33,7 @@ function RootLayoutContent() {
     if (!user) { settingsApplied.current = false; return; }
     if (settingsApplied.current) return;
     settingsApplied.current = true;
-    settingsService.fetch(String(user.id)).then((settings) => {
+    settingsService.fetch().then((settings) => {
       if (settings?.language && ['en', 'es', 'ja'].includes(settings.language)) {
         setLocale(settings.language as Locale);
       }

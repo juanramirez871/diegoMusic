@@ -1,7 +1,7 @@
 import { Settings } from '../models/index.js';
 
 export async function getSettings(req, res) {
-  const { userId } = req.params;
+  const userId = req.user.id;
   try {
     const settings = await Settings.findOne({ where: { userId } });
     res.json({
@@ -17,7 +17,7 @@ export async function getSettings(req, res) {
 }
 
 export async function updateSettings(req, res) {
-  const { userId } = req.params;
+  const userId = req.user.id;
   const { language, videoQuality } = req.body;
   try {
     const [settings] = await Settings.findOrCreate({

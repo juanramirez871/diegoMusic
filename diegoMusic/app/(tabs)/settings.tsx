@@ -3,7 +3,6 @@ import { Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePlayer } from '@/context/PlayerContext';
-import { useAuth } from '@/context/AuthContext';
 import type { Locale } from '@/interfaces/language';
 import type { VideoQuality } from '@/context/player/types';
 import { styles } from '@/styles/SettingsScreen.styles';
@@ -25,15 +24,14 @@ export default function SettingsScreen() {
 
   const { t, locale, setLocale } = useLanguage();
   const { videoQuality, setVideoQuality } = usePlayer();
-  const { user } = useAuth();
   const handleSetLocale = (l: Locale) => {
     setLocale(l);
-    if (user) settingsService.update(String(user.id), { language: l });
+    settingsService.update({ language: l });
   };
 
   const handleSetVideoQuality = (q: VideoQuality) => {
     setVideoQuality(q);
-    if (user) settingsService.update(String(user.id), { videoQuality: q });
+    settingsService.update({ videoQuality: q });
   };
 
   const QUALITIES: { value: VideoQuality; label: string }[] = [

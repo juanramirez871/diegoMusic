@@ -89,9 +89,11 @@ export default function HomeScreen() {
     );
   }
 
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <SafeAreaView style={[styles.safeArea, { overflow: 'hidden' }]}>
-      {Platform.OS === 'web' && (
+    <SafeAreaView style={[styles.safeArea, !isWeb && { overflow: 'hidden' }]}>
+      {isWeb && (
         <LinearGradient
           colors={['rgba(44,90,243,0.18)', 'rgba(44,90,243,0.04)', 'transparent']}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 320, zIndex: 0 }}
@@ -99,20 +101,22 @@ export default function HomeScreen() {
         />
       )}
 
-      <Animated.View style={{ flex: 1, transform: [{ translateX: contentTranslateX }] }}>
+      <Animated.View style={{ flex: 1, transform: [{ translateX: isWeb ? 0 : contentTranslateX }] }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
         >
           <View style={styles.container}>
             <View style={styles.header}>
-              <TouchableOpacity style={styles.avatarCircle} onPress={openDrawer} activeOpacity={0.8}>
-                <Image
-                  source={user?.avatar ? { uri: user.avatar } : require("@/assets/images/avatar.jpg")}
-                  style={styles.avatar}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
+              {!isWeb && (
+                <TouchableOpacity style={styles.avatarCircle} onPress={openDrawer} activeOpacity={0.8}>
+                  <Image
+                    source={user?.avatar ? { uri: user.avatar } : require("@/assets/images/avatar.jpg")}
+                    style={styles.avatar}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              )}
 
               <View style={styles.tagsContainer}>
                 <TouchableOpacity
@@ -195,7 +199,7 @@ export default function HomeScreen() {
         />
       </Animated.View>
 
-      <UserDrawer animValue={drawerAnim} onClose={closeDrawer} />
+      {!isWeb && <UserDrawer animValue={drawerAnim} onClose={closeDrawer} />}
     </SafeAreaView>
   );
 }
