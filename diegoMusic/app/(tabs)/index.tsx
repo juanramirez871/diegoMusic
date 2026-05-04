@@ -153,7 +153,9 @@ export default function HomeScreen() {
 
                   <View style={styles.musicArtistContainer}>
                     {displayArtists.map((artist) => (
-                      <MusicArtist key={artist.id} artist={artist} />
+                      <View key={artist.id} style={styles.musicArtistItem}>
+                        <MusicArtist artist={artist} />
+                      </View>
                     ))}
                   </View>
 

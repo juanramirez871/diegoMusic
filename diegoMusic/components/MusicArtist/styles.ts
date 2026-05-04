@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
 
 export const styles = StyleSheet.create({
   container: {
@@ -7,24 +9,24 @@ export const styles = StyleSheet.create({
   },
   title: {
     color: '#b3b3b3',
-    fontSize: 14,
+    fontSize: isWeb ? 16 : 14,
     fontWeight: 'bold',
   },
   author: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: isWeb ? 26 : 20,
     fontWeight: 'bold',
-    lineHeight: 24,
+    lineHeight: isWeb ? 32 : 24,
   },
   image: {
-    width: 60,
-    height: 60,
-    borderRadius: '50%',
+    width: isWeb ? 88 : 60,
+    height: isWeb ? 88 : 60,
+    borderRadius: 999,
   },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    gap: 10,
+    gap: isWeb ? 14 : 10,
   },
 });

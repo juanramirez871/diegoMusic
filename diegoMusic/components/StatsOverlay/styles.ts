@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
 
 export const styles = StyleSheet.create({
   container: {
@@ -64,15 +66,15 @@ export const styles = StyleSheet.create({
   },
   rank: {
     color: '#b3b3b3',
-    fontSize: 16,
+    fontSize: isWeb ? 20 : 16,
     fontWeight: 'bold',
-    width: 20,
+    width: isWeb ? 28 : 20,
     textAlign: 'center',
   },
   songThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 4,
+    width: isWeb ? 64 : 44,
+    height: isWeb ? 64 : 44,
+    borderRadius: 6,
     backgroundColor: '#333',
   },
   songInfo: {
@@ -80,33 +82,33 @@ export const styles = StyleSheet.create({
   },
   songTitle: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: isWeb ? 17 : 14,
     fontWeight: '600',
   },
   songArtist: {
     color: '#b3b3b3',
-    fontSize: 12,
+    fontSize: isWeb ? 14 : 12,
     marginTop: 2,
   },
   playsBadge: {
     backgroundColor: '#2c5af3ff',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 10,
   },
   playsText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: isWeb ? 14 : 12,
     fontWeight: 'bold',
   },
   artistsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: isWeb ? 20 : 12,
   },
   artistItem: {
     flex: 1,
     alignItems: 'center',
-    gap: 6,
+    gap: isWeb ? 10 : 6,
     position: 'relative',
   },
   crownBadge: {
@@ -115,23 +117,23 @@ export const styles = StyleSheet.create({
     zIndex: 1,
   },
   crownText: {
-    fontSize: 16,
+    fontSize: isWeb ? 22 : 16,
   },
   artistAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: isWeb ? 120 : 70,
+    height: isWeb ? 120 : 70,
+    borderRadius: 999,
     backgroundColor: '#333',
   },
   artistName: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: isWeb ? 17 : 13,
     fontWeight: '600',
     textAlign: 'center',
   },
   artistPlays: {
     color: '#b3b3b3',
-    fontSize: 11,
+    fontSize: isWeb ? 14 : 11,
   },
   streakCard: {
     flexDirection: 'row',

@@ -1,9 +1,10 @@
 import { Platform, StyleSheet } from 'react-native';
 
+const isWeb = Platform.OS === 'web';
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#121212' : '#252424ff',
+    backgroundColor: isWeb ? '#121212' : '#252424ff',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -75,14 +76,14 @@ export const styles = StyleSheet.create({
   },
   recentPlayedWrapper: {
     width: '100%',
-    gap: 20,
+    gap: isWeb ? 28 : 20,
   },
   podcastsWrapper: {
     width: '100%',
     gap: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: isWeb ? 26 : 22,
     fontWeight: 'bold',
     marginBottom: 5,
     color: '#fff',
@@ -91,7 +92,10 @@ export const styles = StyleSheet.create({
   musicArtistContainer: {
     flexDirection: 'column',
     width: '100%',
-    gap: 12,
+    gap: isWeb ? 20 : 12,
+  },
+  musicArtistItem: {
+    width: '100%',
   },
   emptyContainer: {
     width: '100%',
