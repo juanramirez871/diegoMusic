@@ -20,6 +20,7 @@ import {
 import { ArtistData, SongData } from '@/interfaces/Song';
 import { useLanguage } from '@/context/LanguageContext';
 import { favoriteArtistsService } from '@/services/favoriteArtistsService';
+import { favoriteSongsService } from '@/services/favoriteSongsService';
 
 export const usePlayerStorage = () => {
 
@@ -132,6 +133,13 @@ export const usePlayerStorage = () => {
         storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(artists)).catch(() => {});
       }
     });
+    favoriteSongsService.fetchAll().then((songs) => {
+      if (songs.length > 0) {
+        setFavorites(songs);
+        storage.setItem(FAVORITES_KEY, JSON.stringify(songs)).catch(() => {});
+        syncThumbnails(songs);
+      }
+    });
   }, []);
 
   const toggleFavorite = async (song: SongData) => {
@@ -232,6 +240,9 @@ export const usePlayerStorage = () => {
       console.error('Error in toggleFavorite process:', error);
       setFavorites(favorites);
     }
+
+    if (isFav) favoriteSongsService.remove(song.id);
+    else favoriteSongsService.add(song);
   };
 
   const isFavorite = (songId: string) => {

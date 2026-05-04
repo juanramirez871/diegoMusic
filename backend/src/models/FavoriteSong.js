@@ -11,22 +11,9 @@ const FavoriteSong = sequelize.define('FavoriteSong', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  youtubeId: {
-    type: DataTypes.STRING,
+  songId: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  thumbnailUrl: {
-    type: DataTypes.TEXT,
-  },
-  channelName: {
-    type: DataTypes.STRING,
-  },
-  durationFormatted: {
-    type: DataTypes.STRING,
   },
 }, {
   tableName: 'favoriteSongs',

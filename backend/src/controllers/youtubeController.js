@@ -1,5 +1,8 @@
 import * as youtubeService from "../services/youtubeService.js";
 import { createReadStream, statSync } from "fs";
+import { Song } from "../models/index.js";
+
+const AUDIO_URL_TTL_MS = 4 * 60 * 60 * 1000;
 
 const searchVideo = async (req, res) => {
   try {
@@ -93,7 +96,30 @@ const getAudioUrl = async (req, res) => {
   try {
     const { url } = req.query;
     if (!url) return res.status(400).json({ error: 'url is required' });
+
+    const videoId = url.match(/[?&]v=([^&]+)/)?.[1] ?? url.split('/').pop();
+
+    // Check DB cache first
+    if (videoId) {
+      const song = await Song.findOne({ where: { youtubeId: videoId } });
+      if (song?.audioUrl && song?.audioUrlCachedAt) {
+        const age = Date.now() - new Date(song.audioUrlCachedAt).getTime();
+        if (age < AUDIO_URL_TTL_MS) {
+          return res.json({ url: song.audioUrl, mimeType: 'audio/mp4' });
+        }
+      }
+    }
+
     const result = await youtubeService.getAudioDirectUrl(url);
+
+    // Persist to DB if song exists
+    if (videoId) {
+      Song.update(
+        { audioUrl: result.url, audioUrlCachedAt: new Date() },
+        { where: { youtubeId: videoId } }
+      ).catch(() => {});
+    }
+
     res.json(result);
   }
   catch (error) {

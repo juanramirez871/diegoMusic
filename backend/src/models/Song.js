@@ -7,12 +7,34 @@ const Song = sequelize.define('Song', {
     autoIncrement: true,
     primaryKey: true,
   },
+  youtubeId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  thumbnailUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  durationFormatted: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   artistId: {
     type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  audioUrl: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  audioUrlCachedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
 }, {
   tableName: 'songs',
