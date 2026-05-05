@@ -61,7 +61,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     sleepTimer,
     videoQuality,
     openArtistOverlay,
+    closeArtistOverlay,
   } = usePlayer();
+
+  useEffect(() => {
+    if (visible) closeArtistOverlay();
+  }, [visible]);
 
   const video = useVideoPlayback({
     currentSong,
