@@ -75,7 +75,6 @@ export const MinimizedPlayer = ({ onPress, style }: { onPress: () => void; style
     seekTo,
   } = usePlayer();
 
-  const [hoverProgress, setHoverProgress] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
 
@@ -117,7 +116,7 @@ export const MinimizedPlayer = ({ onPress, style }: { onPress: () => void; style
         <View style={{ width: '100%', maxWidth: 480, alignItems: 'center', gap: 6 }}>
         <View style={styles.controls}>
           <TouchableOpacity style={styles.iconBtn} onPress={toggleShuffle}>
-            <IconSymbol name="shuffle" size={18} color={isShuffle ? '#1db954' : '#b3b3b3'} />
+            <IconSymbol name="shuffle" size={18} color={isShuffle ? '#2c5af3' : '#b3b3b3'} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={playPrevious}>
             <IconSymbol name="play-skip-back" size={20} color="#fff" />
@@ -136,7 +135,7 @@ export const MinimizedPlayer = ({ onPress, style }: { onPress: () => void; style
             <IconSymbol name="play-skip-forward" size={20} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn} onPress={toggleRepeat}>
-            <IconSymbol name="repeat" size={18} color={isRepeating ? '#1db954' : '#b3b3b3'} />
+            <IconSymbol name="repeat" size={18} color={isRepeating ? '#2c5af3' : '#b3b3b3'} />
           </TouchableOpacity>
         </View>
         <View style={styles.progressRow}>
