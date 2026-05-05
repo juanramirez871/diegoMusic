@@ -176,4 +176,9 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  crownImage: {
+    width: isWeb ? 140 : 80,
+    height: isWeb ? 120 : 80,
+    transform: [{ translateY: isWeb ? -30 : -20 }],
+  },
 });
