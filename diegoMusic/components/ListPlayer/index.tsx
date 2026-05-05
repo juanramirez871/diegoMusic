@@ -1,4 +1,4 @@
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { Platform, View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { youtubeService } from "@/services/youtubeService";
 import { usePlayer } from "@/context/PlayerContext";
@@ -7,6 +7,9 @@ import { Skeleton } from "@/components/Skeleton";
 import { CarouselPlayerProps } from "@/interfaces/player";
 import { SongData } from "@/interfaces/Song";
 import { styles } from './styles';
+
+const isWeb = Platform.OS === 'web';
+const THUMB_SIZE = isWeb ? 200 : 140;
 
 
 export default function ListPlayer({ channelId, query, data }: CarouselPlayerProps) {
@@ -56,12 +59,12 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
     return (
       <View style={styles.container}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {[1, 2, 3, 4, 5].map((i) => (
+          {Array.from({ length: isWeb ? 10 : 5 }, (_, i) => i).map((i) => (
             <View key={i} style={styles.songItem}>
-              <Skeleton width={140} height={140} borderRadius={8} />
+              <Skeleton width={THUMB_SIZE} height={THUMB_SIZE} borderRadius={isWeb ? 12 : 8} />
               <View style={styles.infoContainer}>
-                <Skeleton width={100} height={14} borderRadius={4} style={{ marginBottom: 4 }} />
-                <Skeleton width={80} height={12} borderRadius={4} />
+                <Skeleton width={isWeb ? 140 : 100} height={isWeb ? 16 : 14} borderRadius={4} style={{ marginBottom: 4 }} />
+                <Skeleton width={isWeb ? 100 : 80} height={12} borderRadius={4} />
               </View>
             </View>
           ))}
