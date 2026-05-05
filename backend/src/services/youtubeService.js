@@ -1,9 +1,10 @@
 import ytch from "yt-channel-info";
 import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
-import { unlink } from "fs/promises";
+import { unlink, readFile } from "fs/promises";
 import os from "os";
 import fetch from "node-fetch";
+import https from "https";
 import path from "path";
 import {
   extractVideoId,
@@ -13,6 +14,21 @@ import {
 } from "../utils/youtubeUtils.js";
 import { existsSync } from "fs";
 import { execSync } from "child_process";
+
+const ipv4Agent = new https.Agent({ family: 4 });
+const parseCookiesTxt = async (cookiesPath) => {
+  try {
+    const text = await readFile(cookiesPath, "utf8");
+    return text
+      .split("\n")
+      .filter(l => l && !l.startsWith("#") && l.includes("\t"))
+      .map(l => { const p = l.split("\t"); return p.length >= 7 ? `${p[5]}=${p[6].trim()}` : null; })
+      .filter(Boolean)
+      .join("; ");
+  } catch {
+    return "";
+  }
+};
 
 let innertube = null;
 const downloadCache = new Map();
@@ -247,9 +263,11 @@ export const getVideoDirectSource = async (url, quality = 'low') => {
   const formatSelector = VIDEO_QUALITY_FORMAT[quality] ?? VIDEO_QUALITY_FORMAT.low;
 
   console.log(`[getVideoDirectSource] Obteniendo URL para: ${videoId} (calidad: ${quality})`);
-
   const args = [
-    ...getYtdlpBaseArgs(),
+    "--no-playlist",
+    "--no-part",
+    "--force-ipv4",
+    "--extractor-args", "youtube:player_client=android_vr",
     "-f", formatSelector,
     "-g",
     videoUrl,
@@ -305,13 +323,19 @@ export const getVideoDirectSource = async (url, quality = 'low') => {
 
 export const proxyVideoStream = async (res, sourceUrl, mimeType, rangeHeader) => {
 
+  const cookiesPath = path.join(process.cwd(), "cookies.txt");
+  const cookieHeader = existsSync(cookiesPath) ? await parseCookiesTxt(cookiesPath) : "";
+
   const headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    "Referer": "https://www.youtube.com/",
+    "Origin": "https://www.youtube.com",
+    ...(cookieHeader && { "Cookie": cookieHeader }),
   };
 
   if (rangeHeader) headers.Range = rangeHeader;
   console.log(`[proxyVideoStream] Iniciando stream. Range: ${rangeHeader || "N/A"}`);
-  const upstream = await fetch(sourceUrl, { headers });
+  const upstream = await fetch(sourceUrl, { headers, agent: ipv4Agent });
 
   if (!upstream.ok) {
     console.error(`[proxyVideoStream] Error al obtener stream de YouTube: ${upstream.status} ${upstream.statusText}`);
