@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { Platform } from "react-native";
 import type { NetworkContextType, NetworkProviderProps } from '@/interfaces/network';
 
 const API_PROBE_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api') + '/status';
@@ -33,7 +34,7 @@ NetInfo.configure({
   reachabilityLongTimeout: 60 * 1000,
   reachabilityShortTimeout: 5 * 1000,
   reachabilityRequestTimeout: 15 * 1000,
-  reachabilityShouldRun: () => true,
+  reachabilityShouldRun: () => Platform.OS !== 'web',
   shouldFetchWiFiSSID: false,
   useNativeReachability: false,
 });
@@ -86,6 +87,16 @@ export function NetworkProvider({ children }: NetworkProviderProps) {
   const handleNetworkChange = useCallback((state: NetInfoState) => {
 
     if (!mountedRef.current) return;
+
+    if (Platform.OS === 'web') {
+      stopRetry();
+      const connected = state.isConnected !== false;
+      setIsOnline(connected);
+      setIsNetworkChecked(true);
+      checkApi();
+      return;
+    }
+
     if (state.isConnected === false) {
       stopRetry();
       setIsOnline(false);
