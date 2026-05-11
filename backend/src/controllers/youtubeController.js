@@ -32,8 +32,16 @@ const downloadAudio = async (req, res) => {
 
     const { url, start = 0 } = req.query;
     if (!url) return res.status(400).json({ error: 'url is required' });
-    const filePath = await youtubeService.downloadAudio(url, Number(start));
-    const fileSize = statSync(filePath).size;
+
+    const cached = youtubeService.getCachedAudioFile(url, Number(start));
+    if (!cached) {
+      console.log('[downloadAudio] No hay cache, streaming progresivo desde yt-dlp');
+      youtubeService.downloadAudio(url, Number(start)).catch(() => {});
+      return youtubeService.streamAudioToResponse(url, res);
+    }
+
+    const filePath = cached.path;
+    const fileSize = cached.size;
     const rangeHeader = req.headers.range;
 
     if (rangeHeader) {
@@ -135,6 +143,22 @@ const prefetchAudio = (req, res) => {
   youtubeService.getAudioDirectUrl(url).catch((err) =>
     console.warn('[prefetch] Error warming audio cache:', err.message)
   );
+  youtubeService.downloadAudio(url, 0).catch((err) =>
+    console.warn('[prefetch] Error warming yt-dlp cache:', err.message)
+  );
 };
 
-export { searchVideo, searchChannelVideos, downloadAudio, streamVideo, getAudioUrl, prefetchAudio };
+const warmAudio = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) return res.status(400).json({ error: 'url is required' });
+    await youtubeService.downloadAudio(url, 0);
+    res.json({ ready: true });
+  }
+  catch (error) {
+    console.error('Error in warmAudio:', error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+  }
+};
+
+export { searchVideo, searchChannelVideos, downloadAudio, streamVideo, getAudioUrl, prefetchAudio, warmAudio };

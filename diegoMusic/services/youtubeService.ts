@@ -1,5 +1,4 @@
 import apiFetch from './api';
-import { Platform } from 'react-native';
 import { API_URL } from './apiUrl';
 
 const BASE_URL = API_URL;
@@ -81,14 +80,26 @@ export const youtubeService = {
   },
 
   getAudioDirectUrl: async (url: string): Promise<{ url: string; mimeType: string }> => {
-    if (Platform.OS === 'web') {
-      return { url: `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}`, mimeType: 'audio/mp4' };
-    }
-    return apiFetch<{ url: string; mimeType: string }>(`/youtube/audio/url?url=${encodeURIComponent(url)}`);
+    return { url: `${BASE_URL}/youtube/audio/download?url=${encodeURIComponent(url)}`, mimeType: 'audio/mp4' };
   },
 
   prefetchAudio: (url: string): void => {
     fetch(`${BASE_URL}/youtube/audio/prefetch?url=${encodeURIComponent(url)}`).catch(() => {});
+  },
+
+  warmAudio: async (url: string, timeoutMs: number = 25000): Promise<boolean> => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${BASE_URL}/youtube/audio/warm?url=${encodeURIComponent(url)}`, { signal: controller.signal });
+      return res.ok;
+    }
+    catch {
+      return false;
+    }
+    finally {
+      clearTimeout(t);
+    }
   },
 
   getVideoStreamUrl: (url: string, quality: 'low' | 'medium' | 'high' = 'low') => {

@@ -1,5 +1,4 @@
 import ytch from "yt-channel-info";
-import { Innertube } from "youtubei.js";
 import { spawn } from "child_process";
 import { unlink, readFile } from "fs/promises";
 import os from "os";
@@ -12,7 +11,8 @@ import {
   mapInnertubeVideoToChannelItem,
   resolveChannelId
 } from "../utils/youtubeUtils.js";
-import { existsSync } from "fs";
+import { getInnertube } from "../utils/innertube.js";
+import { existsSync, statSync, unlinkSync } from "fs";
 import { execSync } from "child_process";
 
 const ipv4Agent = new https.Agent({ family: 4 });
@@ -30,17 +30,9 @@ const parseCookiesTxt = async (cookiesPath) => {
   }
 };
 
-let innertube = null;
 const downloadCache = new Map();
 const urlCache = new Map();
-const URL_CACHE_TTL = 4 * 60 * 60 * 1000;
-
-const getInnertube = async () => {
-  if (!innertube) {
-    innertube = await Innertube.create({ generate_session_locally: true });
-  }
-  return innertube;
-};
+const URL_CACHE_TTL = 5 * 60 * 1000;
 
 
 const getYtdlpBaseArgs = () => {
@@ -177,6 +169,76 @@ export const getAudioDirectUrl = async (url) => {
 };
 
 
+export const getCachedAudioFile = (url, startSeconds = 0) => {
+  const videoId = extractVideoId(url);
+  const cacheKey = `${videoId}-${startSeconds}`;
+  const tempFile = path.join(os.tmpdir(), `ytdlp-${cacheKey}.m4a`);
+  if (existsSync(tempFile)) {
+    const size = statSync(tempFile).size;
+    if (size > 5000 && !downloadCache.has(cacheKey)) {
+      return { path: tempFile, size };
+    }
+  }
+  return null;
+};
+
+export const streamAudioToResponse = (url, res) => {
+  const videoId = extractVideoId(url);
+  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  const args = [
+    ...getYtdlpBaseArgs(),
+    videoUrl,
+    "-f", "ba[ext=m4a]/ba/best",
+    "-o", "-",
+  ];
+
+  const proc = spawn("yt-dlp", args, {
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, PATH: process.env.PATH }
+  });
+
+  proc.stderr.on("data", (d) => console.log("[yt-dlp:stream]", d.toString().trim()));
+
+  let headersSent = false;
+  let firstChunk = true;
+
+  proc.stdout.on("data", (chunk) => {
+    if (firstChunk) {
+      firstChunk = false;
+      if (!res.headersSent) {
+        res.writeHead(200, {
+          "Content-Type": "audio/mp4",
+          "Transfer-Encoding": "chunked",
+        });
+        headersSent = true;
+      }
+    }
+    if (!res.write(chunk)) proc.stdout.pause();
+  });
+
+  res.on("drain", () => proc.stdout.resume());
+
+  proc.on("close", (code) => {
+    if (code !== 0 && !headersSent && !res.headersSent) {
+      res.status(500).json({ error: `yt-dlp exited with code ${code}` });
+      return;
+    }
+    try { res.end(); } catch {}
+  });
+
+  proc.on("error", (err) => {
+    console.error("[yt-dlp:stream] error:", err);
+    if (!headersSent && !res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
+    else { try { res.end(); } catch {} }
+  });
+
+  res.on("close", () => {
+    try { proc.kill(); } catch {}
+  });
+};
+
 export const downloadAudio = (url, startSeconds = 0) => {
 
   const videoId = extractVideoId(url);
@@ -190,8 +252,13 @@ export const downloadAudio = (url, startSeconds = 0) => {
   const tempFile = path.join(os.tmpdir(), `ytdlp-${cacheKey}.m4a`);
   const promise = new Promise((resolve, reject) => {
     if (existsSync(tempFile)) {
-      console.log(`[yt-dlp] Archivo en disco: ${tempFile}`);
-      return resolve(tempFile);
+      const existingSize = statSync(tempFile).size;
+      if (existingSize > 5000) {
+        console.log(`[yt-dlp] Archivo en disco (${existingSize} bytes): ${tempFile}`);
+        return resolve(tempFile);
+      }
+      console.warn(`[yt-dlp] Archivo en disco corrupto (${existingSize} bytes), eliminando y re-descargando: ${tempFile}`);
+      try { unlinkSync(tempFile); } catch {}
     }
 
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
@@ -213,11 +280,19 @@ export const downloadAudio = (url, startSeconds = 0) => {
 
     proc.on("close", (code) => {
       if (code === 0) {
-        console.log(`[yt-dlp] Descarga completa: ${tempFile}`);
+        const finalSize = existsSync(tempFile) ? statSync(tempFile).size : 0;
+        if (finalSize <= 5000) {
+          console.error(`[yt-dlp] Descarga terminó con archivo inválido (${finalSize} bytes): ${tempFile}`);
+          downloadCache.delete(cacheKey);
+          try { unlinkSync(tempFile); } catch {}
+          return reject(new Error(`yt-dlp produjo archivo vacío (${finalSize} bytes)`));
+        }
+        console.log(`[yt-dlp] Descarga completa (${finalSize} bytes): ${tempFile}`);
         resolve(tempFile);
       }
       else {
         downloadCache.delete(cacheKey);
+        try { unlinkSync(tempFile); } catch {}
         reject(new Error(`yt-dlp salió con código ${code}`));
       }
     });

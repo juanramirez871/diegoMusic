@@ -8,6 +8,7 @@ import { parseDuration } from './utils';
 import { SongData } from '@/interfaces/Song';
 import { useLanguage } from '@/context/LanguageContext';
 
+
 export const useAudioPlayer = (
   currentSong: SongData | null,
   playNext: () => void,
@@ -336,10 +337,53 @@ export const useAudioPlayer = (
             downloadResumable.downloadAsync().then(async (result: any) => {
               downloadResumableRef.current = null;
               downloadTargetUriRef.current = null;
-              if (result && result.uri && currentSongRef.current?.id === song.id) {
-                localFileUriRef.current = result.uri;
-                isUsingLocalFileRef.current = true;
-                console.log('Descarga finalizada para', song.id, 'en', result.uri);
+              if (!result?.uri || currentSongRef.current?.id !== song.id) return;
+
+              let fileCheck = await FileSystem.getInfoAsync(result.uri);
+              let finalUri = result.uri;
+
+              if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+                console.warn(`[PRELOADED] descarga directa inválida (size=${(fileCheck as any).size ?? 0}), reintentando vía backend yt-dlp`);
+                await FileSystem.deleteAsync(result.uri, { idempotent: true });
+                try {
+                  const backendUrl = youtubeService.getAudioDownloadUrl(song.url);
+                  const retry = await FileSystem.createDownloadResumable(backendUrl, result.uri, {}).downloadAsync();
+                  if (!retry?.uri || currentSongRef.current?.id !== song.id) return;
+                  fileCheck = await FileSystem.getInfoAsync(retry.uri);
+                  finalUri = retry.uri;
+                  if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+                    console.error(`[PRELOADED] reintento backend también dio archivo inválido`);
+                    await FileSystem.deleteAsync(retry.uri, { idempotent: true });
+                    return;
+                  }
+                  console.log(`[PRELOADED] reintento backend OK (${(fileCheck as any).size} bytes)`);
+                }
+                catch (e) {
+                  console.error('[PRELOADED] reintento backend falló:', e);
+                  return;
+                }
+              }
+
+              localFileUriRef.current = finalUri;
+              isUsingLocalFileRef.current = true;
+              console.log(`Descarga finalizada para ${song.id} en ${finalUri} (${(fileCheck as any).size} bytes)`);
+
+              if (currentSequence === playSequenceRef.current && soundRef.current && !soundRef.current.playing) {
+                console.warn('[PRELOADED] sound preloaded no arrancó, reemplazando con archivo recién descargado');
+                if (playbackSafetyTimerRef.current) {
+                  clearTimeout(playbackSafetyTimerRef.current);
+                  playbackSafetyTimerRef.current = null;
+                }
+                try { statusSubscriptionRef.current?.remove(); } catch {}
+                statusSubscriptionRef.current = null;
+                try { soundRef.current.remove(); } catch {}
+                const fresh = createAudioPlayer({ uri: finalUri });
+                attachStatusListener(fresh);
+                soundRef.current = fresh;
+                try { fresh.seekTo(0); } catch {}
+                fresh.play();
+                stableSetIsLoading(false);
+                stableSetIsPlaying(true);
               }
             })
             .catch((err: any) => console.error('Download error:', err));
@@ -404,9 +448,53 @@ export const useAudioPlayer = (
           downloadResumable.downloadAsync().then(async (result: any) => {
             downloadResumableRef.current = null;
             downloadTargetUriRef.current = null;
-            if (result?.uri && currentSongRef.current?.id === song.id) {
-              localFileUriRef.current = result.uri;
-              isUsingLocalFileRef.current = true;
+            if (!result?.uri || currentSongRef.current?.id !== song.id) return;
+
+            let fileCheck = await FileSystem.getInfoAsync(result.uri);
+            let finalUri = result.uri;
+
+            if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+              console.warn(`[LOCAL_FALLBACK] descarga directa inválida (size=${(fileCheck as any).size ?? 0}), reintentando vía backend yt-dlp`);
+              await FileSystem.deleteAsync(result.uri, { idempotent: true });
+              try {
+                const backendUrl = youtubeService.getAudioDownloadUrl(song.url);
+                const retry = await FileSystem.createDownloadResumable(backendUrl, result.uri, {}).downloadAsync();
+                if (!retry?.uri || currentSongRef.current?.id !== song.id) return;
+                fileCheck = await FileSystem.getInfoAsync(retry.uri);
+                finalUri = retry.uri;
+
+                if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+                  console.error(`[LOCAL_FALLBACK] reintento backend también dio archivo inválido`);
+                  await FileSystem.deleteAsync(retry.uri, { idempotent: true });
+                  return;
+                }
+                console.log(`[LOCAL_FALLBACK] reintento backend OK (${(fileCheck as any).size} bytes)`);
+              }
+              catch (e) {
+                console.error('[LOCAL_FALLBACK] reintento backend falló:', e);
+                return;
+              }
+            }
+
+            localFileUriRef.current = finalUri;
+            isUsingLocalFileRef.current = true;
+
+            if (currentSequence === playSequenceRef.current && soundRef.current && !soundRef.current.playing) {
+              console.warn('[LOCAL_FALLBACK] sound stream no arrancó, reemplazando con archivo recién descargado');
+              if (playbackSafetyTimerRef.current) {
+                clearTimeout(playbackSafetyTimerRef.current);
+                playbackSafetyTimerRef.current = null;
+              }
+              try { statusSubscriptionRef.current?.remove(); } catch {}
+              statusSubscriptionRef.current = null;
+              try { soundRef.current.remove(); } catch {}
+              const fresh = createAudioPlayer({ uri: finalUri });
+              attachStatusListener(fresh);
+              soundRef.current = fresh;
+              try { fresh.seekTo(0); } catch {}
+              fresh.play();
+              stableSetIsLoading(false);
+              stableSetIsPlaying(true);
             }
           })
           .catch((err: any) => console.error('Download error:', err));
@@ -422,6 +510,14 @@ export const useAudioPlayer = (
           return;
         }
 
+        console.log(`[PSL] NETWORK: warming yt-dlp...`);
+        const warmedOk = await youtubeService.warmAudio(song.url);
+        console.log(`[PSL] NETWORK: warm result=${warmedOk}`);
+        if (currentSequence !== playSequenceRef.current) {
+          console.log(`[PSL] NETWORK: seq mismatch tras warm. ABORT.`);
+          return;
+        }
+
         sound = createAudioPlayer({ uri: directUrl });
         attachStatusListener(sound);
         sound.play();
@@ -433,16 +529,65 @@ export const useAudioPlayer = (
         downloadResumableRef.current = downloadResumable;
         downloadTargetUriRef.current = targetUri;
 
-        downloadResumable.downloadAsync().then(async (result: any) => {
+        const handleDownloadResult = async (result: any) => {
           downloadResumableRef.current = null;
           downloadTargetUriRef.current = null;
-          if (result && result.uri && currentSongRef.current?.id === song.id) {
-            localFileUriRef.current = result.uri;
-            isUsingLocalFileRef.current = true;
-            console.log('Descarga finalizada para', song.id, 'en', result.uri);
+          if (!result?.uri || currentSongRef.current?.id !== song.id) return;
+
+          let fileCheck = await FileSystem.getInfoAsync(result.uri);
+          let finalUri = result.uri;
+
+          if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+            console.warn(`[NETWORK] descarga directa inválida (size=${(fileCheck as any).size ?? 0}), reintentando vía backend yt-dlp`);
+            await FileSystem.deleteAsync(result.uri, { idempotent: true });
+            try {
+              const backendUrl = youtubeService.getAudioDownloadUrl(song.url);
+              const retry = await FileSystem.createDownloadResumable(backendUrl, result.uri, {}).downloadAsync();
+              if (!retry?.uri || currentSongRef.current?.id !== song.id) return;
+              fileCheck = await FileSystem.getInfoAsync(retry.uri);
+              finalUri = retry.uri;
+              if (!fileCheck.exists || (fileCheck as any).size < 5000) {
+                console.error(`[NETWORK] reintento backend también dio archivo inválido (size=${(fileCheck as any).size ?? 0})`);
+                await FileSystem.deleteAsync(retry.uri, { idempotent: true });
+                return;
+              }
+              console.log(`[NETWORK] reintento backend OK (${(fileCheck as any).size} bytes)`);
+            }
+            catch (e) {
+              console.error('[NETWORK] reintento backend falló:', e);
+              return;
+            }
           }
-        })
-        .catch((err: any) => console.error('Download error:', err));
+
+          localFileUriRef.current = finalUri;
+          isUsingLocalFileRef.current = true;
+          console.log(`Descarga finalizada para ${song.id} en ${finalUri} (${(fileCheck as any).size} bytes)`);
+
+          if (currentSequence === playSequenceRef.current && soundRef.current) {
+            const currentTimeSec = (soundRef.current.currentTime ?? 0);
+            const reallyPlaying = soundRef.current.playing && currentTimeSec > 0.1;
+            if (!reallyPlaying) {
+              console.warn(`[NETWORK] sound stream no arrancó (playing=${soundRef.current.playing} currentTime=${currentTimeSec}), reemplazando con archivo recién descargado`);
+              if (playbackSafetyTimerRef.current) {
+                clearTimeout(playbackSafetyTimerRef.current);
+                playbackSafetyTimerRef.current = null;
+              }
+              try { statusSubscriptionRef.current?.remove(); } catch {}
+              statusSubscriptionRef.current = null;
+              try { soundRef.current.remove(); } catch {}
+              const fresh = createAudioPlayer({ uri: finalUri });
+              attachStatusListener(fresh);
+              soundRef.current = fresh;
+              try { fresh.seekTo(0); } catch {}
+              fresh.play();
+              stableSetIsLoading(false);
+              stableSetIsPlaying(true);
+            }
+          }
+        };
+        downloadResumable.downloadAsync()
+          .then(handleDownloadResult)
+          .catch((err: any) => console.error('Download error:', err));
       }
       else throw new Error('Offline and no local file');
 

@@ -1,3 +1,4 @@
+import { getInnertube } from "./innertube.js";
 
 export const extractVideoId = (url) => {
   if (url.includes("v="))        return url.split("v=")[1].split("&")[0];
