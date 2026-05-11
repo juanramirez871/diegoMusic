@@ -95,6 +95,20 @@ export const webDownload = {
     return fileExists(dir, filename);
   },
 
+  async deleteOne(songId: string, title: string): Promise<boolean> {
+    if (!supportsFsAccess()) return false;
+    const dir = await getOrPickRootDir();
+    if (!dir) return false;
+    const filename = `${sanitizeFilename(title || songId)}.mp3`;
+    try {
+      await dir.removeEntry(filename);
+      return true;
+    }
+    catch {
+      return false;
+    }
+  },
+
   async downloadOne(opts: { songId: string; title: string; url: string }): Promise<'downloaded' | 'skipped' | 'failed'> {
     const { songId, title, url } = opts;
     const filename = `${sanitizeFilename(title || songId)}.mp3`;

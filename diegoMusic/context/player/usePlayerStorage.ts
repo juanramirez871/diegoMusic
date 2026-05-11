@@ -184,15 +184,24 @@ export const usePlayerStorage = () => {
 
       await storage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
       if (isFav) {
-        try {
-          await Promise.all([
-            FileSystem.deleteAsync(persistentUri, { idempotent: true }),
-            FileSystem.deleteAsync(thumbnailUri, { idempotent: true })
-          ]);
-          bumpDownloadVersion();
+        if (Platform.OS === 'web') {
+          if (await webDownload.hasFolder()) {
+            webDownload.deleteOne(song.id, song.title).then((ok) => {
+              if (ok) bumpDownloadVersion();
+            });
+          }
         }
-        catch (e) {
-          console.warn('Error deleting favorite files:', e);
+        else {
+          try {
+            await Promise.all([
+              FileSystem.deleteAsync(persistentUri, { idempotent: true }),
+              FileSystem.deleteAsync(thumbnailUri, { idempotent: true })
+            ]);
+            bumpDownloadVersion();
+          }
+          catch (e) {
+            console.warn('Error deleting favorite files:', e);
+          }
         }
       }
       else {
