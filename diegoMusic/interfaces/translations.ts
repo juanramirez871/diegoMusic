@@ -11,6 +11,8 @@ export interface Translations {
     songCount: string;
     noResults: string;
     noSongs: string;
+    downloadAllDoneTitle: string;
+    downloadAllDoneBody: string;
   };
   search: {
     title: string;
@@ -91,6 +93,8 @@ export interface Translations {
     songDownloaded: string;
     notificationTitle: string;
     notificationBody: string;
+    batchNotificationTitle: string;
+    batchNotificationBody: string;
   };
   musicArtist: {
     forFansOf: string;

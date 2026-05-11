@@ -47,6 +47,8 @@ export interface PlayerContextType {
   recentPlayed: SongData[];
   mostPlayed: SongData[];
   toggleFavorite: (song: SongData) => void;
+  downloadAllFavorites: () => Promise<{ downloaded: number; skipped: number; failed: number }>;
+  downloadVersion: number;
   toggleFavoriteArtist: (artist: ArtistData) => void;
   isFavorite: (songId: string) => boolean;
   isFavoriteArtist: (artistId: string) => boolean;

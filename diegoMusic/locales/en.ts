@@ -13,6 +13,8 @@ const en: Translations = {
     songCount: '{count} songs',
     noResults: 'No results found',
     noSongs: 'No liked songs yet',
+    downloadAllDoneTitle: 'Download finished',
+    downloadAllDoneBody: 'Downloaded: {downloaded} · Already saved: {skipped} · Failed: {failed}',
   },
   search: {
     title: 'Search',
@@ -93,6 +95,8 @@ const en: Translations = {
     songDownloaded: 'Song downloaded',
     notificationTitle: 'Download complete',
     notificationBody: '"{title}" is now available',
+    batchNotificationTitle: 'Downloads complete',
+    batchNotificationBody: '{downloaded} songs downloaded · {failed} failed',
   },
   musicArtist: {
     forFansOf: 'For fans of',

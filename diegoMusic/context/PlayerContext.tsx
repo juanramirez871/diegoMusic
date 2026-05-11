@@ -44,7 +44,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toggleFavoriteArtist,
     isFavoriteArtist,
     addRecentPlayed,
-    addMostPlayed
+    addMostPlayed,
+    downloadAllFavorites,
+    downloadVersion,
   } = usePlayerStorage();
 
   const {
@@ -342,6 +344,8 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     artistPlays,
     songPlays,
     toggleFavorite,
+    downloadAllFavorites,
+    downloadVersion,
     toggleFavoriteArtist,
     isFavorite,
     isFavoriteArtist,
@@ -374,7 +378,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setVolume,
   }), [
     isMaximized, currentSong, playSong, favorites, favoriteArtists, recentPlayed, mostPlayed,
-    toggleFavorite, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
+    toggleFavorite, downloadAllFavorites, downloadVersion, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
     queue, setQueue, playNext, playPrevious, isShuffle, onToggleShuffle, repeatMode, toggleRepeat,
     isPlaying, isIntendingToPlay, togglePlayPause, pause, progress, duration, seekTo,
     isLoading, sleepTimer, setSleepTimer, showDownloadBanner, streak, artistPlays, songPlays,

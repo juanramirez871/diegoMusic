@@ -35,6 +35,8 @@ export const usePlayerStorage = () => {
   const [artistPlays, setArtistPlays] = useState<Record<string, ArtistPlayData>>({});
   const [songPlays, setSongPlays] = useState<Record<string, SongPlayData>>({});
   const [showDownloadBanner, setShowDownloadBanner] = useState(false);
+  const [downloadVersion, setDownloadVersion] = useState(0);
+  const bumpDownloadVersion = () => setDownloadVersion((v) => v + 1);
   const [streak, setStreak] = useState(0);
   const [videoQuality, setVideoQualityState] = useState<VideoQuality>('low');
 
@@ -186,6 +188,7 @@ export const usePlayerStorage = () => {
             FileSystem.deleteAsync(persistentUri, { idempotent: true }),
             FileSystem.deleteAsync(thumbnailUri, { idempotent: true })
           ]);
+          bumpDownloadVersion();
         }
         catch (e) {
           console.warn('Error deleting favorite files:', e);
@@ -223,6 +226,7 @@ export const usePlayerStorage = () => {
             }
             console.log(`[FAVORITE] Descarga de audio completada (${(info as any).size} bytes): ${song.title}`);
             triggerDownloadBanner();
+            bumpDownloadVersion();
             if (AppState.currentState !== 'active') {
               sendDownloadCompleteNotification(
                 t('download.notificationTitle'),
@@ -396,6 +400,86 @@ export const usePlayerStorage = () => {
     await storage.setItem(VIDEO_QUALITY_KEY, quality);
   };
 
+  const downloadAllFavorites = async (): Promise<{ downloaded: number; skipped: number; failed: number }> => {
+    const stats = { downloaded: 0, skipped: 0, failed: 0 };
+    const concurrency = 2;
+    const queue = [...favorites];
+
+    const downloadOne = (song: SongData): Promise<void> => new Promise((resolve) => {
+      const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;
+      const thumbnailUri = `${FileSystem.documentDirectory}${song.id}_thumb.jpg`;
+
+      FileSystem.getInfoAsync(persistentUri).then((info) => {
+        if (info.exists && (info as any).size > 5000) {
+          stats.skipped++;
+          return resolve();
+        }
+        const cleanupAndStart = info.exists
+          ? FileSystem.deleteAsync(persistentUri, { idempotent: true })
+          : Promise.resolve();
+
+        cleanupAndStart.then(() => {
+          const downloadUrl = youtubeService.getAudioDownloadUrl(song.url);
+          FileSystem.createDownloadResumable(
+            downloadUrl,
+            persistentUri,
+            { sessionType: FileSystem.FileSystemSessionType.BACKGROUND }
+          )
+          .downloadAsync().then(async (result: any) => {
+            const finalInfo = await FileSystem.getInfoAsync(result?.uri || persistentUri);
+            if (!finalInfo.exists || (finalInfo as any).size <= 5000) {
+              await FileSystem.deleteAsync(persistentUri, { idempotent: true });
+              stats.failed++;
+              return resolve();
+            }
+            stats.downloaded++;
+            bumpDownloadVersion();
+
+            if (AppState.currentState !== 'active') {
+              sendDownloadCompleteNotification(
+                t('download.notificationTitle'),
+                t('download.notificationBody', { title: song.title })
+              );
+            }
+
+            if (song.thumbnail?.url) {
+              const thumbInfo = await FileSystem.getInfoAsync(thumbnailUri);
+              if (!thumbInfo.exists) {
+                FileSystem.createDownloadResumable(song.thumbnail.url, thumbnailUri, {})
+                  .downloadAsync()
+                  .catch(() => {});
+              }
+            }
+            resolve();
+          })
+          .catch((err: any) => {
+            console.error(`[DOWNLOAD_ALL] Error en ${song.title}:`, err);
+            FileSystem.deleteAsync(persistentUri, { idempotent: true }).catch(() => {});
+            stats.failed++;
+            resolve();
+          });
+        });
+      })
+      .catch(() => {
+        stats.failed++;
+        resolve();
+      });
+    });
+
+    const workers = Array.from({ length: concurrency }, async () => {
+      while (queue.length > 0) {
+        const song = queue.shift();
+        if (song) await downloadOne(song);
+      }
+    });
+
+    await Promise.all(workers);
+    if (stats.downloaded > 0) triggerDownloadBanner();
+    bumpDownloadVersion();
+
+    return stats;
+  };
+
   return {
     favorites,
     favoriteArtists,
@@ -412,6 +496,8 @@ export const usePlayerStorage = () => {
     toggleFavoriteArtist,
     isFavoriteArtist,
     addRecentPlayed,
-    addMostPlayed
+    addMostPlayed,
+    downloadAllFavorites,
+    downloadVersion,
   };
 };

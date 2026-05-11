@@ -13,6 +13,8 @@ const ja: Translations = {
     songCount: '{count}曲',
     noResults: '結果が見つかりません',
     noSongs: 'まだお気に入りの曲がありません',
+    downloadAllDoneTitle: 'ダウンロード完了',
+    downloadAllDoneBody: 'ダウンロード: {downloaded} · 既存: {skipped} · 失敗: {failed}',
   },
   search: {
     title: '検索',
@@ -93,6 +95,8 @@ const ja: Translations = {
     songDownloaded: '曲をダウンロードしました',
     notificationTitle: 'ダウンロード完了',
     notificationBody: '「{title}」が利用可能になりました',
+    batchNotificationTitle: 'ダウンロード完了',
+    batchNotificationBody: '{downloaded}曲ダウンロード · {failed}失敗',
   },
   musicArtist: {
     forFansOf: 'こんな人におすすめ',

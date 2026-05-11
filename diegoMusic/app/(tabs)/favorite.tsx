@@ -4,7 +4,9 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from '@/components/IconSymbol';
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,6 +14,7 @@ import { StatusBar } from "expo-status-bar";
 import Song from "@/components/Song";
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { usePendingDownloads } from "@/hooks/usePendingDownloads";
 import React, { useState, useMemo } from "react";
 import { styles } from "@/styles/FavoriteScreen.styles";
 import Animated, {
@@ -26,9 +29,26 @@ export default function FavoriteScreen() {
 
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
-  const { favorites, playSong, isShuffle, toggleShuffle } = usePlayer();
+  const { favorites, playSong, isShuffle, toggleShuffle, downloadAllFavorites } = usePlayer();
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const pendingDownloads = usePendingDownloads();
+
+  const handleDownloadAll = async () => {
+    if (isDownloadingAll || favorites.length === 0) return;
+    setIsDownloadingAll(true);
+    try {
+      const stats = await downloadAllFavorites();
+      Alert.alert(
+        t('favorite.downloadAllDoneTitle'),
+        t('favorite.downloadAllDoneBody', stats),
+      );
+    }
+    finally {
+      setIsDownloadingAll(false);
+    }
+  };
 
   const filteredFavorites = useMemo(() => {
     return [...favorites].reverse().filter(
@@ -213,6 +233,17 @@ export default function FavoriteScreen() {
       </Animated.ScrollView>
 
       <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
+        {Platform.OS !== 'web' && (pendingDownloads > 0 || isDownloadingAll) && (
+          <Animated.View style={shuffleAnimatedStyle}>
+            <TouchableOpacity onPress={handleDownloadAll} disabled={isDownloadingAll}>
+              {isDownloadingAll ? (
+                <LoadingSpinner size={32} color="#2c5af3" />
+              ) : (
+                <IconSymbol name="arrow.down.circle.fill" size={32} color="#fff" />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        )}
         <Animated.View style={shuffleAnimatedStyle}>
           <TouchableOpacity onPress={toggleShuffle}>
             <IconSymbol name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />

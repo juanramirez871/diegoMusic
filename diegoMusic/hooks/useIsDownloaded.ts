@@ -4,7 +4,7 @@ import * as FileSystem from '@/utils/fileSystem';
 import { usePlayer } from '@/context/PlayerContext';
 
 export function useIsDownloaded(songId?: string): boolean {
-  const { favorites } = usePlayer();
+  const { favorites, downloadVersion } = usePlayer();
   const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function useIsDownloaded(songId?: string): boolean {
       .catch(() => !cancelled && setDownloaded(false));
 
     return () => { cancelled = true; };
-  }, [songId, favorites]);
+  }, [songId, favorites, downloadVersion]);
 
   return downloaded;
 }
