@@ -14,7 +14,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o 
 WORKDIR /app
 COPY package*.json ./
 
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 COPY . .
 
 EXPOSE 3000

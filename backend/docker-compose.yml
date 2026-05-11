@@ -1,3 +1,5 @@
+name: diegomusic
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -40,6 +42,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../diegoMusic
+      dockerfile: Dockerfile
+      args:
+        EXPO_PUBLIC_API_URL: https://api.diegomusic.com:47821/api
+        EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID}
+        EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID}
+    container_name: diego-music-web
+    ports:
+      - "47822:47822"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     restart: unless-stopped
 
 volumes:
