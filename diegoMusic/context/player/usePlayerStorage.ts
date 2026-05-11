@@ -3,7 +3,8 @@ import storage from '@/services/storage';
 import { sendDownloadCompleteNotification } from '@/services/notifications';
 import * as FileSystem from '@/utils/fileSystem';
 import { useEffect, useState } from 'react';
-import { Alert, AppState } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
+import { webDownload } from '@/services/webDownload';
 import {
     FAVORITES_KEY,
     FAVORITE_ARTISTS_KEY,
@@ -195,6 +196,34 @@ export const usePlayerStorage = () => {
         }
       }
       else {
+        if (Platform.OS === 'web') {
+          let folderReady = await webDownload.hasFolder();
+          if (!folderReady && webDownload.isSupported()) {
+            folderReady = await webDownload.pickFolder();
+          }
+          if (folderReady || !webDownload.isSupported()) {
+            console.log(`[FAVORITE] (web) Iniciando descarga: ${song.title}`);
+            webDownload.downloadOne({
+              songId: song.id,
+              title: song.title,
+              url: youtubeService.getAudioDownloadUrl(song.url),
+            }).then((result) => {
+              if (result === 'downloaded') {
+                triggerDownloadBanner();
+                bumpDownloadVersion();
+              }
+              else if (result === 'failed') {
+                Alert.alert(
+                  t('errors.downloadTitle'),
+                  t('errors.downloadFailed', { title: song.title })
+                );
+              }
+            });
+          }
+          if (isFav) favoriteSongsService.remove(song.id);
+          else favoriteSongsService.add(song);
+          return;
+        }
         const fileInfo = await FileSystem.getInfoAsync(persistentUri);
         const hasValidFile = fileInfo.exists && (fileInfo as any).size > 5000;
         if (!hasValidFile) {
@@ -404,6 +433,31 @@ export const usePlayerStorage = () => {
     const stats = { downloaded: 0, skipped: 0, failed: 0 };
     const concurrency = 2;
     const queue = [...favorites];
+
+    if (Platform.OS === 'web') {
+      const folderOk = await webDownload.pickFolder();
+      if (!folderOk && webDownload.isSupported()) {
+        return stats;
+      }
+      const downloadOneWeb = async (song: SongData) => {
+        const result = await webDownload.downloadOne({
+          songId: song.id,
+          title: song.title,
+          url: youtubeService.getAudioDownloadUrl(song.url),
+        });
+        stats[result as keyof typeof stats]++;
+        if (result === 'downloaded') bumpDownloadVersion();
+      };
+      const workersWeb = Array.from({ length: concurrency }, async () => {
+        while (queue.length > 0) {
+          const song = queue.shift();
+          if (song) await downloadOneWeb(song);
+        }
+      });
+      await Promise.all(workersWeb);
+      if (stats.downloaded > 0) triggerDownloadBanner();
+      return stats;
+    }
 
     const downloadOne = (song: SongData): Promise<void> => new Promise((resolve) => {
       const persistentUri = `${FileSystem.documentDirectory}${song.id}.mp3`;

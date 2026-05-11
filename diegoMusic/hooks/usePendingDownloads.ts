@@ -2,16 +2,27 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as FileSystem from '@/utils/fileSystem';
 import { usePlayer } from '@/context/PlayerContext';
+import { webDownload } from '@/services/webDownload';
 
 export function usePendingDownloads(): number {
-  
+
   const { favorites, downloadVersion } = usePlayer();
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      setPending(0);
-      return;
+      let cancelledWeb = false;
+      (async () => {
+        if (!(await webDownload.hasFolder())) {
+          if (!cancelledWeb) setPending(favorites.length);
+          return;
+        }
+        const checks = await Promise.all(
+          favorites.map((s) => webDownload.isDownloaded(s.id, s.title)),
+        );
+        if (!cancelledWeb) setPending(checks.filter((ok) => !ok).length);
+      })();
+      return () => { cancelledWeb = true; };
     }
 
     let cancelled = false;

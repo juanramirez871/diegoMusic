@@ -12,11 +12,11 @@ import { styles } from './styles';
 
 export default function Song({ data, onPress }: SongProps) {
 
-  const { currentSong, isPlaying, isLoading } = usePlayer();
+  const { currentSong } = usePlayer();
   const { t } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const thumbnailSource = useThumbnail(data?.id, data?.thumbnail?.url);
-  const isDownloaded = useIsDownloaded(data?.id);
+  const isDownloaded = useIsDownloaded(data?.id, data?.title);
 
   const isCurrentSong = currentSong?.id === data?.id;
   const title = data?.title || t('song.untitled');

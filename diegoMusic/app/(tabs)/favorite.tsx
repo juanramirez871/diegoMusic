@@ -233,7 +233,7 @@ export default function FavoriteScreen() {
       </Animated.ScrollView>
 
       <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
-        {Platform.OS !== 'web' && (pendingDownloads > 0 || isDownloadingAll) && (
+        {(pendingDownloads > 0 || isDownloadingAll) && (
           <Animated.View style={shuffleAnimatedStyle}>
             <TouchableOpacity onPress={handleDownloadAll} disabled={isDownloadingAll}>
               {isDownloadingAll ? (

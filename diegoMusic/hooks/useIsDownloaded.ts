@@ -2,20 +2,29 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as FileSystem from '@/utils/fileSystem';
 import { usePlayer } from '@/context/PlayerContext';
+import { webDownload } from '@/services/webDownload';
 
-export function useIsDownloaded(songId?: string): boolean {
+export function useIsDownloaded(songId?: string, title?: string): boolean {
+  
   const { favorites, downloadVersion } = usePlayer();
   const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'web' || !songId) {
+    if (!songId) {
       setDownloaded(false);
       return;
     }
 
     let cancelled = false;
-    const uri = `${FileSystem.documentDirectory}${songId}.mp3`;
 
+    if (Platform.OS === 'web') {
+      webDownload.isDownloaded(songId, title || songId)
+        .then((ok) => !cancelled && setDownloaded(ok))
+        .catch(() => !cancelled && setDownloaded(false));
+      return () => { cancelled = true; };
+    }
+
+    const uri = `${FileSystem.documentDirectory}${songId}.mp3`;
     FileSystem.getInfoAsync(uri)
       .then((info) => {
         if (cancelled) return;
@@ -24,7 +33,7 @@ export function useIsDownloaded(songId?: string): boolean {
       .catch(() => !cancelled && setDownloaded(false));
 
     return () => { cancelled = true; };
-  }, [songId, favorites, downloadVersion]);
+  }, [songId, title, favorites, downloadVersion]);
 
   return downloaded;
 }

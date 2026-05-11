@@ -43,7 +43,7 @@ const ICONS: Record<string, IconEntry> = {
   'musical-notes-outline': { icon: Icons.Music2 },
   'speaker.wave.2.fill': { icon: Icons.Volume2 },
   'speaker.slash.fill': { icon: Icons.VolumeX },
-  'arrow.down.circle.fill': { icon: Icons.ArrowDownCircle, filled: true },
+  'arrow.down.circle.fill': { icon: Icons.ArrowDownCircle },
   'arrow.clockwise': { icon: Icons.RotateCw },
   'wifi': { icon: Icons.Wifi },
   'wifi.slash': { icon: Icons.WifiOff },
