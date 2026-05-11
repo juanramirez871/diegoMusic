@@ -5,6 +5,7 @@ import SongOptionsModal from "@/components/SongOptionsModal";
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
+import { useIsDownloaded } from "@/hooks/useIsDownloaded";
 import { SongProps } from "@/interfaces/Song";
 import { styles } from './styles';
 
@@ -15,7 +16,8 @@ export default function Song({ data, onPress }: SongProps) {
   const { t } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const thumbnailSource = useThumbnail(data?.id, data?.thumbnail?.url);
-  
+  const isDownloaded = useIsDownloaded(data?.id);
+
   const isCurrentSong = currentSong?.id === data?.id;
   const title = data?.title || t('song.untitled');
   const artist = data?.channel?.name || t('song.unknownArtist');
@@ -67,8 +69,16 @@ export default function Song({ data, onPress }: SongProps) {
                 color={isCurrentSong ? "#2c5af3" : "#b3b3b3"}
               />
             </View>
-            <Text 
-              style={[styles.artist, isCurrentSong && { color: "rgba(44, 90, 243, 0.7)" }]} 
+            {isDownloaded && (
+              <IconSymbol
+                name="arrow.down.circle.fill"
+                size={14}
+                color="#2c5af3"
+                style={{ marginLeft: -4 }}
+              />
+            )}
+            <Text
+              style={[styles.artist, isCurrentSong && { color: "rgba(44, 90, 243, 0.7)" }]}
               numberOfLines={1}
             >
               {artist} {data?.duration_formatted ? `• ${data.duration_formatted}` : ""}
