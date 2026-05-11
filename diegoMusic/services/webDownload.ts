@@ -95,6 +95,21 @@ export const webDownload = {
     return fileExists(dir, filename);
   },
 
+  async getBlobUrl(songId: string, title: string): Promise<string | null> {
+    if (!supportsFsAccess()) return null;
+    const dir = await getOrPickRootDir();
+    if (!dir) return null;
+    const filename = `${sanitizeFilename(title || songId)}.mp3`;
+    try {
+      const handle = await dir.getFileHandle(filename);
+      const file = await handle.getFile();
+      return URL.createObjectURL(file);
+    }
+    catch {
+      return null;
+    }
+  },
+
   async deleteOne(songId: string, title: string): Promise<boolean> {
     if (!supportsFsAccess()) return false;
     const dir = await getOrPickRootDir();

@@ -2,7 +2,8 @@ import { youtubeService } from '@/services/youtubeService';
 import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from '@/utils/fileSystem';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, AppState } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
+import { webDownload } from '@/services/webDownload';
 import { PlaybackState, SafeMediaControl } from './mediaControls';
 import { parseDuration } from './utils';
 import { SongData } from '@/interfaces/Song';
@@ -501,6 +502,24 @@ export const useAudioPlayer = (
         }
       }
       else if (isOnline) {
+
+        if (Platform.OS === 'web') {
+          const blobUrl = await webDownload.getBlobUrl(song.id, song.title);
+          if (blobUrl) {
+            console.log(`[PSL] seq=${currentSequence} → RAMA: WEB_LOCAL (blob)`);
+            if (currentSequence !== playSequenceRef.current) {
+              URL.revokeObjectURL(blobUrl);
+              return;
+            }
+            sound = createAudioPlayer({ uri: blobUrl });
+            attachStatusListener(sound);
+            sound.play();
+            soundRef.current = sound;
+            await addRecentPlayed(song);
+            await addMostPlayed(song);
+            return;
+          }
+        }
 
         console.log(`[PSL] seq=${currentSequence} → RAMA: NETWORK (API fetch) song.url=${song.url}`);
         const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
