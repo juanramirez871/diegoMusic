@@ -24,10 +24,34 @@ export const unstable_settings = {
 };
 
 function RootLayoutContent() {
+
   const { isLoggedIn, loading, user } = useAuth();
-  const { isMaximized, setIsMaximized, setVideoQuality } = usePlayer();
+  const { isMaximized, setIsMaximized, setVideoQuality, togglePlayPause, currentSong } = usePlayer();
   const { setLocale } = useLanguage();
   const settingsApplied = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isLoggedIn) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      if (e.type === 'keydown' && currentSong) togglePlayPause();
+    };
+
+    window.addEventListener('keydown', handler, { capture: true });
+    window.addEventListener('keyup', handler, { capture: true });
+
+    return () => {
+      window.removeEventListener('keydown', handler, { capture: true } as any);
+      window.removeEventListener('keyup', handler, { capture: true } as any);
+    };
+  }, [isLoggedIn, currentSong, togglePlayPause]);
 
   useEffect(() => {
     if (!user) { settingsApplied.current = false; return; }
