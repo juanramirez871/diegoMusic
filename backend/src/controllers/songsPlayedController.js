@@ -14,9 +14,11 @@ export async function recordPlay(req, res) {
         defaults: { name: channelName ?? '', avatar: channelAvatar ?? '' },
       });
 
-      if (artist.name !== channelName || artist.avatar !== channelAvatar) {
-        await artist.update({ name: channelName, avatar: channelAvatar });
-      }
+      const patch = {};
+      if (channelName && !artist.name) patch.name = channelName;
+      if (channelAvatar && !artist.avatar) patch.avatar = channelAvatar;
+      if (Object.keys(patch).length > 0) await artist.update(patch);
+
       artistId = artist.id;
     }
 

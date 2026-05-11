@@ -285,8 +285,17 @@ export const usePlayerStorage = () => {
       console.error('Error persisting favorite artists:', error);
     }
 
-    if (isAlreadyFavorite) favoriteArtistsService.remove(artist.id);
-    else favoriteArtistsService.add(artist);
+    if (isAlreadyFavorite) {
+      favoriteArtistsService.remove(artist.id);
+    }
+    else {
+      const canonical = await favoriteArtistsService.add(artist);
+      if (canonical && (canonical.avatar !== artist.avatar || canonical.name !== artist.name)) {
+        const reconciled = newFavoriteArtists.map(a => a.id === canonical.id ? canonical : a);
+        setFavoriteArtists(reconciled);
+        storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(reconciled)).catch(() => {});
+      }
+    }
   };
 
   const isFavoriteArtist = (artistId: string) => {

@@ -12,15 +12,17 @@ export const favoriteArtistsService = {
     }
   },
 
-  async add(artist: ArtistData): Promise<void> {
+  async add(artist: ArtistData): Promise<ArtistData | null> {
     try {
-      await apiFetch('/artists/favorites', {
+      const res = await apiFetch<{ artist?: ArtistData }>('/artists/favorites', {
         method: 'POST',
         body: JSON.stringify({ channelId: artist.id, name: artist.name, avatar: artist.avatar }),
       });
+      return res.artist ?? null;
     }
     catch (err) {
       console.warn('[FavoriteArtists] Failed to add to DB:', err);
+      return null;
     }
   },
 

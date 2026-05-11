@@ -31,12 +31,16 @@ export async function addFavoriteArtist(req, res) {
       defaults: { name, avatar },
     });
 
-    if (artist.name !== name || artist.avatar !== avatar) {
-      await artist.update({ name, avatar });
-    }
+    const patch = {};
+    if (name && !artist.name) patch.name = name;
+    if (avatar && !artist.avatar) patch.avatar = avatar;
+    if (Object.keys(patch).length > 0) await artist.update(patch);
 
     await FavoriteArtist.findOrCreate({ where: { userId, artistId: artist.id } });
-    res.status(201).json({ ok: true });
+    res.status(201).json({
+      ok: true,
+      artist: { id: artist.channelId, name: artist.name, avatar: artist.avatar ?? '' },
+    });
   }
   catch (err) {
     console.error('[FavoriteArtists] Add error:', err);

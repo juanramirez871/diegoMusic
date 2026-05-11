@@ -30,7 +30,7 @@ export const youtubeService = {
     channel: {
       name: video.author,
       id: video.authorId,
-      avatar: video.videoThumbnails?.sort((a: any, b: any) => b.width - a.width)[0]?.url || "",
+      avatar: "",
     },
     duration_formatted: video.durationText || "00:00",
   }),
