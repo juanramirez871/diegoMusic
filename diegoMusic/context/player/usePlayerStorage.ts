@@ -22,10 +22,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { favoriteArtistsService } from '@/services/favoriteArtistsService';
 import { favoriteSongsService } from '@/services/favoriteSongsService';
 import { songsPlayedService } from '@/services/songsPlayedService';
+import { useAuth } from '@/context/AuthContext';
 
 export const usePlayerStorage = () => {
 
   const { t } = useLanguage();
+  const { token } = useAuth();
   const [favorites, setFavorites] = useState<SongData[]>([]);
   const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
@@ -128,50 +130,40 @@ export const usePlayerStorage = () => {
   }, []);
 
   useEffect(() => {
+    if (!token) return;
+
     favoriteArtistsService.fetchAll().then((artists) => {
-      if (artists.length > 0) {
-        setFavoriteArtists(artists);
-        storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(artists)).catch(() => {});
-      }
+      setFavoriteArtists(artists);
+      storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(artists)).catch(() => {});
     });
     favoriteSongsService.fetchAll().then((songs) => {
-      if (songs.length > 0) {
-        setFavorites(songs);
-        storage.setItem(FAVORITES_KEY, JSON.stringify(songs)).catch(() => {});
-        syncThumbnails(songs);
-      }
+      setFavorites(songs);
+      storage.setItem(FAVORITES_KEY, JSON.stringify(songs)).catch(() => {});
+      if (songs.length > 0) syncThumbnails(songs);
     });
     songsPlayedService.fetchStats().then((stats) => {
       if (!stats) return;
-      if (stats.recentPlayed.length > 0) {
-        setRecentPlayed(stats.recentPlayed);
-        storage.setItem(RECENT_PLAYED_KEY, JSON.stringify(stats.recentPlayed)).catch(() => {});
-      }
 
-      if (stats.mostPlayed.length > 0) {
-        setMostPlayed(stats.mostPlayed);
-        storage.setItem(MOST_PLAYED_KEY, JSON.stringify(stats.mostPlayed)).catch(() => {});
-      }
+      setRecentPlayed(stats.recentPlayed);
+      storage.setItem(RECENT_PLAYED_KEY, JSON.stringify(stats.recentPlayed)).catch(() => {});
 
-      if (Object.keys(stats.artistPlays).length > 0) {
-        setArtistPlays(stats.artistPlays);
-        storage.setItem(ARTIST_PLAYS_KEY, JSON.stringify(stats.artistPlays)).catch(() => {});
-      }
+      setMostPlayed(stats.mostPlayed);
+      storage.setItem(MOST_PLAYED_KEY, JSON.stringify(stats.mostPlayed)).catch(() => {});
 
-      if (Object.keys(stats.songPlays).length > 0) {
-        setSongPlays(stats.songPlays);
-        storage.setItem(SONG_PLAYS_KEY, JSON.stringify(stats.songPlays)).catch(() => {});
-      }
-      
-      if (stats.activeDays.length > 0) {
-        setStreak(computeStreak(stats.activeDays));
-        storage.setItem(ACTIVE_DAYS_KEY, JSON.stringify(stats.activeDays)).catch(() => {});
-      }
-      if (stats.lyricsQueries && Object.keys(stats.lyricsQueries).length > 0) {
+      setArtistPlays(stats.artistPlays);
+      storage.setItem(ARTIST_PLAYS_KEY, JSON.stringify(stats.artistPlays)).catch(() => {});
+
+      setSongPlays(stats.songPlays);
+      storage.setItem(SONG_PLAYS_KEY, JSON.stringify(stats.songPlays)).catch(() => {});
+
+      setStreak(computeStreak(stats.activeDays));
+      storage.setItem(ACTIVE_DAYS_KEY, JSON.stringify(stats.activeDays)).catch(() => {});
+
+      if (stats.lyricsQueries) {
         storage.setItem('@lyrics_custom_queries', JSON.stringify(stats.lyricsQueries)).catch(() => {});
       }
     });
-  }, []);
+  }, [token]);
 
   const toggleFavorite = async (song: SongData) => {
 

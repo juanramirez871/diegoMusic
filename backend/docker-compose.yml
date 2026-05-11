@@ -23,9 +23,9 @@ services:
       dockerfile: Dockerfile
     container_name: diego-music-backend
     ports:
-      - "3000:3000"
+      - "47821:47821"
     environment:
-      - PORT=3000
+      - PORT=47821
       - NODE_ENV=production
       - DB_HOST=postgres
       - DB_PORT=5432

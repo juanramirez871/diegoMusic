@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.diegomusic.com:47821/api';
 const API_TIMEOUT_MS = 8000;
 
 const getToken = async (): Promise<string | null> => {

@@ -1,11 +1,22 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import routes from './routes/index.js';
 import { sequelize } from './models/index.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 47821;
+const CERT_DIR = path.resolve(__dirname, '../certs');
+const CERT_FILE = path.join(CERT_DIR, 'diegomusic.com.pem');
+const KEY_FILE = path.join(CERT_DIR, 'diegomusic.com-key.pem');
+const HTTPS_ENABLED = fs.existsSync(CERT_FILE) && fs.existsSync(KEY_FILE);
 
 app.use(cors());
 app.use(express.json());
@@ -39,9 +50,19 @@ async function start() {
     console.error('[DB] Connection failed:', err.message);
   }
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT} (ɔ◔‿◔)ɔ ♥`);
-  });
+  if (HTTPS_ENABLED) {
+    const credentials = {
+      cert: fs.readFileSync(CERT_FILE),
+      key: fs.readFileSync(KEY_FILE),
+    };
+    https.createServer(credentials, app).listen(PORT, () => {
+      console.log(`Server is running on https://api.diegomusic.com:${PORT} (ɔ◔‿◔)ɔ ♥`);
+    });
+  } else {
+    http.createServer(app).listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT} (ɔ◔‿◔)ɔ ♥`);
+    });
+  }
 }
 
 start();
