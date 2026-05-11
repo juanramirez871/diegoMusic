@@ -2,12 +2,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/services/apiUrl';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:3000/api';
 
 const AUTH_STORAGE_KEY = '@auth_user';
 const TOKEN_STORAGE_KEY = '@auth_token';

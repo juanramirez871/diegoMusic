@@ -1,7 +1,8 @@
 import apiFetch from './api';
 import { Platform } from 'react-native';
+import { API_URL } from './apiUrl';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
+const BASE_URL = API_URL;
 const searchCache = new Map<string, any[]>();
 
 export const youtubeService = {

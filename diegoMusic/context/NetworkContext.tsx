@@ -10,9 +10,9 @@ import React, {
 import { Platform } from "react-native";
 import type { NetworkContextType, NetworkProviderProps } from '@/interfaces/network';
 
-const WEB_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.diegomusic.com:47821/api';
-const NATIVE_API_URL = process.env.EXPO_PUBLIC_API_URL_NATIVE || 'http://192.168.1.13:47823/api';
-const API_PROBE_URL = (Platform.OS === 'web' ? WEB_API_URL : NATIVE_API_URL) + '/status';
+import { API_URL } from '@/services/apiUrl';
+
+const API_PROBE_URL = API_URL + '/status';
 const API_PROBE_TIMEOUT_MS = 4000;
 
 const probeApi = async (): Promise<boolean> => {
