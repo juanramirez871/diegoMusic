@@ -15,6 +15,7 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoDidFinishHandledRef = useRef(false);
   const pendingVideoSeekRef = useRef<number | null>(null);
+  const seekTargetMsRef = useRef<number | null>(null);
   const audioStateBeforeVideoRef = useRef<AudioStateBeforeVideo | null>(null);
   const showVideoRef = useRef(false);
   const isVideoReadyRef = useRef(false);
@@ -27,22 +28,26 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
 
   useEventListener(player, 'statusChange', ({ status, error }: any) => {
     if (status === 'readyToPlay') {
-      setIsVideoLoading(false);
-      setIsVideoReady(true);
-      isVideoReadyRef.current = true;
       if (player.duration) setVideoDuration(player.duration * 1000);
       const pending = pendingVideoSeekRef.current;
       if (pending !== null) {
-        pendingVideoSeekRef.current = null;
         player.currentTime = pending / 1000;
         setVideoProgress(pending);
+        seekTargetMsRef.current = pending;
+        pendingVideoSeekRef.current = null;
       }
-    } else if (status === 'error') {
+
+      setIsVideoLoading(false);
+      setIsVideoReady(true);
+      isVideoReadyRef.current = true;
+    }
+    else if (status === 'error') {
       console.error('[Video] Error de carga/reproducción:', error);
       setIsVideoLoading(false);
       setIsVideoReady(false);
       isVideoReadyRef.current = false;
       setShowVideo(false);
+      
       showVideoRef.current = false;
       const restore = audioStateBeforeVideoRef.current;
       if (restore) {
@@ -59,6 +64,14 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
 
   useEventListener(player, 'timeUpdate', ({ currentTime }: any) => {
     if (!showVideoRef.current) return;
+    if (pendingVideoSeekRef.current !== null) return;
+    const seekTarget = seekTargetMsRef.current;
+    if (seekTarget !== null) {
+      const diff = Math.abs(currentTime * 1000 - seekTarget);
+      if (diff > 3000) return;
+      seekTargetMsRef.current = null;
+    }
+
     setVideoProgress(currentTime * 1000);
     if (player.duration) setVideoDuration(player.duration * 1000);
   });
@@ -81,6 +94,7 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
     setIsVideoPlaying(false);
     isVideoPlayingRef.current = false;
     pendingVideoSeekRef.current = null;
+    seekTargetMsRef.current = null;
     audioStateBeforeVideoRef.current = null;
     setVideoDuration(0);
     videoDidFinishHandledRef.current = false;
@@ -93,6 +107,8 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
         return;
       }
       player.currentTime = position / 1000;
+      seekTargetMsRef.current = position;
+      setVideoProgress(position);
       return;
     }
     audio.seekTo(position);
@@ -110,6 +126,7 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
       videoDidFinishHandledRef.current = false;
       audioStateBeforeVideoRef.current = { wasPlaying: audio.isPlaying, position: audio.progress };
       pendingVideoSeekRef.current = audio.progress;
+      setVideoProgress(audio.progress);
       setIsVideoLoading(true);
       setIsVideoReady(false);
       isVideoReadyRef.current = false;
@@ -133,6 +150,7 @@ export const useVideoPlayback = ({ currentSong, isOnline, videoOfflineTitle, vid
     showVideoRef.current = false;
     setIsVideoLoading(false);
     setIsVideoReady(false);
+    
     isVideoReadyRef.current = false;
     setIsVideoPlaying(false);
     isVideoPlayingRef.current = false;

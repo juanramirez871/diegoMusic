@@ -101,7 +101,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const nextSong = hasNextOrPrev ? queue[(currentIndex + 1) % queue.length] : null;
   const prevSong = hasNextOrPrev ? queue[(currentIndex - 1 + queue.length) % queue.length] : null;
 
-  const activeProgress = video.showVideo ? (video.isVideoReady ? video.videoProgress : progress) : progress;
+  const activeProgress = video.showVideo ? (video.isVideoReady && video.videoProgress > 0 ? video.videoProgress : progress) : progress;
   const activeDuration = video.showVideo ? (video.isVideoReady && video.videoDuration > 0 ? video.videoDuration : duration) : duration;
   const activeIsPlaying = video.showVideo ? (video.isVideoReady ? video.isVideoPlaying : false) : isPlaying;
   const activeIsLoading = video.showVideo ? video.isVideoLoading : isLoading;
