@@ -77,8 +77,20 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     audio: { isPlaying, progress, pause, seekTo, togglePlayPause, playNext },
   });
 
-  const activeProgress = video.showVideo ? (video.isVideoReady ? video.videoProgress : progress) : progress;
+  const activeProgress = video.showVideo ? (video.isVideoReady && video.videoProgress > 0 ? video.videoProgress : progress) : progress;
   const activeDuration = video.showVideo ? (video.isVideoReady && video.videoDuration > 0 ? video.videoDuration : duration) : duration;
+  const activeIsPlaying = video.showVideo ? (video.isVideoReady ? video.isVideoPlaying : false) : isIntendingToPlay;
+  const activeIsLoading = video.showVideo ? video.isVideoLoading : isLoading;
+
+  const handlePlayPausePress = () => {
+    if (video.showVideo) {
+      if (!video.isVideoReady) return;
+      if (video.player.playing) video.player.pause();
+      else video.player.play();
+      return;
+    }
+    if (!isLoading) togglePlayPause();
+  };
 
   const lyrics = useLyrics(currentSong, isOnline);
   const lyricsDefaultQuery = lyrics.lyricsQuery;
@@ -95,8 +107,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const playTint = useSharedValue(0);
 
   useEffect(() => {
-    playTint.value = withTiming(!video.showVideo && isLoading ? 1 : 0, { duration: 200 });
-  }, [isLoading, video.showVideo]);
+    playTint.value = withTiming(activeIsLoading ? 1 : 0, { duration: 200 });
+  }, [activeIsLoading]);
 
   useEffect(() => {
     if (video.showVideo) {
@@ -260,10 +272,10 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <TouchableOpacity onPress={playPrevious}>
                   <IconSymbol name="play-skip-back" size={28} color="#fff" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.playBtn} onPress={() => { if (!isLoading) togglePlayPause(); }}>
+                <TouchableOpacity style={styles.playBtn} onPress={handlePlayPausePress}>
                   <Animated.View style={playIconAnimatedStyle}>
                     <IconSymbol
-                      name={isIntendingToPlay ? 'pause' : 'play'}
+                      name={activeIsPlaying ? 'pause' : 'play'}
                       size={32}
                       color="#000"
                     />
