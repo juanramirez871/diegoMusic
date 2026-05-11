@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.diegomusic.com:47821/api';
+const WEB_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.diegomusic.com:47821/api';
+const NATIVE_API_URL = process.env.EXPO_PUBLIC_API_URL_NATIVE || 'http://192.168.1.13:47823/api';
+
+const BASE_URL = Platform.OS === 'web' ? WEB_API_URL : NATIVE_API_URL;
 const API_TIMEOUT_MS = 8000;
 
 const getToken = async (): Promise<string | null> => {
@@ -34,10 +38,12 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     }
 
     return data as T;
-  } catch (error) {
+  }
+  catch (error) {
     console.error(`API Fetch Error [${endpoint}]:`, error);
     throw error;
-  } finally {
+  }
+  finally {
     clearTimeout(timeoutId);
   }
 };

@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT || 47821;
+const HTTP_PORT = process.env.HTTP_PORT || 47823;
 const CERT_DIR = path.resolve(__dirname, '../certs');
 const CERT_FILE = path.join(CERT_DIR, 'diegomusic.com.pem');
 const KEY_FILE = path.join(CERT_DIR, 'diegomusic.com-key.pem');
@@ -56,7 +57,10 @@ async function start() {
       key: fs.readFileSync(KEY_FILE),
     };
     https.createServer(credentials, app).listen(PORT, () => {
-      console.log(`Server is running on https://api.diegomusic.com:${PORT} (ɔ◔‿◔)ɔ ♥`);
+      console.log(`HTTPS on https://api.diegomusic.com:${PORT} (ɔ◔‿◔)ɔ ♥`);
+    });
+    http.createServer(app).listen(HTTP_PORT, () => {
+      console.log(`HTTP  on http://0.0.0.0:${HTTP_PORT} (mobile/LAN)`);
     });
   } else {
     http.createServer(app).listen(PORT, () => {
