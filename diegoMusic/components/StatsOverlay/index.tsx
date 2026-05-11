@@ -7,6 +7,7 @@ import {
   Image,
   Animated,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePlayer } from "@/context/PlayerContext";
@@ -42,8 +43,9 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
   const topSongs = allSongs.slice(0, 5);
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, top: -insets.top, paddingTop: insets.top }]}>
+      <StatusBar style="light" backgroundColor="#121212" translucent={false} />
+      <View style={[styles.header, { paddingTop: 10 }]}>
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <IconSymbol name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
