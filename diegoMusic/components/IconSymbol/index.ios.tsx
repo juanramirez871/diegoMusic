@@ -15,7 +15,7 @@ const TO_SF: Record<string, string> = {
   'bar-chart-outline': 'chart.bar',
   'chevron-back': 'chevron.left',
   'chevron-down': 'chevron.down',
-  'cloud-offline-outline': 'cloud.slash',
+  'cloud-offline-outline': 'wifi.slash',
   'ellipsis-horizontal': 'ellipsis',
   'expand-outline': 'arrow.up.left.and.arrow.down.right',
   'musical-notes': 'music.note.list',
