@@ -24,11 +24,13 @@ import { favoriteArtistsService } from '@/services/favoriteArtistsService';
 import { favoriteSongsService } from '@/services/favoriteSongsService';
 import { songsPlayedService } from '@/services/songsPlayedService';
 import { useAuth } from '@/context/AuthContext';
+import { useNetwork } from '@/context/NetworkContext';
 
 export const usePlayerStorage = () => {
 
   const { t } = useLanguage();
   const { token } = useAuth();
+  const { isOnline } = useNetwork();
   const [favorites, setFavorites] = useState<SongData[]>([]);
   const [favoriteArtists, setFavoriteArtists] = useState<ArtistData[]>([]);
   const [recentPlayed, setRecentPlayed] = useState<SongData[]>([]);
@@ -133,17 +135,21 @@ export const usePlayerStorage = () => {
   }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !isOnline) return;
 
     favoriteArtistsService.fetchAll().then((artists) => {
+      if (!artists) return;
       setFavoriteArtists(artists);
       storage.setItem(FAVORITE_ARTISTS_KEY, JSON.stringify(artists)).catch(() => {});
     });
+
     favoriteSongsService.fetchAll().then((songs) => {
+      if (!songs) return;
       setFavorites(songs);
       storage.setItem(FAVORITES_KEY, JSON.stringify(songs)).catch(() => {});
       if (songs.length > 0) syncThumbnails(songs);
     });
+
     songsPlayedService.fetchStats().then((stats) => {
       if (!stats) return;
 
@@ -166,7 +172,7 @@ export const usePlayerStorage = () => {
         storage.setItem('@lyrics_custom_queries', JSON.stringify(stats.lyricsQueries)).catch(() => {});
       }
     });
-  }, [token]);
+  }, [token, isOnline]);
 
   const toggleFavorite = async (song: SongData) => {
 

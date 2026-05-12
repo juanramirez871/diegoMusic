@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     position: 'absolute',
-    bottom: Platform.select({ ios: 65, android: 75, default: 0 }),
+    bottom: Platform.select({ ios: 77, android: 75, default: 0 }),
     zIndex: 1000,
     width: '100%',
   },

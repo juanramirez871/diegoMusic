@@ -2,13 +2,13 @@ import apiFetch from './api';
 import type { ArtistData } from '@/interfaces/Song';
 
 export const favoriteArtistsService = {
-  async fetchAll(): Promise<ArtistData[]> {
+  async fetchAll(): Promise<ArtistData[] | null> {
     try {
       const data = await apiFetch<{ artists: ArtistData[] }>('/artists/favorites');
       return data.artists ?? [];
     }
     catch {
-      return [];
+      return null;
     }
   },
 

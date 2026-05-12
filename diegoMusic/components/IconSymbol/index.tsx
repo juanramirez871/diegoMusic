@@ -50,7 +50,7 @@ const SF_TO_MATERIAL: Record<string, React.ComponentProps<typeof MaterialIcons>[
   'bar-chart-outline': 'bar-chart',
   'chevron-back': 'chevron-left',
   'chevron-down': 'expand-more',
-  'cloud-offline-outline': 'cloud-off',
+  'cloud-offline-outline': 'wifi-off',
   'ellipsis-horizontal': 'more-horiz',
   'expand-outline': 'fullscreen',
   'musical-notes': 'music-note',

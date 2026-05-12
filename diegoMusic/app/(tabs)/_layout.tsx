@@ -54,8 +54,9 @@ export default function TabLayout() {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           paddingTop: 5,
+          paddingBottom: Platform.OS === 'ios' ? 10 : 4,
           elevation: 0,
-          height: Platform.OS === 'ios' ? 65 : 55,
+          height: Platform.OS === 'ios' ? 78 : 55,
         },
         tabBarBackground: () => (
           <BlurView
@@ -100,9 +101,8 @@ export default function TabLayout() {
         genreTitle={pendingArtistOverlay?.name ?? ''}
         channelId={pendingArtistOverlay?.id}
         fadeAnim={artistFadeAnim}
-        bottomOffset={Platform.OS === 'ios' ? 65 : 55}
+        bottomOffset={Platform.OS === 'ios' ? 78 : 55}
       />
     </View>
   );
 }
-
