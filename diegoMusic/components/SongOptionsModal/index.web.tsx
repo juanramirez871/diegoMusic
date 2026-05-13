@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Animated, Linking, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Animated, Linking, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from '@/components/IconSymbol';
 import { usePlayer } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SongOptionsModalProps } from "@/interfaces/Song";
-
-const SHEET_HEIGHT = 320;
+import { styles, SHEET_HEIGHT } from "./styles.web";
 
 export default function SongOptionsModal({ visible, onClose, song }: SongOptionsModalProps) {
   const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = usePlayer();
@@ -72,58 +71,3 @@ export default function SongOptionsModal({ visible, onClose, song }: SongOptions
     document.body
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    position: 'fixed' as any,
-    top: 0, left: 0, right: 0, bottom: 0,
-    zIndex: 2000,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  sheet: {
-    backgroundColor: '#282828',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
-    height: SHEET_HEIGHT,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#555',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  header: {
-    marginBottom: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#444',
-    paddingBottom: 15,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  optionsList: {
-    gap: 10,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    gap: 15,
-  },
-  optionText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-});

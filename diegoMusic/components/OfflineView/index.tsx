@@ -6,6 +6,7 @@ import type { OfflineViewProps } from '@/interfaces/ui';
 import { styles } from './styles';
 
 export const OfflineView = ({ onRetry, title, message }: OfflineViewProps) => {
+
   const { t } = useLanguage();
   const resolvedTitle = title ?? t('offline.title');
   const resolvedMessage = message ?? t('offline.message');
