@@ -96,7 +96,16 @@ export const usePlayerStorage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [savedFavorites, savedArtists, savedRecent, savedMostPlayed, savedActiveDays, savedArtistPlays, savedSongPlays, savedVideoQuality] = await Promise.all([
+        const [
+          savedFavorites,
+          savedArtists,
+          savedRecent,
+          savedMostPlayed,
+          savedActiveDays,
+          savedArtistPlays,
+          savedSongPlays,
+          savedVideoQuality
+        ] = await Promise.all([
           storage.getItem(FAVORITES_KEY),
           storage.getItem(FAVORITE_ARTISTS_KEY),
           storage.getItem(RECENT_PLAYED_KEY),

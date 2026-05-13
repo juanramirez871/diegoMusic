@@ -36,30 +36,10 @@ export interface SongPlayData {
   timesPlayed: number;
 }
 
-export interface PlayerContextType {
-  isMaximized: boolean;
-  setIsMaximized: (value: boolean) => void;
+export interface PlaybackContextType {
   currentSong: SongData | null;
   setCurrentSong: (song: SongData | null) => void;
   playSong: (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => void;
-  favorites: SongData[];
-  favoriteArtists: ArtistData[];
-  recentPlayed: SongData[];
-  mostPlayed: SongData[];
-  toggleFavorite: (song: SongData) => void;
-  downloadAllFavorites: () => Promise<{ downloaded: number; skipped: number; failed: number }>;
-  downloadVersion: number;
-  toggleFavoriteArtist: (artist: ArtistData) => void;
-  isFavorite: (songId: string) => boolean;
-  isFavoriteArtist: (artistId: string) => boolean;
-  queue: SongData[];
-  setQueue: (queue: SongData[]) => void;
-  playNext: () => void;
-  playPrevious: () => void;
-  isShuffle: boolean;
-  toggleShuffle: () => void;
-  repeatMode: RepeatMode;
-  toggleRepeat: () => void;
   isPlaying: boolean;
   isIntendingToPlay: boolean;
   togglePlayPause: () => void;
@@ -70,15 +50,50 @@ export interface PlayerContextType {
   isLoading: boolean;
   sleepTimer: number | null;
   setSleepTimer: (minutes: number | null) => void;
+  volume: number;
+  setVolume: (vol: number) => void;
+}
+
+export interface QueueContextType {
+  queue: SongData[];
+  setQueue: (queue: SongData[]) => void;
+  playNext: () => void;
+  playPrevious: () => void;
+  isShuffle: boolean;
+  toggleShuffle: () => void;
+  repeatMode: RepeatMode;
+  toggleRepeat: () => void;
+}
+
+export interface LibraryContextType {
+  favorites: SongData[];
+  favoriteArtists: ArtistData[];
+  recentPlayed: SongData[];
+  mostPlayed: SongData[];
+  artistPlays: Record<string, ArtistPlayData>;
+  songPlays: Record<string, SongPlayData>;
+  toggleFavorite: (song: SongData) => void;
+  toggleFavoriteArtist: (artist: ArtistData) => void;
+  isFavorite: (songId: string) => boolean;
+  isFavoriteArtist: (artistId: string) => boolean;
+  downloadAllFavorites: () => Promise<{ downloaded: number; skipped: number; failed: number }>;
+  downloadVersion: number;
   showDownloadBanner: boolean;
   streak: number;
   videoQuality: VideoQuality;
   setVideoQuality: (quality: VideoQuality) => void;
-  artistPlays: Record<string, ArtistPlayData>;
-  songPlays: Record<string, SongPlayData>;
+}
+
+export interface PlayerUIContextType {
+  isMaximized: boolean;
+  setIsMaximized: (value: boolean) => void;
   pendingArtistOverlay: { id: string; name: string } | null;
   openArtistOverlay: (artist: { id: string; name: string }) => void;
   closeArtistOverlay: () => void;
-  volume: number;
-  setVolume: (vol: number) => void;
 }
+
+export type PlayerContextType =
+  & PlaybackContextType
+  & QueueContextType
+  & LibraryContextType
+  & PlayerUIContextType;

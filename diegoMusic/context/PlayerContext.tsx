@@ -1,8 +1,14 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { setAudioModeAsync } from 'expo-audio';
 import * as FileSystem from '@/utils/fileSystem';
 import storage from '@/services/storage';
-import { PlayerContextType, CURRENT_SONG_KEY, QUEUE_SOURCE_KEY } from './player/types';
+import {
+  CURRENT_SONG_KEY,
+  QUEUE_SOURCE_KEY,
+  PlaybackContextType,
+  QueueContextType,
+  LibraryContextType,
+} from './player/types';
 import { SafeMediaControl, Command, PlaybackState } from './player/mediaControls';
 import { parseDuration } from './player/utils';
 import { usePlayerStorage } from './player/usePlayerStorage';
@@ -12,23 +18,15 @@ import { usePlayerQueue } from './player/usePlayerQueue';
 import { useNetwork } from './NetworkContext';
 import { SongData } from '@/interfaces/Song';
 import { Image } from 'react-native';
-
-const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
+import { LibraryProvider, useLibrary } from './player/LibraryContext';
+import { PlayerUIProvider, usePlayerUI } from './player/PlayerUIContext';
+import { QueueProvider, useQueue } from './player/QueueContext';
+import { PlaybackProvider, usePlayback } from './player/PlaybackContext';
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-
   const { isOnline } = useNetwork();
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [pendingArtistOverlay, setPendingArtistOverlay] = useState<{ id: string; name: string } | null>(null);
-  const openArtistOverlay = useCallback((artist: { id: string; name: string }) => {
-    setIsMaximized(false);
-    setPendingArtistOverlay(artist);
-  }, []);
 
-  const closeArtistOverlay = useCallback(() => {
-    setPendingArtistOverlay(null);
-  }, []);
-  const [currentSong, setCurrentSong] = useState<SongData | null>(null);
+  const storageHook = usePlayerStorage();
   const {
     favorites,
     favoriteArtists,
@@ -48,8 +46,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addMostPlayed,
     downloadAllFavorites,
     downloadVersion,
-  } = usePlayerStorage();
+  } = storageHook;
 
+  const [currentSong, setCurrentSong] = useState<SongData | null>(null);
   const {
     queue,
     setQueue,
@@ -59,23 +58,18 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toggleRepeat,
     updateQueueAndSource,
     getNextSong,
-    getPreviousSong
+    getPreviousSong,
   } = usePlayerQueue();
 
-  const { 
-    preloadedSoundsRef, 
-    preloadNextSongs, 
-    clearPreloaded 
-  } = usePreloader();
-
+  const { preloadedSoundsRef, preloadNextSongs, clearPreloaded } = usePreloader();
   const updateQueueAndSourceRef = useRef(updateQueueAndSource);
   useEffect(() => {
     updateQueueAndSourceRef.current = updateQueueAndSource;
   }, [updateQueueAndSource]);
 
   const setIsIntendingToPlayRef = useRef<(value: boolean) => void>(() => {});
-  const playSong = useCallback(async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
 
+  const playSong = useCallback(async (song: SongData, initialQueue?: SongData[], source?: 'favorites' | 'search') => {
     setCurrentSong(song);
     setIsIntendingToPlayRef.current(true);
 
@@ -89,8 +83,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       artist: song.channel?.name || 'Unknown Artist',
       duration: parseDuration(song.duration_formatted) / 1000,
       ...(normalizedArtwork ? { artwork: { uri: normalizedArtwork } } : {}),
-    })
-    .catch(() => {});
+    }).catch(() => {});
 
     const playPromise = playSongLogicRef.current!(song);
     const queueUpdatePromise = updateQueueAndSourceRef.current(song, initialQueue, source);
@@ -99,13 +92,13 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       await Promise.all([
         storage.setItem(CURRENT_SONG_KEY, JSON.stringify(song)),
-        storage.setItem(QUEUE_SOURCE_KEY, newSource)
+        storage.setItem(QUEUE_SOURCE_KEY, newSource),
       ]);
     }
     catch (error) {
       console.error('Error persisting playback data:', error);
     }
-  }, [setCurrentSong]);
+  }, []);
 
   const playNext = useCallback(() => {
     const nextSong = getNextSong(currentSong);
@@ -140,7 +133,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     addRecentPlayed,
     addMostPlayed,
     isOnline,
-    isFavorite
+    isFavorite,
   );
 
   setIsIntendingToPlayRef.current = setIsIntendingToPlay;
@@ -150,33 +143,20 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const playPreviousRef = useRef(playPrevious);
   const seekToRef = useRef(seekTo);
 
-  useEffect(() => {
-    togglePlayPauseRef.current = togglePlayPause;
-  }, [togglePlayPause]);
-
-  useEffect(() => {
-    playNextRef.current = playNext;
-  }, [playNext]);
-
-  useEffect(() => {
-    playPreviousRef.current = playPrevious;
-  }, [playPrevious]);
-
-  useEffect(() => {
-    seekToRef.current = seekTo;
-  }, [seekTo]);
+  useEffect(() => { togglePlayPauseRef.current = togglePlayPause; }, [togglePlayPause]);
+  useEffect(() => { playNextRef.current = playNext; }, [playNext]);
+  useEffect(() => { playPreviousRef.current = playPrevious; }, [playPrevious]);
+  useEffect(() => { seekToRef.current = seekTo; }, [seekTo]);
 
   const [sleepTimer, setSleepTimerState] = useState<number | null>(null);
-  const sleepTimerRef = React.useRef<any>(null);
+  const sleepTimerRef = useRef<any>(null);
 
   const setSleepTimer = useCallback((minutes: number | null) => {
     if (sleepTimerRef.current) {
       clearTimeout(sleepTimerRef.current);
       sleepTimerRef.current = null;
     }
-
     setSleepTimerState(minutes);
-
     if (minutes !== null) {
       const ms = minutes * 60 * 1000;
       sleepTimerRef.current = setTimeout(() => {
@@ -232,8 +212,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           });
           await SafeMediaControl.updatePlaybackState(PlaybackState.STOPPED, 0);
         }
-      }
-      catch (error) {
+      } catch (error) {
         console.warn('Error setting audio mode or media controls:', error);
       }
     };
@@ -265,29 +244,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
-
   useEffect(() => {
     let cancelled = false;
 
     const updateMetadata = async () => {
-      if (!currentSong) return;
 
+      if (!currentSong) return;
       let artworkUri = currentSong.thumbnail?.url;
 
       if (isFavorite(currentSong.id)) {
         const localThumbUri = `${FileSystem.documentDirectory}${currentSong.id}_thumb.jpg`;
         try {
           const info = await FileSystem.getInfoAsync(localThumbUri);
-          if (info.exists) {
-            artworkUri = localThumbUri;
-          }
-        } catch (e) {
+          if (info.exists) artworkUri = localThumbUri;
+        }
+        catch (e) {
           console.warn('Error checking local thumbnail for metadata:', e);
         }
       }
 
       if (cancelled) return;
-
       const normalizedArtworkUri =
         typeof artworkUri === 'string' && artworkUri.length > 0
           ? artworkUri.replace(/^http:\/\//, 'https://')
@@ -299,20 +275,14 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         duration: parseDuration(currentSong.duration_formatted) / 1000,
       };
 
-      if (normalizedArtworkUri) {
-        metadata.artwork = { uri: normalizedArtworkUri };
-      }
-
+      if (normalizedArtworkUri) metadata.artwork = { uri: normalizedArtworkUri };
       SafeMediaControl.updateMetadata(metadata).catch(() => {});
     };
 
     updateMetadata();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [currentSong, favorites]);
-
 
   useEffect(() => {
     if (currentSong && queue.length > 0) {
@@ -343,7 +313,6 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [currentSong?.id, queue]);
 
-
   useEffect(() => {
     return () => {
       clearPreloaded();
@@ -354,12 +323,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const onToggleShuffle = useCallback(() => toggleShuffle(currentSong), [toggleShuffle, currentSong]);
 
-  const contextValue = useMemo(() => ({
-    isMaximized,
-    setIsMaximized,
-    currentSong,
-    setCurrentSong,
-    playSong,
+  const libraryValue = useMemo<LibraryContextType>(() => ({
     favorites,
     favoriteArtists,
     recentPlayed,
@@ -367,19 +331,26 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     artistPlays,
     songPlays,
     toggleFavorite,
-    downloadAllFavorites,
-    downloadVersion,
     toggleFavoriteArtist,
     isFavorite,
     isFavoriteArtist,
-    queue,
-    setQueue,
-    playNext,
-    playPrevious,
-    isShuffle,
-    toggleShuffle: onToggleShuffle,
-    repeatMode,
-    toggleRepeat,
+    downloadAllFavorites,
+    downloadVersion,
+    showDownloadBanner,
+    streak,
+    videoQuality,
+    setVideoQuality,
+  }), [
+    favorites, favoriteArtists, recentPlayed, mostPlayed, artistPlays, songPlays,
+    toggleFavorite, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
+    downloadAllFavorites, downloadVersion, showDownloadBanner, streak,
+    videoQuality, setVideoQuality,
+  ]);
+
+  const playbackValue = useMemo<PlaybackContextType>(() => ({
+    currentSong,
+    setCurrentSong,
+    playSong,
     isPlaying,
     isIntendingToPlay,
     togglePlayPause,
@@ -390,36 +361,43 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isLoading,
     sleepTimer,
     setSleepTimer,
-    showDownloadBanner,
-    streak,
-    videoQuality,
-    setVideoQuality,
-    pendingArtistOverlay,
-    openArtistOverlay,
-    closeArtistOverlay,
     volume,
     setVolume,
   }), [
-    isMaximized, currentSong, playSong, favorites, favoriteArtists, recentPlayed, mostPlayed,
-    toggleFavorite, downloadAllFavorites, downloadVersion, toggleFavoriteArtist, isFavorite, isFavoriteArtist,
-    queue, setQueue, playNext, playPrevious, isShuffle, onToggleShuffle, repeatMode, toggleRepeat,
-    isPlaying, isIntendingToPlay, togglePlayPause, pause, progress, duration, seekTo,
-    isLoading, sleepTimer, setSleepTimer, showDownloadBanner, streak, artistPlays, songPlays,
-    videoQuality, setVideoQuality, pendingArtistOverlay, openArtistOverlay, closeArtistOverlay,
-    volume, setVolume,
+    currentSong, playSong, isPlaying, isIntendingToPlay, togglePlayPause, pause,
+    progress, duration, seekTo, isLoading, sleepTimer, setSleepTimer, volume, setVolume,
   ]);
 
+  const queueValue = useMemo<QueueContextType>(() => ({
+    queue,
+    setQueue,
+    playNext,
+    playPrevious,
+    isShuffle,
+    toggleShuffle: onToggleShuffle,
+    repeatMode,
+    toggleRepeat,
+  }), [queue, setQueue, playNext, playPrevious, isShuffle, onToggleShuffle, repeatMode, toggleRepeat]);
+
   return (
-    <PlayerContext.Provider value={contextValue}>
-      {children}
-    </PlayerContext.Provider>
+    <LibraryProvider value={libraryValue}>
+      <PlayerUIProvider>
+        <PlaybackProvider value={playbackValue}>
+          <QueueProvider value={queueValue}>
+            {children}
+          </QueueProvider>
+        </PlaybackProvider>
+      </PlayerUIProvider>
+    </LibraryProvider>
   );
 };
 
 export const usePlayer = () => {
-  const context = useContext(PlayerContext);
-  if (context === undefined) {
-    throw new Error('usePlayer must be used within a PlayerProvider');
-  }
-  return context;
+  const playback = usePlayback();
+  const queue = useQueue();
+  const library = useLibrary();
+  const ui = usePlayerUI();
+  return { ...playback, ...queue, ...library, ...ui };
 };
+
+export { useLibrary, usePlayback, useQueue, usePlayerUI };
