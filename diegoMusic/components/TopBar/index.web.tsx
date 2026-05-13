@@ -7,7 +7,7 @@ import { SearchOverlay } from '@/components/SearchOverlay';
 import { useNetwork } from '@/context/NetworkContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayerUI } from '@/context/PlayerContext';
 import storage from '@/services/storage';
 import type { HistoryItem } from '@/interfaces/ui';
 
@@ -17,7 +17,7 @@ export function TopBar() {
   const { isOnline, isNetworkChecked, isApiReachable } = useNetwork();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
-  const { isMaximized } = usePlayer();
+  const { isMaximized } = usePlayerUI();
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);

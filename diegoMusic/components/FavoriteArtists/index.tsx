@@ -1,5 +1,5 @@
 import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
-import { usePlayer } from "@/context/PlayerContext";
+import { useLibrary } from "@/context/PlayerContext";
 import { FavoriteArtistsProps } from "@/interfaces/artists";
 import { useLanguage } from "@/context/LanguageContext";
 import { styles } from './styles';
@@ -7,7 +7,7 @@ import { styles } from './styles';
 
 export default function FavoriteArtists({ onArtistPress }: FavoriteArtistsProps) {
 
-  const { favoriteArtists } = usePlayer();
+  const { favoriteArtists } = useLibrary();
   const { t } = useLanguage();
   return (
     <View style={styles.container}>

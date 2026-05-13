@@ -7,7 +7,7 @@ import { GenreOverlay } from '@/components/GenreOverlay';
 import { MinimizedPlayer } from '@/components/minimizedPlayer';
 import { MaximazedPlayer } from '@/components/maximazedPlayer';
 import { TopBar } from '@/components/TopBar';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayerUI } from '@/context/PlayerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import type { TranslationKey } from '@/interfaces/language';
 
@@ -67,7 +67,7 @@ function Sidebar() {
 }
 
 export default function TabLayout() {
-  const { pendingArtistOverlay, closeArtistOverlay, isMaximized, setIsMaximized } = usePlayer();
+  const { pendingArtistOverlay, closeArtistOverlay, isMaximized, setIsMaximized } = usePlayerUI();
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
   const prevArtistRef = useRef<string | null>(null);
   const pathname = usePathname();

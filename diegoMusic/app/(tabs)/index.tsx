@@ -7,7 +7,7 @@ import RecentPlayed from "@/components/RecentPlayed";
 import { StatsOverlay } from "@/components/StatsOverlay";
 import { UserDrawer, DRAWER_WIDTH } from "@/components/UserDrawer";
 import { useNetwork } from "@/context/NetworkContext";
-import { usePlayer } from "@/context/PlayerContext";
+import { useLibrary } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { ArtistData, SongData } from "@/interfaces/Song";
@@ -38,7 +38,7 @@ export default function HomeScreen() {
 
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { favoriteArtists, songPlays } = usePlayer();
+  const { favoriteArtists, songPlays } = useLibrary();
   const mostPlayed = useMemo(
     () =>
       (Object.values(songPlays) as unknown as SongData[])

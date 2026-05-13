@@ -16,7 +16,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
-import { usePlayer } from "@/context/PlayerContext";
+import { useLibrary } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SongOptionsModalProps } from "@/interfaces/Song";
 import { styles } from './styles';
@@ -30,7 +30,7 @@ export default function SongOptionsModal({
   song,
 }: SongOptionsModalProps) {
 
-  const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = usePlayer();
+  const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = useLibrary();
   const { t } = useLanguage();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.4);

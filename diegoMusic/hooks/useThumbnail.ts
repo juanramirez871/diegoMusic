@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import * as FileSystem from '@/utils/fileSystem';
-import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/PlayerContext';
 
 export const useThumbnail = (songId: string | undefined, remoteUrl: string | undefined) => {
 
-  const { isFavorite } = usePlayer();
+  const { isFavorite } = useLibrary();
   const [localExists, setLocalExists] = useState(false);
   const favoriteStatus = songId ? isFavorite(songId) : false;
   const normalizedRemote = typeof remoteUrl === 'string' ? remoteUrl.trim() : '';

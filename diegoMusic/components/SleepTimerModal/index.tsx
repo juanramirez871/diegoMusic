@@ -15,7 +15,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from "react-native-reanimated";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SleepTimerModalProps } from "@/interfaces/player";
 import { styles } from './styles';
@@ -28,7 +28,7 @@ export default function SleepTimerModal({
   onClose,
 }: SleepTimerModalProps) {
 
-  const { sleepTimer, setSleepTimer } = usePlayer();
+  const { sleepTimer, setSleepTimer } = usePlayback();
   const { t } = useLanguage();
   const overlayOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(SCREEN_HEIGHT * 0.5);

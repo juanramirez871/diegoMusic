@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from '@/components/IconSymbol';
 import Song from "@/components/Song";
 import { youtubeService } from "@/services/youtubeService";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { Skeleton } from "@/components/Skeleton";
 import { GenreOverlayProps, SongData } from "@/interfaces/Song";
 import { useLanguage } from "@/context/LanguageContext";
@@ -37,7 +37,7 @@ export const GenreOverlay: React.FC<GenreOverlayProps> = ({
   bottomOffset = 0,
 }) => {
 
-  const { playSong } = usePlayer();
+  const { playSong } = usePlayback();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);

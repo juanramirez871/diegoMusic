@@ -2,7 +2,7 @@ import { View, Image, Text, TouchableOpacity } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useState } from "react";
 import SongOptionsModal from "@/components/SongOptionsModal";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useThumbnail } from "@/hooks/useThumbnail";
 import { useIsDownloaded } from "@/hooks/useIsDownloaded";
@@ -12,7 +12,7 @@ import { styles } from './styles';
 
 export default function Song({ data, onPress }: SongProps) {
 
-  const { currentSong } = usePlayer();
+  const { currentSong } = usePlayback();
   const { t } = useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const thumbnailSource = useThumbnail(data?.id, data?.thumbnail?.url);

@@ -4,12 +4,12 @@ import { BlurView } from 'expo-blur';
 import { StyleSheet, Platform, Animated, View } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { GenreOverlay } from '@/components/GenreOverlay';
-import { usePlayer } from '@/context/PlayerContext';
+import { usePlayerUI } from '@/context/PlayerContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function TabLayout() {
 
-  const { pendingArtistOverlay, closeArtistOverlay } = usePlayer();
+  const { pendingArtistOverlay, closeArtistOverlay } = usePlayerUI();
   const { t } = useLanguage();
   const artistFadeAnim = useRef(new Animated.Value(0)).current;
   const prevArtistRef = useRef<string | null>(null);

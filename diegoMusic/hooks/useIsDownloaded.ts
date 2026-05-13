@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as FileSystem from '@/utils/fileSystem';
-import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/PlayerContext';
 import { webDownload } from '@/services/webDownload';
 
 export function useIsDownloaded(songId?: string, title?: string): boolean {
   
-  const { favorites, downloadVersion } = usePlayer();
+  const { favorites, downloadVersion } = useLibrary();
   const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {

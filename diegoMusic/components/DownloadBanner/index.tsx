@@ -1,4 +1,4 @@
-import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/PlayerContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useEffect } from 'react';
 import { Text } from 'react-native';
@@ -7,7 +7,7 @@ import { styles } from './styles';
 
 export function DownloadBanner() {
   
-  const { showDownloadBanner } = usePlayer();
+  const { showDownloadBanner } = useLibrary();
   const { t } = useLanguage();
   const opacity = useSharedValue(0);
 

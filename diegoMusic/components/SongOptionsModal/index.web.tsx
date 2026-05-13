@@ -2,13 +2,13 @@ import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Animated, Linking, Pressable, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from '@/components/IconSymbol';
-import { usePlayer } from "@/context/PlayerContext";
+import { useLibrary } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SongOptionsModalProps } from "@/interfaces/Song";
 import { styles, SHEET_HEIGHT } from "./styles.web";
 
 export default function SongOptionsModal({ visible, onClose, song }: SongOptionsModalProps) {
-  const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = usePlayer();
+  const { toggleFavorite, isFavorite, toggleFavoriteArtist, isFavoriteArtist } = useLibrary();
   const { t } = useLanguage();
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const opacity = useRef(new Animated.Value(0)).current;

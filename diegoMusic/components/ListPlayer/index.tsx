@@ -1,7 +1,7 @@
 import { Platform, View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { youtubeService } from "@/services/youtubeService";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { useNetwork } from "@/context/NetworkContext";
 import { Skeleton } from "@/components/Skeleton";
 import { CarouselPlayerProps } from "@/interfaces/player";
@@ -17,7 +17,7 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
   const [songs, setSongs] = useState<SongData[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
-  const { playSong } = usePlayer();
+  const { playSong } = usePlayback();
   const { isApiReachable } = useNetwork();
 
   useEffect(() => {

@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { Text, TouchableOpacity, View, ScrollView, Image, ImageSourcePropType } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
-import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/PlayerContext';
 import type { Locale } from '@/interfaces/language';
 import type { VideoQuality } from '@/context/player/types';
 import { styles } from '@/styles/SettingsScreen.styles';
@@ -23,7 +23,7 @@ const QUALITY_ICONS: Record<VideoQuality, string> = {
 export default function SettingsScreen() {
 
   const { t, locale, setLocale } = useLanguage();
-  const { videoQuality, setVideoQuality } = usePlayer();
+  const { videoQuality, setVideoQuality } = useLibrary();
   const handleSetLocale = (l: Locale) => {
     setLocale(l);
     settingsService.update({ language: l });

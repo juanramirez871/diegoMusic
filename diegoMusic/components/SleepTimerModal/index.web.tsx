@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Pressable, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { IconSymbol } from '@/components/IconSymbol';
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { SleepTimerModalProps } from "@/interfaces/player";
 import { styles, SHEET_HEIGHT } from "./styles.web";
 
 export default function SleepTimerModal({ visible, onClose }: SleepTimerModalProps) {
-  const { sleepTimer, setSleepTimer } = usePlayer();
+  const { sleepTimer, setSleepTimer } = usePlayback();
   const { t } = useLanguage();
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const opacity = useRef(new Animated.Value(0)).current;

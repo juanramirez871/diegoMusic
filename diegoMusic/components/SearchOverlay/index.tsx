@@ -14,7 +14,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import Song from "@/components/Song";
 import { youtubeService } from "@/services/youtubeService";
 import { Skeleton } from "@/components/Skeleton";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayback } from "@/context/PlayerContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { DownloadBanner } from "@/components/DownloadBanner";
 import { SongData } from "@/interfaces/Song";
@@ -80,7 +80,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   setRecentSearches,
 }) => {
 
-  const { playSong } = usePlayer();
+  const { playSong } = usePlayback();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [results, setResults] = useState<SongData[]>([]);

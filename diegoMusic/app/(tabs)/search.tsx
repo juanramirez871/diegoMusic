@@ -4,7 +4,7 @@ import { SearchOverlay } from "@/components/SearchOverlay";
 import CATEGORIES from "@/constants/categories";
 import { useNetwork } from "@/context/NetworkContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerUI } from "@/context/PlayerContext";
 import type { HistoryItem } from '@/interfaces/ui';
 import storage from '@/services/storage';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -36,7 +36,7 @@ export default function TabTwoScreen() {
   const [isGenreVisible, setIsGenreVisible] = useState(false);
   const { isOnline, isNetworkChecked, isApiReachable } = useNetwork();
   const { t } = useLanguage();
-  const { isMaximized } = usePlayer();
+  const { isMaximized } = usePlayerUI();
 
   useEffect(() => {
     const loadHistory = async () => {

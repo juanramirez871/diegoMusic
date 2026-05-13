@@ -10,7 +10,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { usePlayer } from "@/context/PlayerContext";
+import { useLibrary } from "@/context/PlayerContext";
 import { parseDuration } from "@/context/player/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import type { StatsOverlayProps } from "@/interfaces/ui";
@@ -23,7 +23,7 @@ export const StatsOverlay: React.FC<StatsOverlayProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
-  const { favorites, streak, artistPlays, songPlays } = usePlayer();
+  const { favorites, streak, artistPlays, songPlays } = useLibrary();
 
   if (!isVisible) return null;
 

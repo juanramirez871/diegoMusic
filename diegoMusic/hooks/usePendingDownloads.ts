@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as FileSystem from '@/utils/fileSystem';
-import { usePlayer } from '@/context/PlayerContext';
+import { useLibrary } from '@/context/PlayerContext';
 import { webDownload } from '@/services/webDownload';
 
 export function usePendingDownloads(): number {
 
-  const { favorites, downloadVersion } = usePlayer();
+  const { favorites, downloadVersion } = useLibrary();
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
