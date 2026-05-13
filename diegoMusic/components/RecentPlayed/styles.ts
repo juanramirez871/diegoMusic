@@ -1,4 +1,6 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
 
 export const styles = StyleSheet.create({
   gridContainer: {
@@ -14,7 +16,7 @@ export const styles = StyleSheet.create({
   containerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3c3b3bff',
+    backgroundColor: isWeb ? '#1d1d1d' : '#3c3b3bff',
     borderRadius: 8,
     overflow: 'hidden',
     height: 50,

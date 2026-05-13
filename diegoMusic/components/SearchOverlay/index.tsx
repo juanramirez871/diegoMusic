@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Animated,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from '@/components/IconSymbol';
@@ -86,6 +88,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
   const [lastSearchedQuery, setLastSearchedQuery] = useState("");
 
   const fetchResults = async (query: string) => {
+    
     const trimmedQuery = query.trim();
     if (trimmedQuery.length <= 3) {
       setResults([]);
@@ -188,7 +191,11 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
         </View>
       </View>
 
-      <View style={styles.searchContent}>
+      <KeyboardAvoidingView
+        style={styles.searchContent}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={insets.top + 56}
+      >
         {searchQuery.trim().length > 3 ? (
           isLoading && results.length === 0 ? (
             <View style={styles.resultsContainer}>
@@ -218,6 +225,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
           )
         ) : recentSearches.length === 0 ? (
           <View style={styles.emptyState}>
+            <IconSymbol name="search" size={44} color="#8f8f8f" style={styles.emptyStateIcon} />
             <Text style={styles.emptyStateTitle}>{t('searchOverlay.emptyTitle')}</Text>
             <Text style={styles.emptyStateSub}>{t('searchOverlay.emptySub')}</Text>
           </View>
@@ -249,7 +257,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({
             </ScrollView>
           </View>
         )}
-      </View>
+      </KeyboardAvoidingView>
     </Animated.View>
   );
 };

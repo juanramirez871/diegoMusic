@@ -3,6 +3,7 @@ import { youtubeService } from '@/services/youtubeService';
 import { createAudioPlayer, AudioPlayer } from 'expo-audio';
 import * as FileSystem from '@/utils/fileSystem';
 import { useRef } from 'react';
+import { Platform } from 'react-native';
 
 
 export const usePreloader = () => {
@@ -10,6 +11,7 @@ export const usePreloader = () => {
   const preloadedSoundsRef = useRef<Map<string, AudioPlayer>>(new Map());
   const preloadNextSongs = async (currentQueue: SongData[], currentIndex: number, isOnline: boolean = true) => {
 
+    if (Platform.OS === 'web') return;
     const currentSong = currentQueue[currentIndex];
     const nextSongs = currentQueue.slice(currentIndex + 1, currentIndex + 2);
     const idsToKeep = new Set([currentSong.id, ...nextSongs.map(s => s.id)]);
@@ -22,7 +24,8 @@ export const usePreloader = () => {
         const cacheUri = `${FileSystem.cacheDirectory}${id}.mp3`;
         const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
         console.log(`[PRELOADER_CLEANUP] Eliminando preloaded id=${id} cacheExists=${cacheInfo.exists}`);
-        if (cacheInfo.exists) {
+        if (cacheInfo.exists)
+        {
           await FileSystem.deleteAsync(cacheUri, { idempotent: true }).catch(() => {});
           console.log(`[PRELOADER_CLEANUP] Cache eliminado: ${cacheUri}`);
         }

@@ -50,6 +50,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyStateIcon: {
+    marginBottom: 14,
+  },
   emptyStateTitle: {
     color: '#fff',
     fontSize: 20,

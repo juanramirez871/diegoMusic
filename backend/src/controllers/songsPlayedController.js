@@ -1,4 +1,5 @@
 import { Artist, Song, SongPlayed } from '../models/index.js';
+import { enrichMediaMetadata } from '../services/mediaMetadataService.js';
 
 export async function recordPlay(req, res) {
 
@@ -7,16 +8,23 @@ export async function recordPlay(req, res) {
   if (!youtubeId || !title) return res.status(400).json({ error: 'youtubeId and title required' });
 
   try {
+    const enriched = await enrichMediaMetadata({
+      title,
+      artistName: channelName,
+      thumbnailUrl,
+      artistAvatar: channelAvatar,
+    });
+
     let artistId = null;
     if (channelId) {
       const [artist] = await Artist.findOrCreate({
         where: { channelId },
-        defaults: { name: channelName ?? '', avatar: channelAvatar ?? '' },
+        defaults: { name: channelName ?? '', avatar: enriched.artistAvatar ?? '' },
       });
 
       const patch = {};
       if (channelName && !artist.name) patch.name = channelName;
-      if (channelAvatar && !artist.avatar) patch.avatar = channelAvatar;
+      if (enriched.artistAvatar && artist.avatar !== enriched.artistAvatar) patch.avatar = enriched.artistAvatar;
       if (Object.keys(patch).length > 0) await artist.update(patch);
 
       artistId = artist.id;
@@ -24,11 +32,11 @@ export async function recordPlay(req, res) {
 
     const [song] = await Song.findOrCreate({
       where: { youtubeId },
-      defaults: { title, thumbnailUrl, durationFormatted, artistId },
+      defaults: { title, thumbnailUrl: enriched.thumbnailUrl, durationFormatted, artistId },
     });
 
-    if (song.title !== title || song.thumbnailUrl !== thumbnailUrl) {
-      await song.update({ title, thumbnailUrl, durationFormatted, artistId });
+    if (song.title !== title || song.thumbnailUrl !== enriched.thumbnailUrl) {
+      await song.update({ title, thumbnailUrl: enriched.thumbnailUrl, durationFormatted, artistId });
     }
 
     const now = new Date();
@@ -87,19 +95,22 @@ export async function getStats(req, res) {
       .map(toSongData);
 
     const artistPlays = {};
-    for (const r of records) {
+    for (const r of records)
+    {
       const artist = r.Song?.Artist;
       if (!artist) continue;
-
       const key = artist.name;
-      if (!artistPlays[key]) {
+      if (!artistPlays[key])
+      {
         artistPlays[key] = { name: artist.name, avatar: artist.avatar ?? '', count: 0 };
       }
+
       artistPlays[key].count += r.times;
     }
 
     const songPlays = {};
-    for (const r of records) {
+    for (const r of records)
+    {
       if (!r.Song) continue;
       songPlays[r.Song.youtubeId] = {
         id: r.Song.youtubeId,
@@ -134,20 +145,18 @@ export async function getStats(req, res) {
 }
 
 export async function updateLyricsQuery(req, res) {
+
   const userId = req.user.id;
   const { youtubeId, query } = req.body;
   if (!youtubeId || !query) return res.status(400).json({ error: 'youtubeId and query required' });
 
-  try {
+  try
+  {
     const song = await Song.findOne({ where: { youtubeId } });
     if (!song) return res.status(404).json({ error: 'Song not found' });
-
     const record = await SongPlayed.findOne({ where: { userId, songId: song.id } });
-    if (record) {
-      await record.update({ lyricsQuery: query });
-    } else {
-      await SongPlayed.create({ userId, songId: song.id, times: 0, lyricsQuery: query });
-    }
+    if (record) await record.update({ lyricsQuery: query });
+    else await SongPlayed.create({ userId, songId: song.id, times: 0, lyricsQuery: query });
 
     res.json({ ok: true });
   }

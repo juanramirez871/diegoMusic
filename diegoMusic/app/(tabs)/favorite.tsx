@@ -158,6 +158,7 @@ export default function FavoriteScreen() {
             style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
           />
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.headerTitleContainer,
             headerTitleAnimatedStyle,
@@ -188,7 +189,7 @@ export default function FavoriteScreen() {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <IconSymbol name="close-circle" size={18} color="#b3b3b3" />
+                  <IconSymbol name="close" size={18} color="#b3b3b3" />
                 </TouchableOpacity>
               )}
             </View>

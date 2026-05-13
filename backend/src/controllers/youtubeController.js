@@ -1,13 +1,80 @@
 import * as youtubeService from "../services/youtubeService.js";
+import * as coverResolverService from "../services/coverResolverService.js";
+import { enrichFromCacheAndWarm } from '../services/mediaMetadataService.js';
 import { createReadStream, statSync } from "fs";
-import { Song } from "../models/index.js";
+import { Song, Artist } from "../models/index.js";
 
 const AUDIO_URL_TTL_MS = 4 * 60 * 60 * 1000;
+const mapWithConcurrency = async (items, worker, concurrency = 4) => {
+
+  const results = new Array(items.length);
+  let index = 0;
+
+  const run = async () => {
+    while (index < items.length) {
+      const current = index;
+      index += 1;
+      results[current] = await worker(items[current], current);
+    }
+  };
+
+  const workers = Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, () => run());
+  await Promise.all(workers);
+  return results;
+};
+
+const enrichSearchVideos = async (videos = []) => mapWithConcurrency(videos, async (video) => {
+  try {
+    const enriched = enrichFromCacheAndWarm({
+      title: video?.title,
+      artistName: video?.channel?.name,
+      thumbnailUrl: video?.thumbnail?.url,
+      artistAvatar: video?.channel?.icon,
+    });
+
+    return {
+      ...video,
+      thumbnail: { ...(video.thumbnail || {}), url: enriched.thumbnailUrl || video?.thumbnail?.url || '' },
+      channel: { ...(video.channel || {}), icon: enriched.artistAvatar || video?.channel?.icon || '' },
+    };
+  }
+  catch {
+    return video;
+  }
+}, 4);
+
+const enrichChannelVideos = async (videos = []) => mapWithConcurrency(videos, async (video) => {
+  try {
+    const primaryThumb = video?.videoThumbnails?.[0]?.url || '';
+    const enriched = enrichFromCacheAndWarm({
+      title: video?.title,
+      artistName: video?.author,
+      thumbnailUrl: primaryThumb,
+      artistAvatar: '',
+    });
+
+    const nextThumb = enriched.thumbnailUrl || primaryThumb;
+    const thumbs = Array.isArray(video.videoThumbnails) ? [...video.videoThumbnails] : [];
+    if (thumbs.length > 0) {
+      thumbs[0] = { ...thumbs[0], url: nextThumb };
+    }
+
+    return {
+      ...video,
+      videoThumbnails: thumbs,
+      authorAvatar: enriched.artistAvatar || video?.authorAvatar || '',
+    };
+  }
+  catch {
+    return video;
+  }
+}, 4);
 
 const searchVideo = async (req, res) => {
   try {
     const videos = await youtubeService.searchVideo(req.query.search, req.query.limit);
-    res.status(200).json(videos);
+    const enrichedVideos = await enrichSearchVideos(videos);
+    res.status(200).json(enrichedVideos);
   }
   catch (error) {
     console.error(error);
@@ -19,7 +86,8 @@ const searchVideo = async (req, res) => {
 const searchChannelVideos = async (req, res) => {
   try {
     const videos = await youtubeService.searchChannelVideos(req.query.channelId);
-    res.status(200).json(videos);
+    const enrichedVideos = await enrichChannelVideos(videos);
+    res.status(200).json(enrichedVideos);
   }
   catch (error) {
     console.error(error);
@@ -44,7 +112,8 @@ const downloadAudio = async (req, res) => {
     const fileSize = cached.size;
     const rangeHeader = req.headers.range;
 
-    if (rangeHeader) {
+    if (rangeHeader)
+    {
       const [startByte, endByte] = rangeHeader
         .replace("bytes=", "")
         .split("-")
@@ -82,7 +151,8 @@ const downloadAudio = async (req, res) => {
 };
 
 const streamVideo = async (req, res) => {
-  try {
+  try
+  {
     const { url, quality } = req.query;
     if (!url) return res.status(400).json({ error: "url es requerido" });
     const rangeHeader = req.headers.range;
@@ -102,26 +172,23 @@ const streamVideo = async (req, res) => {
 
 const getAudioUrl = async (req, res) => {
   try {
+
     const { url } = req.query;
     if (!url) return res.status(400).json({ error: 'url is required' });
-
     const videoId = url.match(/[?&]v=([^&]+)/)?.[1] ?? url.split('/').pop();
-
-    // Check DB cache first
-    if (videoId) {
+    if (videoId)
+    {
       const song = await Song.findOne({ where: { youtubeId: videoId } });
-      if (song?.audioUrl && song?.audioUrlCachedAt) {
+      if (song?.audioUrl && song?.audioUrlCachedAt)
+      {
         const age = Date.now() - new Date(song.audioUrlCachedAt).getTime();
-        if (age < AUDIO_URL_TTL_MS) {
-          return res.json({ url: song.audioUrl, mimeType: 'audio/mp4' });
-        }
+        if (age < AUDIO_URL_TTL_MS) return res.json({ url: song.audioUrl, mimeType: 'audio/mp4' });
       }
     }
 
     const result = await youtubeService.getAudioDirectUrl(url);
-
-    // Persist to DB if song exists
-    if (videoId) {
+    if (videoId)
+    {
       Song.update(
         { audioUrl: result.url, audioUrlCachedAt: new Date() },
         { where: { youtubeId: videoId } }
@@ -137,19 +204,23 @@ const getAudioUrl = async (req, res) => {
 };
 
 const prefetchAudio = (req, res) => {
+
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'url is required' });
   res.status(202).end();
+
   youtubeService.getAudioDirectUrl(url).catch((err) =>
     console.warn('[prefetch] Error warming audio cache:', err.message)
   );
+
   youtubeService.downloadAudio(url, 0).catch((err) =>
     console.warn('[prefetch] Error warming yt-dlp cache:', err.message)
   );
 };
 
 const warmAudio = async (req, res) => {
-  try {
+  try
+  {
     const { url } = req.query;
     if (!url) return res.status(400).json({ error: 'url is required' });
     await youtubeService.downloadAudio(url, 0);
@@ -161,4 +232,64 @@ const warmAudio = async (req, res) => {
   }
 };
 
-export { searchVideo, searchChannelVideos, downloadAudio, streamVideo, getAudioUrl, prefetchAudio, warmAudio };
+const resolveCover = async (req, res) => {
+
+  try
+  {
+    const { title, artist, album, limit, rawTitle, minScore } = req.query;
+    if (!title && !artist && !album && !rawTitle) {
+      return res.status(400).json({ error: "title, artist, album or rawTitle is required" });
+    }
+
+    const result = await coverResolverService.resolveCover({
+      title,
+      artist,
+      album,
+      rawTitle,
+      limit,
+      minScore,
+    });
+
+    res.status(200).json(result);
+  }
+  catch (error) {
+    console.error("Error in resolveCover:", error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+  }
+};
+
+const resolveArtistImage = async (req, res) => {
+
+  try
+  {
+    const { artist, rawTitle, limit, minScore } = req.query;
+    if (!artist && !rawTitle) {
+      return res.status(400).json({ error: 'artist or rawTitle is required' });
+    }
+
+    const result = await coverResolverService.resolveArtistImage({
+      artist,
+      rawTitle,
+      limit,
+      minScore,
+    });
+
+    res.status(200).json(result);
+  }
+  catch (error) {
+    console.error('Error in resolveArtistImage:', error);
+    if (!res.headersSent) res.status(500).json({ error: error.message });
+  }
+};
+
+export {
+  searchVideo,
+  searchChannelVideos,
+  downloadAudio,
+  streamVideo,
+  getAudioUrl,
+  prefetchAudio,
+  warmAudio,
+  resolveCover,
+  resolveArtistImage,
+};

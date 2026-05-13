@@ -50,6 +50,12 @@ export const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     height: '100%',
+    // @ts-ignore web-only
+    outlineStyle: 'solid',
+    // @ts-ignore web-only
+    outlineWidth: 0,
+    // @ts-ignore web-only
+    boxShadow: 'none',
   },
   sortButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

@@ -3,9 +3,13 @@ import * as FileSystem from '@/utils/fileSystem';
 import { usePlayer } from '@/context/PlayerContext';
 
 export const useThumbnail = (songId: string | undefined, remoteUrl: string | undefined) => {
+
   const { isFavorite } = usePlayer();
   const [localExists, setLocalExists] = useState(false);
   const favoriteStatus = songId ? isFavorite(songId) : false;
+  const normalizedRemote = typeof remoteUrl === 'string' ? remoteUrl.trim() : '';
+  const isYoutubeThumb = /ytimg\.com|googleusercontent\.com/i.test(normalizedRemote);
+  const shouldPreferLocal = !normalizedRemote || isYoutubeThumb;
 
   useEffect(() => {
     let isMounted = true;
@@ -28,8 +32,9 @@ export const useThumbnail = (songId: string | undefined, remoteUrl: string | und
     return () => { isMounted = false; };
   }, [songId, favoriteStatus]);
 
+  if (normalizedRemote && !shouldPreferLocal) return { uri: normalizedRemote };
   if (localExists && songId) return { uri: `${FileSystem.documentDirectory}${songId}_thumb.jpg` };
-  if (remoteUrl) return { uri: remoteUrl };
+  if (normalizedRemote) return { uri: normalizedRemote };
 
   return require("@/assets/images/cover.jpg");
 };

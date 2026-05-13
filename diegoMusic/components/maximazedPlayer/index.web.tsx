@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { VideoView } from 'expo-video';
 import QueueModal from "@/components/QueueModal";
 import SleepTimerModal from "@/components/SleepTimerModal";
@@ -95,14 +94,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const lyrics = useLyrics(currentSong, isOnline);
   const lyricsDefaultQuery = lyrics.lyricsQuery;
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
-  const [thumbError, setThumbError] = useState(false);
-
-  const hiResThumbnailSource = (() => {
-    const src = thumbnailSource as any;
-    if (!src?.uri) return thumbnailSource;
-    const hiResUri = src.uri.replace(/\/[^/]+\.jpg(\?.*)?$/, '/maxresdefault.jpg');
-    return hiResUri !== src.uri ? { uri: hiResUri } : thumbnailSource;
-  })();
   const lyricsScrollRef = useRef<ScrollView>(null);
   const playTint = useSharedValue(0);
 
@@ -120,7 +111,6 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
     setSeekProgress(0);
     setIsSeeking(false);
     setShowLyricsEdit(false);
-    setThumbError(false);
   }, [currentSong?.id]);
 
   useEffect(() => {
@@ -177,6 +167,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   return (
     <>
       <LinearGradient colors={['#1a3a9e', '#0d0d0d', '#080808']} style={styles.dialog}>
+          <Image
+            source={thumbnailSource}
+            style={styles.backgroundImage}
+            blurRadius={36}
+          />
+          <View style={styles.backgroundOverlay} />
 
           <View style={styles.header}>
             <TouchableOpacity onPress={() => { video.closeIfOpen(); onClose(); }} style={styles.headerBtn}>
@@ -190,7 +186,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
           <View style={styles.body}>
             <View style={styles.left}>
-              <View style={styles.cover}>
+              <View style={[styles.cover, video.showVideo && styles.coverVideoMode]}>
                 {video.showVideo ? (
                   <>
                     {video.isVideoLoading && (
@@ -225,9 +221,8 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                   </>
                 ) : (
                   <Image
-                    source={thumbError ? thumbnailSource : hiResThumbnailSource}
+                    source={thumbnailSource}
                     style={styles.coverImage}
-                    onError={() => setThumbError(true)}
                   />
                 )}
               </View>
@@ -415,18 +410,32 @@ const styles = StyleSheet.create({
   },
   cover: {
     width: '100%' as any,
-    aspectRatio: 16 / 9,
-    maxHeight: 340,
+    aspectRatio: 1,
+    maxWidth: 520,
+    alignSelf: 'center',
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coverVideoMode: {
+    aspectRatio: 16 / 9,
+    maxWidth: 760,
+  },
   coverImage: {
     width: '100%' as any,
     height: '100%' as any,
     resizeMode: 'cover',
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.45,
+    transform: [{ scale: 1.12 }],
+  },
+  backgroundOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   videoLoading: {
     ...StyleSheet.absoluteFillObject,
@@ -503,8 +512,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 16,
   },
-
-  /* Right column: lyrics */
   right: {
     flex: 2,
     backgroundColor: 'rgba(255,255,255,0.05)',

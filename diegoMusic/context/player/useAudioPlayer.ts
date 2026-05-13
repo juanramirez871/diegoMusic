@@ -326,7 +326,7 @@ export const useAudioPlayer = (
           sound.play();
           console.log(`[PSL] PRELOADED: play() llamado. seq=${currentSequence}`);
 
-          if (!localUri && isOnline) {
+          if (!localUri && isOnline && Platform.OS !== 'web') {
             const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
             if (currentSequence !== playSequenceRef.current) return;
             const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
@@ -442,11 +442,12 @@ export const useAudioPlayer = (
           attachStatusListener(sound);
           sound.play();
 
-          const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
-          const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
-          downloadResumableRef.current = downloadResumable;
-          downloadTargetUriRef.current = targetUri;
-          downloadResumable.downloadAsync().then(async (result: any) => {
+          if (Platform.OS !== 'web') {
+            const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
+            const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
+            downloadResumableRef.current = downloadResumable;
+            downloadTargetUriRef.current = targetUri;
+            downloadResumable.downloadAsync().then(async (result: any) => {
             downloadResumableRef.current = null;
             downloadTargetUriRef.current = null;
             if (!result?.uri || currentSongRef.current?.id !== song.id) return;
@@ -497,8 +498,9 @@ export const useAudioPlayer = (
               stableSetIsLoading(false);
               stableSetIsPlaying(true);
             }
-          })
-          .catch((err: any) => console.error('Download error:', err));
+            })
+            .catch((err: any) => console.error('Download error:', err));
+          }
         }
       }
       else if (isOnline) {
@@ -529,12 +531,14 @@ export const useAudioPlayer = (
           return;
         }
 
-        console.log(`[PSL] NETWORK: warming yt-dlp...`);
-        const warmedOk = await youtubeService.warmAudio(song.url);
-        console.log(`[PSL] NETWORK: warm result=${warmedOk}`);
-        if (currentSequence !== playSequenceRef.current) {
-          console.log(`[PSL] NETWORK: seq mismatch tras warm. ABORT.`);
-          return;
+        if (Platform.OS !== 'web') {
+          console.log(`[PSL] NETWORK: warming yt-dlp...`);
+          const warmedOk = await youtubeService.warmAudio(song.url);
+          console.log(`[PSL] NETWORK: warm result=${warmedOk}`);
+          if (currentSequence !== playSequenceRef.current) {
+            console.log(`[PSL] NETWORK: seq mismatch tras warm. ABORT.`);
+            return;
+          }
         }
 
         sound = createAudioPlayer({ uri: directUrl });
@@ -542,11 +546,12 @@ export const useAudioPlayer = (
         sound.play();
         console.log(`[PSL] NETWORK: play() llamado. seq=${currentSequence}`);
 
-        const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
-        console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
-        const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
-        downloadResumableRef.current = downloadResumable;
-        downloadTargetUriRef.current = targetUri;
+        if (Platform.OS !== 'web') {
+          const targetUri = isFavorite(song.id) ? persistentUri : cacheUri;
+          console.log(`[DOWNLOAD] Iniciando descarga de fondo a: ${isFavorite(song.id) ? 'Favoritos' : 'Cache'}`);
+          const downloadResumable = FileSystem.createDownloadResumable(directUrl, targetUri, {});
+          downloadResumableRef.current = downloadResumable;
+          downloadTargetUriRef.current = targetUri;
 
         const handleDownloadResult = async (result: any) => {
           downloadResumableRef.current = null;
@@ -585,7 +590,8 @@ export const useAudioPlayer = (
           if (currentSequence === playSequenceRef.current && soundRef.current) {
             const currentTimeSec = (soundRef.current.currentTime ?? 0);
             const reallyPlaying = soundRef.current.playing && currentTimeSec > 0.1;
-            if (!reallyPlaying) {
+            if (!reallyPlaying)
+            {
               console.warn(`[NETWORK] sound stream no arrancó (playing=${soundRef.current.playing} currentTime=${currentTimeSec}), reemplazando con archivo recién descargado`);
               if (playbackSafetyTimerRef.current) {
                 clearTimeout(playbackSafetyTimerRef.current);
@@ -598,15 +604,17 @@ export const useAudioPlayer = (
               attachStatusListener(fresh);
               soundRef.current = fresh;
               try { fresh.seekTo(0); } catch {}
+
               fresh.play();
               stableSetIsLoading(false);
               stableSetIsPlaying(true);
             }
           }
         };
-        downloadResumable.downloadAsync()
-          .then(handleDownloadResult)
-          .catch((err: any) => console.error('Download error:', err));
+          downloadResumable.downloadAsync()
+            .then(handleDownloadResult)
+            .catch((err: any) => console.error('Download error:', err));
+        }
       }
       else throw new Error('Offline and no local file');
 

@@ -11,6 +11,7 @@ import { useAudioPlayer } from './player/useAudioPlayer';
 import { usePlayerQueue } from './player/usePlayerQueue';
 import { useNetwork } from './NetworkContext';
 import { SongData } from '@/interfaces/Song';
+import { Image } from 'react-native';
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
@@ -319,6 +320,28 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (currentIndex !== -1) preloadNextSongs(queue, currentIndex, isOnline);
     }
   }, [currentSong?.id, queue, isOnline]);
+
+  useEffect(() => {
+    if (!currentSong || queue.length === 0) return;
+
+    const currentIndex = queue.findIndex((s) => s.id === currentSong.id);
+    if (currentIndex === -1) return;
+
+    const candidates = [
+      queue[(currentIndex + 1) % queue.length],
+      queue[(currentIndex + 2) % queue.length],
+    ];
+
+    const seen = new Set<string>();
+    for (const song of candidates) {
+      const rawUrl = song?.thumbnail?.url;
+      if (!rawUrl) continue;
+      const url = rawUrl.replace(/^http:\/\//, 'https://');
+      if (seen.has(url)) continue;
+      seen.add(url);
+      Image.prefetch(url).catch(() => {});
+    }
+  }, [currentSong?.id, queue]);
 
 
   useEffect(() => {
