@@ -198,26 +198,7 @@ export const useAudioPlayer = (
     statusSubscriptionRef.current = player.addListener('playbackStatusUpdate', onPlaybackStatusUpdate);
   };
 
-  const attachPlayingChangeListener = (player: AudioPlayer) => {
-    player.addListener('playingChange', ({ isPlaying: isPlayingNow }: any) => {
-      const now = Date.now();
-      if (isPlayingNow) {
-        if (isLoadingRef.current) stableSetIsLoading(false);
-        stableSetIsPlaying(true);
-        setIsIntendingToPlay(true);
-      }
-      else {
-        stableSetIsPlaying(false);
-        setIsIntendingToPlay(false);
-      }
 
-      if (now - lastMediaControlUpdateRef.current >= 500) {
-        lastMediaControlUpdateRef.current = now;
-        const state = isPlayingNow ? PlaybackState.PLAYING : PlaybackState.PAUSED;
-        SafeMediaControl.updatePlaybackState(state, (player.currentTime ?? 0)).catch(() => {});
-      }
-    });
-  };
 
   const unloadCurrentSound = () => {
     statusSubscriptionRef.current?.remove();
@@ -324,7 +305,7 @@ export const useAudioPlayer = (
 
         sound = createAudioPlayer({ uri: persistentUri });
         attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
         sound.play();
       }
       else if (preloadedSound) {
@@ -345,7 +326,7 @@ export const useAudioPlayer = (
           }
 
           attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
           sound.play();
           console.log(`[PSL] PRELOADED: play() llamado. seq=${currentSequence}`);
 
@@ -403,7 +384,6 @@ export const useAudioPlayer = (
                 try { soundRef.current.remove(); } catch {}
                 const fresh = createAudioPlayer({ uri: finalUri });
                 attachStatusListener(fresh);
-      attachPlayingChangeListener(fresh);
                 soundRef.current = fresh;
                 try { fresh.seekTo(0); } catch {}
                 fresh.play();
@@ -423,14 +403,14 @@ export const useAudioPlayer = (
             isUsingLocalFileRef.current = true;
             sound = createAudioPlayer({ uri: localUri });
             attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
             sound.play();
           }
           else if (isOnline) {
             const { url: directUrl } = await youtubeService.getAudioDirectUrl(song.url);
             sound = createAudioPlayer({ uri: directUrl });
             attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
             sound.play();
           }
           else {
@@ -450,7 +430,7 @@ export const useAudioPlayer = (
           isUsingLocalFileRef.current = true;
           sound = createAudioPlayer({ uri: localUri });
           attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
           sound.play();
           console.log(`[PSL] LOCAL: play() llamado. seq=${currentSequence}`);
         }
@@ -467,7 +447,7 @@ export const useAudioPlayer = (
           if (currentSequence !== playSequenceRef.current) return;
           sound = createAudioPlayer({ uri: directUrl });
           attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
           sound.play();
 
           if (Platform.OS !== 'web') {
@@ -520,7 +500,6 @@ export const useAudioPlayer = (
               try { soundRef.current.remove(); } catch {}
               const fresh = createAudioPlayer({ uri: finalUri });
               attachStatusListener(fresh);
-      attachPlayingChangeListener(fresh);
               soundRef.current = fresh;
               try { fresh.seekTo(0); } catch {}
               fresh.play();
@@ -544,7 +523,7 @@ export const useAudioPlayer = (
             }
             sound = createAudioPlayer({ uri: blobUrl });
             attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
             sound.play();
             soundRef.current = sound;
             await addRecentPlayed(song);
@@ -573,7 +552,7 @@ export const useAudioPlayer = (
 
         sound = createAudioPlayer({ uri: directUrl });
         attachStatusListener(sound);
-    attachPlayingChangeListener(sound);
+
         sound.play();
         console.log(`[PSL] NETWORK: play() llamado. seq=${currentSequence}`);
 
@@ -633,7 +612,6 @@ export const useAudioPlayer = (
               try { soundRef.current.remove(); } catch {}
               const fresh = createAudioPlayer({ uri: finalUri });
               attachStatusListener(fresh);
-      attachPlayingChangeListener(fresh);
               soundRef.current = fresh;
               try { fresh.seekTo(0); } catch {}
 
@@ -770,7 +748,6 @@ export const useAudioPlayer = (
       unloadCurrentSound();
       const localSound = createAudioPlayer({ uri: localFileUriRef.current });
       attachStatusListener(localSound);
-      attachPlayingChangeListener(localSound);
       localSound.seekTo(position / 1000);
       if (isPlayingNow) localSound.play();
 
