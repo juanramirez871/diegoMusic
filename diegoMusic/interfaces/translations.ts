@@ -1,3 +1,5 @@
+import { SUPPORTED_LANGUAGES } from '@/services/lyricsTranslation';
+import type { LyricLine } from '@/interfaces/lyrics';
 export interface Translations {
   tabs: {
     home: string;
@@ -37,6 +39,9 @@ export interface Translations {
     noConnection: string;
     notAvailable: string;
     searchPlaceholder: string;
+    translate: string;
+    translateFrom: string;
+    translateTo: string;
   };
   offline: {
     title: string;
@@ -134,4 +139,28 @@ export interface Translations {
     agreementMiddle: string;
     privacyPolicy: string;
   };
+}
+
+export interface TranslationPrefs {
+  enabled: boolean;
+  from: string;
+  to: string;
+}
+
+export interface UseLyricsTranslationReturn {
+  translationEnabled: boolean;
+  setTranslationEnabled: (enabled: boolean) => void;
+  translationFrom: string;
+  setTranslationFrom: (code: string) => void;
+  translationTo: string;
+  setTranslationTo: (code: string) => void;
+  translatedSynced: LyricLine[] | null;
+  translatedPlain: string | null;
+  translating: boolean;
+  supportedLanguages: typeof SUPPORTED_LANGUAGES;
+}
+
+export interface TranslationLanguage {
+  code: string;
+  name: string;
 }

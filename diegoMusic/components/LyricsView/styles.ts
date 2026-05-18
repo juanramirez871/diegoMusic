@@ -139,3 +139,45 @@ export const full = StyleSheet.create({
     lineHeight: 26,
   },
 });
+
+export const translation = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  toggleText: {
+    color: '#b3b3b3',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  toggleTextActive: {
+    color: '#2c5af3ff',
+  },
+  picker: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    color: '#fff',
+    fontSize: 12,
+  },
+  pickerLabel: {
+    color: '#888',
+    fontSize: 11,
+    fontWeight: '600',
+    minWidth: 20,
+  },
+});

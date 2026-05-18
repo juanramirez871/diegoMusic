@@ -39,6 +39,9 @@ const ja: Translations = {
     noConnection: 'インターネット接続がありません',
     notAvailable: '歌詞は利用できません',
     searchPlaceholder: 'アーティスト - 曲名',
+    translate: '翻訳',
+    translateFrom: '翻訳元',
+    translateTo: '翻訳先',
   },
   offline: {
     title: 'インターネット接続がありません',

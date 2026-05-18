@@ -39,6 +39,9 @@ const es: Translations = {
     noConnection: 'Sin conexión a internet',
     notAvailable: 'Letra no disponible',
     searchPlaceholder: 'Artista - Canción',
+    translate: 'Traducir',
+    translateFrom: 'Desde',
+    translateTo: 'A',
   },
   offline: {
     title: 'Sin conexión a internet',

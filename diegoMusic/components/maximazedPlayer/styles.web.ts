@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
   cover: {
     width: '100%' as any,
     aspectRatio: 1,
-    maxWidth: 520,
+    maxWidth: 400,
     alignSelf: 'center',
     borderRadius: 8,
     overflow: 'hidden',
@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
   },
   coverVideoMode: {
     aspectRatio: 16 / 9,
-    maxWidth: 760,
+    maxWidth: 520,
   },
   coverImage: {
     width: '100%' as any,
@@ -195,5 +195,35 @@ export const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 16,
     lineHeight: 28,
+  },
+  translateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  translatePickerLabel: {
+    color: '#888',
+    fontSize: 11,
+    fontWeight: '600',
+    minWidth: 20,
+  },
+  translateToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 36,
+  },
+  translateToggleText: {
+    color: '#b3b3b3',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  translateToggleTextActive: {
+    color: '#2c5af3ff',
   },
 });

@@ -80,7 +80,7 @@ export const MinimizedPlayer = ({ onPress, style }: { onPress: () => void; style
   if (!currentSong) return null;
 
   const progressPct = duration > 0 ? Math.min(Math.max((progress / duration) * 100, 0), 100) : 0;
-  const isBuffering = isIntendingToPlay && !isPlaying;
+  const isBuffering = isLoading;
   const isFav = isFavorite(currentSong.id);
   const isRepeating = repeatMode !== 'off';
 
@@ -125,7 +125,7 @@ export const MinimizedPlayer = ({ onPress, style }: { onPress: () => void; style
             onPress={() => { if (!isLoading) togglePlayPause(); }}
           >
             <IconSymbol
-              name={isIntendingToPlay ? 'pause' : 'play'}
+              name={isPlaying ? 'pause' : 'play'}
               size={20}
               color={isBuffering ? 'rgba(0,0,0,0.5)' : '#000'}
             />

@@ -10,6 +10,7 @@ import QueueModal from "@/components/QueueModal";
 import SleepTimerModal from "@/components/SleepTimerModal";
 import SongOptionsModal from "@/components/SongOptionsModal";
 import { useLyrics } from '@/hooks/useLyrics';
+import { useLyricsTranslation } from '@/hooks/useLyricsTranslation';
 import { useVideoPlayback } from '@/hooks/useVideoPlayback';
 import { useNetwork } from '@/context/NetworkContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -79,7 +80,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const activeProgress = video.showVideo ? (video.isVideoReady && video.videoProgress > 0 ? video.videoProgress : progress) : progress;
   const activeDuration = video.showVideo ? (video.isVideoReady && video.videoDuration > 0 ? video.videoDuration : duration) : duration;
-  const activeIsPlaying = video.showVideo ? (video.isVideoReady ? video.isVideoPlaying : false) : isIntendingToPlay;
+  const activeIsPlaying = video.showVideo ? (video.isVideoReady ? video.isVideoPlaying : false) : isPlaying;
   const activeIsLoading = video.showVideo ? video.isVideoLoading : isLoading;
 
   const handlePlayPausePress = () => {
@@ -94,6 +95,21 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const lyrics = useLyrics(currentSong, isOnline);
   const lyricsDefaultQuery = lyrics.lyricsQuery;
+  const {
+    translationEnabled,
+    setTranslationEnabled,
+    translationFrom,
+    setTranslationFrom,
+    translationTo,
+    setTranslationTo,
+    translatedSynced,
+    translatedPlain,
+    translating,
+    supportedLanguages,
+  } = useLyricsTranslation(lyrics.syncedLyrics, lyrics.plainLyrics);
+
+  const displaySynced = translationEnabled && translatedSynced ? translatedSynced : lyrics.syncedLyrics;
+  const displayPlain = translationEnabled && translatedPlain ? translatedPlain : lyrics.plainLyrics;
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
   const lyricsScrollRef = useRef<ScrollView>(null);
   const playTint = useSharedValue(0);
@@ -303,13 +319,83 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
             <View style={styles.right}>
               <View style={styles.lyricsTitleRow}>
                 <Text style={styles.lyricsTitle}>{t('lyrics.title')}</Text>
-                <TouchableOpacity
-                  onPress={() => setShowLyricsEdit(s => !s)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <IconSymbol name="pencil-outline" size={16} color={showLyricsEdit ? '#fff' : '#b3b3b3'} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setTranslationEnabled(!translationEnabled)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <IconSymbol
+                      name="translate"
+                      size={16}
+                      color={translationEnabled ? '#2c5af3ff' : '#b3b3b3'}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowLyricsEdit(s => !s)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <IconSymbol name="pencil-outline" size={16} color={showLyricsEdit ? '#fff' : '#b3b3b3'} />
+                  </TouchableOpacity>
+                </View>
               </View>
+
+              {translationEnabled && (
+                <View style={styles.translateRow}>
+                  <Text style={styles.translatePickerLabel}>{t('lyrics.translateFrom')}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      {supportedLanguages.map((lang) => (
+                        <TouchableOpacity
+                          key={`wf-${lang.code}`}
+                          onPress={() => setTranslationFrom(lang.code)}
+                          style={[
+                            styles.translateToggleBtn,
+                            translationFrom === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.translateToggleText,
+                              translationFrom === lang.code && styles.translateToggleTextActive,
+                            ]}
+                          >
+                            {lang.code.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
+
+              {translationEnabled && (
+                <View style={styles.translateRow}>
+                  <Text style={styles.translatePickerLabel}>{t('lyrics.translateTo')}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                      {supportedLanguages.map((lang) => (
+                        <TouchableOpacity
+                          key={`wt-${lang.code}`}
+                          onPress={() => setTranslationTo(lang.code)}
+                          style={[
+                            styles.translateToggleBtn,
+                            translationTo === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.translateToggleText,
+                              translationTo === lang.code && styles.translateToggleTextActive,
+                            ]}
+                          >
+                            {lang.code.toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              )}
 
               {(showLyricsEdit || (!lyrics.loading && isOnline && lyrics.notFound)) && lyrics.manualSearch && (
                 <View style={styles.lyricsSearchRow}>
@@ -332,24 +418,24 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 </View>
               )}
 
-              {lyrics.loading && (
+              {(lyrics.loading || translating) && (
                 <View style={styles.lyricsCenter}>
                   <LoadingSpinner />
                 </View>
               )}
-              {!lyrics.loading && !isOnline && (
+              {!lyrics.loading && !translating && !isOnline && (
                 <View style={styles.lyricsCenter}>
                   <Text style={styles.lyricsEmpty}>{t('lyrics.offline')}</Text>
                 </View>
               )}
-              {!lyrics.loading && isOnline && lyrics.notFound && (
+              {!lyrics.loading && !translating && isOnline && lyrics.notFound && (
                 <View style={styles.lyricsCenter}>
                   <Text style={styles.lyricsEmpty}>{t('lyrics.notFound')}</Text>
                 </View>
               )}
-              {!lyrics.loading && lyrics.syncedLyrics && lyrics.syncedLyrics.length > 0 && (
+              {!lyrics.loading && !translating && displaySynced && displaySynced.length > 0 && (
                 <ScrollView ref={lyricsScrollRef} style={styles.lyricsScroll} showsVerticalScrollIndicator={false}>
-                  {lyrics.syncedLyrics.map((line, i) => {
+                  {displaySynced.map((line, i) => {
                     const isActive = i === currentLineIndex;
                     return (
                       <TouchableOpacity key={i} onPress={() => handleSeek(line.time / duration)} activeOpacity={0.7}>
@@ -361,9 +447,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                   })}
                 </ScrollView>
               )}
-              {!lyrics.loading && lyrics.plainLyrics && !lyrics.syncedLyrics && (
+              {!lyrics.loading && !translating && displayPlain && !displaySynced && (
                 <ScrollView style={styles.lyricsScroll} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.lyricPlain}>{lyrics.plainLyrics}</Text>
+                  <Text style={styles.lyricPlain}>{displayPlain}</Text>
                 </ScrollView>
               )}
             </View>

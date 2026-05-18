@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { LyricsPanelProps, LyricsViewProps } from '@/interfaces/Song';
-import { COMPACT_LINE_HEIGHT, full, panel, searchStyles } from './styles';
+import { COMPACT_LINE_HEIGHT, full, panel, searchStyles, translation } from './styles';
+import { useLyricsTranslation } from '@/hooks/useLyricsTranslation';
 
 const ManualSearchInput = ({ defaultQuery, onSearch }: { defaultQuery?: string; onSearch: (q: string) => void }) => {
 
@@ -54,37 +55,120 @@ export function LyricsPanel({
 
   const scrollRef = useRef<ScrollView>(null);
   const { t } = useLanguage();
+  const {
+    translationEnabled,
+    setTranslationEnabled,
+    translationFrom,
+    setTranslationFrom,
+    translationTo,
+    setTranslationTo,
+    translatedSynced,
+    translatedPlain,
+    translating,
+    supportedLanguages,
+  } = useLyricsTranslation(syncedLyrics, plainLyrics);
+
+  const displaySynced = translationEnabled && translatedSynced ? translatedSynced : syncedLyrics;
+  const displayPlain = translationEnabled && translatedPlain ? translatedPlain : plainLyrics;
 
   return (
     <View style={panel.container}>
       <View style={panel.header}>
         <Text style={panel.label}>{t('lyrics.title')}</Text>
         <View style={panel.headerActions}>
+          <TouchableOpacity
+            onPress={() => setTranslationEnabled(!translationEnabled)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <IconSymbol
+              name="translate"
+              size={16}
+              color={translationEnabled ? '#2c5af3ff' : '#b3b3b3'}
+            />
+          </TouchableOpacity>
           <TouchableOpacity onPress={onExpand} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <IconSymbol name="expand-outline" size={16} color="#b3b3b3" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {loading && (
+      {translationEnabled && (
+        <View style={translation.row}>
+          <Text style={translation.pickerLabel}>{t('lyrics.translateFrom')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {supportedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={`from-${lang.code}`}
+                  onPress={() => setTranslationFrom(lang.code)}
+                  style={[
+                    translation.toggleBtn,
+                    translationFrom === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      translation.toggleText,
+                      translationFrom === lang.code && translation.toggleTextActive,
+                    ]}
+                  >
+                    {lang.code.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {translationEnabled && (
+        <View style={translation.row}>
+          <Text style={translation.pickerLabel}>{t('lyrics.translateTo')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {supportedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={`to-${lang.code}`}
+                  onPress={() => setTranslationTo(lang.code)}
+                  style={[
+                    translation.toggleBtn,
+                    translationTo === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      translation.toggleText,
+                      translationTo === lang.code && translation.toggleTextActive,
+                    ]}
+                  >
+                    {lang.code.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {(loading || translating) && (
         <View style={panel.center}>
           <LoadingSpinner />
         </View>
       )}
 
-      {!loading && !isOnline && (
+      {!loading && !translating && !isOnline && (
         <View style={panel.center}>
           <Text style={panel.emptyText}>{t('lyrics.offline')}</Text>
         </View>
       )}
 
-      {!loading && isOnline && notFound && (
+      {!loading && !translating && isOnline && notFound && (
         <View style={panel.center}>
           <Text style={panel.emptyText}>{t('lyrics.notFound')}</Text>
         </View>
       )}
 
-      {!loading && syncedLyrics && syncedLyrics.length > 0 && (
+      {!loading && !translating && displaySynced && displaySynced.length > 0 && (
         <ScrollView
           ref={scrollRef}
           style={{ maxHeight: COMPACT_LINE_HEIGHT * 5 }}
@@ -92,7 +176,7 @@ export function LyricsPanel({
           scrollEnabled
           nestedScrollEnabled
         >
-          {syncedLyrics.map((item, index) => {
+          {displaySynced.map((item, index) => {
             const isActive = index === currentLineIndex;
             return (
               <TouchableOpacity key={index} onPress={() => onSeek(item.time)} activeOpacity={0.7}>
@@ -105,13 +189,13 @@ export function LyricsPanel({
         </ScrollView>
       )}
 
-      {!loading && plainLyrics && !syncedLyrics && (
+      {!loading && !translating && displayPlain && !displaySynced && (
         <ScrollView
           style={{ maxHeight: COMPACT_LINE_HEIGHT * 5 }}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
         >
-          <Text style={panel.plain}>{plainLyrics}</Text>
+          <Text style={panel.plain}>{displayPlain}</Text>
         </ScrollView>
       )}
     </View>
@@ -136,6 +220,21 @@ export function LyricsView({
   const scrollRef = useRef<ScrollView>(null);
   const [showEdit, setShowEdit] = useState(false);
   const { t } = useLanguage();
+  const {
+    translationEnabled,
+    setTranslationEnabled,
+    translationFrom,
+    setTranslationFrom,
+    translationTo,
+    setTranslationTo,
+    translatedSynced,
+    translatedPlain,
+    translating,
+    supportedLanguages,
+  } = useLyricsTranslation(syncedLyrics, plainLyrics);
+
+  const displaySynced = translationEnabled && translatedSynced ? translatedSynced : syncedLyrics;
+  const displayPlain = translationEnabled && translatedPlain ? translatedPlain : plainLyrics;
 
   useEffect(() => {
     if (loading) setShowEdit(false);
@@ -155,16 +254,86 @@ export function LyricsView({
 
       <View style={full.headingRow}>
         <Text style={full.heading}>{t('lyrics.title')}</Text>
-        {onManualSearch && (
+        <View style={{ position: 'absolute', right: 0, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
           <TouchableOpacity
-            onPress={() => setShowEdit(s => !s)}
-            style={full.editBtn}
+            onPress={() => setTranslationEnabled(!translationEnabled)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <IconSymbol name="pencil-outline" size={16} color={showEdit ? '#fff' : '#b3b3b3'} />
+            <IconSymbol
+              name="translate"
+              size={18}
+              color={translationEnabled ? '#2c5af3ff' : '#b3b3b3'}
+            />
           </TouchableOpacity>
-        )}
+          {onManualSearch && (
+            <TouchableOpacity
+              onPress={() => setShowEdit(s => !s)}
+              style={full.editBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <IconSymbol name="pencil-outline" size={16} color={showEdit ? '#fff' : '#b3b3b3'} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
+
+      {translationEnabled && (
+        <View style={translation.row}>
+          <Text style={translation.pickerLabel}>{t('lyrics.translateFrom')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {supportedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={`from-${lang.code}`}
+                  onPress={() => setTranslationFrom(lang.code)}
+                  style={[
+                    translation.toggleBtn,
+                    translationFrom === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      translation.toggleText,
+                      translationFrom === lang.code && translation.toggleTextActive,
+                    ]}
+                  >
+                    {lang.code.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
+
+      {translationEnabled && (
+        <View style={translation.row}>
+          <Text style={translation.pickerLabel}>{t('lyrics.translateTo')}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {supportedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={`to-${lang.code}`}
+                  onPress={() => setTranslationTo(lang.code)}
+                  style={[
+                    translation.toggleBtn,
+                    translationTo === lang.code && { backgroundColor: 'rgba(44,90,243,0.2)' },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      translation.toggleText,
+                      translationTo === lang.code && translation.toggleTextActive,
+                    ]}
+                  >
+                    {lang.code.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {showSearchInput && (
         <ManualSearchInput
@@ -174,33 +343,33 @@ export function LyricsView({
         />
       )}
 
-      {loading && (
+      {(loading || translating) && (
         <View style={full.center}>
           <ActivityIndicator color="#fff" />
         </View>
       )}
 
-      {!loading && !isOnline && (
+      {!loading && !translating && !isOnline && (
         <View style={full.center}>
           <IconSymbol name="cloud-offline-outline" size={36} color="#b3b3b3" />
           <Text style={full.emptyText}>{t('lyrics.noConnection')}</Text>
         </View>
       )}
 
-      {!loading && isOnline && notFound && (
+      {!loading && !translating && isOnline && notFound && (
         <View style={full.center}>
           <IconSymbol name="musical-notes-outline" size={36} color="#b3b3b3" />
           <Text style={full.emptyText}>{t('lyrics.notAvailable')}</Text>
         </View>
       )}
 
-      {!loading && syncedLyrics && syncedLyrics.length > 0 && (
+      {!loading && !translating && displaySynced && displaySynced.length > 0 && (
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={full.listContent}
           showsVerticalScrollIndicator={false}
         >
-          {syncedLyrics.map((item, index) => {
+          {displaySynced.map((item, index) => {
             const isActive = index === currentLineIndex;
             return (
               <TouchableOpacity key={index} onPress={() => onSeek(item.time)} activeOpacity={0.7}>
@@ -213,12 +382,12 @@ export function LyricsView({
         </ScrollView>
       )}
 
-      {!loading && plainLyrics && !syncedLyrics && (
+      {!loading && !translating && displayPlain && !displaySynced && (
         <ScrollView
           contentContainerStyle={full.listContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={full.plain}>{plainLyrics}</Text>
+          <Text style={full.plain}>{displayPlain}</Text>
         </ScrollView>
       )}
     </View>

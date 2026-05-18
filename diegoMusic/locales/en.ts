@@ -39,6 +39,9 @@ const en: Translations = {
     noConnection: 'No internet connection',
     notAvailable: 'Lyrics not available',
     searchPlaceholder: 'Artist - Song',
+    translate: 'Translate',
+    translateFrom: 'From',
+    translateTo: 'To',
   },
   offline: {
     title: 'No internet connection',

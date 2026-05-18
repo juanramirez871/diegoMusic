@@ -74,6 +74,7 @@ const ICONS: Record<string, IconEntry> = {
   'cellular': { icon: Icons.Signal },
   'cellular-outline': { icon: Icons.Signal },
   'play-video': { icon: Icons.MonitorPlay },
+  'translate': { icon: Icons.Languages },
 };
 
 export function IconSymbol({

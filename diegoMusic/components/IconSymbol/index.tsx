@@ -74,6 +74,7 @@ const SF_TO_MATERIAL: Record<string, React.ComponentProps<typeof MaterialIcons>[
   'radio-button-off': 'radio-button-unchecked',
   'timer': 'timer',
   'timer-outline': 'timer',
+  'translate': 'translate',
   'play-video': 'smart-display',
 };
 

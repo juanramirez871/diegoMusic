@@ -26,32 +26,31 @@ export const unstable_settings = {
 function RootLayoutContent() {
 
   const { isLoggedIn, loading, user } = useAuth();
-  const { isMaximized, setIsMaximized, setVideoQuality, togglePlayPause, currentSong } = usePlayer();
+  const { isMaximized, setIsMaximized, setVideoQuality, togglePlayPause, playNext, playPrevious, currentSong, isPlaying } = usePlayer();
   const { setLocale } = useLanguage();
   const settingsApplied = useRef(false);
 
   useEffect(() => {
-    if (Platform.OS !== 'web' || !isLoggedIn) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' && e.key !== ' ') return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+    if (Platform.OS !== 'web' || !isLoggedIn || !currentSong) return;
 
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      (document.activeElement as HTMLElement | null)?.blur?.();
-      if (e.type === 'keydown' && currentSong) togglePlayPause();
-    };
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (!isPlaying) togglePlayPause();
+      });
 
-    window.addEventListener('keydown', handler, { capture: true });
-    window.addEventListener('keyup', handler, { capture: true });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (isPlaying) togglePlayPause();
+      });
 
-    return () => {
-      window.removeEventListener('keydown', handler, { capture: true } as any);
-      window.removeEventListener('keyup', handler, { capture: true } as any);
-    };
-  }, [isLoggedIn, currentSong, togglePlayPause]);
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        playPrevious();
+      });
+
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        playNext();
+      });
+    }
+  }, [isLoggedIn, currentSong?.id, isPlaying, togglePlayPause, playNext, playPrevious]);
 
   useEffect(() => {
     if (!user) { settingsApplied.current = false; return; }
