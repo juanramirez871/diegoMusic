@@ -25,15 +25,22 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
   const { isOnline } = useNetwork();
   const { t } = useLanguage();
   const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
   const [isOptionsVisible, setIsOptionsVisible] = useState(false);
   const [isQueueVisible, setIsQueueVisible] = useState(false);
   const [isSleepTimerVisible, setIsSleepTimerVisible] = useState(false);
 
   useEffect(() => {
+    const routeChanged = prevPathnameRef.current !== pathname;
+    prevPathnameRef.current = pathname;
+
+    if (!routeChanged) return;
     setIsOptionsVisible(false);
     setIsQueueVisible(false);
     setIsSleepTimerVisible(false);
-  }, [pathname]);
+    if (visible) onClose();
+
+  }, [pathname, visible, onClose]);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekProgress, setSeekProgress] = useState(0);
   const [showLyricsEdit, setShowLyricsEdit] = useState(false);
