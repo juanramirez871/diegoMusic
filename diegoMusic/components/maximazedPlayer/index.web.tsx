@@ -110,6 +110,13 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
 
   const displaySynced = translationEnabled && translatedSynced ? translatedSynced : lyrics.syncedLyrics;
   const displayPlain = translationEnabled && translatedPlain ? translatedPlain : lyrics.plainLyrics;
+  const originalSyncedLines =
+    lyrics.syncedLyrics?.map((line) => line.text) ??
+    lyrics.plainLyrics?.split('\n').map((line) => line.trim()).filter(Boolean) ?? [];
+
+  const originalPlainText = lyrics.plainLyrics ?? lyrics.syncedLyrics?.map((line) => line.text).join('\n') ?? '';
+  const showOriginalSyncedAboveTranslation = Boolean(translationEnabled && translatedSynced);
+  const showOriginalPlainAboveTranslation = Boolean(translationEnabled && translatedPlain && originalPlainText);
   const thumbnailSource = useThumbnail(currentSong?.id, currentSong?.thumbnail?.url);
   const lyricsScrollRef = useRef<ScrollView>(null);
   const playTint = useSharedValue(0);
@@ -369,7 +376,7 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               )}
 
               {translationEnabled && (
-                <View style={styles.translateRow}>
+                <View style={[styles.translateRow, styles.translateRowBottom]}>
                   <Text style={styles.translatePickerLabel}>{t('lyrics.translateTo')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -437,8 +444,12 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
                 <ScrollView ref={lyricsScrollRef} style={styles.lyricsScroll} showsVerticalScrollIndicator={false}>
                   {displaySynced.map((line, i) => {
                     const isActive = i === currentLineIndex;
+                    const originalText = originalSyncedLines[i] ?? line.text;
                     return (
                       <TouchableOpacity key={i} onPress={() => handleSeek(line.time / duration)} activeOpacity={0.7}>
+                        {showOriginalSyncedAboveTranslation && (
+                          <Text style={styles.lyricOriginalLine}>{originalText}</Text>
+                        )}
                         <Text style={[styles.lyricLine, isActive && styles.lyricLineActive]}>
                           {line.text}
                         </Text>
@@ -449,6 +460,9 @@ export const MaximazedPlayer = ({ visible, onClose }: MaximazedPlayerProps) => {
               )}
               {!lyrics.loading && !translating && displayPlain && !displaySynced && (
                 <ScrollView style={styles.lyricsScroll} showsVerticalScrollIndicator={false}>
+                  {showOriginalPlainAboveTranslation && (
+                    <Text style={styles.lyricOriginalPlain}>{originalPlainText}</Text>
+                  )}
                   <Text style={styles.lyricPlain}>{displayPlain}</Text>
                 </ScrollView>
               )}

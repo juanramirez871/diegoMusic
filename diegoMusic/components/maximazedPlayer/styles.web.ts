@@ -187,6 +187,14 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 48,
   },
+  lyricOriginalLine: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    marginTop: 6,
+    marginBottom: 2,
+  },
   lyricLineActive: {
     color: '#fff',
     fontSize: 20,
@@ -196,11 +204,20 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 28,
   },
+  lyricOriginalPlain: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
   translateRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 6,
+  },
+  translateRowBottom: {
+    marginBottom: 14,
   },
   translatePickerLabel: {
     color: '#888',

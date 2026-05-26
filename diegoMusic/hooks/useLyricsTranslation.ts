@@ -19,13 +19,24 @@ export function useLyricsTranslation(
   const [translating, setTranslating] = useState(false);
   const cacheRef = useRef<Map<string, string>>(new Map());
   const cancelledRef = useRef(false);
+  const sourceKeyRef = useRef<string | null>(null);
+
+  const getSourceKey = () => {
+
+    if (syncedLyrics && syncedLyrics.length > 0) {
+      const preview = syncedLyrics.slice(0, 4).map((line) => line.text).join('|');
+      return `synced:${syncedLyrics.length}:${preview}`;
+    }
+    
+    if (plainLyrics) return `plain:${plainLyrics.length}:${plainLyrics.slice(0, 120)}`;
+    return null;
+  };
 
   useEffect(() => {
     storage.getItem(TRANSLATION_PREFS_KEY).then((raw) => {
       if (raw) {
         try {
           const prefs: TranslationPrefs = JSON.parse(raw);
-          setTranslationEnabled(prefs.enabled ?? false);
           setTranslationFrom(prefs.from ?? DEFAULT_TRANSLATION.from);
           setTranslationTo(prefs.to ?? DEFAULT_TRANSLATION.to);
         } catch {}
@@ -35,11 +46,21 @@ export function useLyricsTranslation(
 
   useEffect(() => {
     storage.setItem(TRANSLATION_PREFS_KEY, JSON.stringify({
-      enabled: translationEnabled,
       from: translationFrom,
       to: translationTo,
     })).catch(() => {});
-  }, [translationEnabled, translationFrom, translationTo]);
+  }, [translationFrom, translationTo]);
+
+  useEffect(() => {
+    const sourceKey = getSourceKey();
+    if (!sourceKey) return;
+
+    if (sourceKeyRef.current && sourceKeyRef.current !== sourceKey) {
+      setTranslationEnabled(false);
+    }
+
+    sourceKeyRef.current = sourceKey;
+  }, [syncedLyrics, plainLyrics]);
 
   useEffect(() => {
     cancelledRef.current = false;

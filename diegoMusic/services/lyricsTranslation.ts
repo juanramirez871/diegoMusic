@@ -13,7 +13,6 @@ export const SUPPORTED_LANGUAGES: TranslationLanguage[] = [
   { code: 'pt', name: 'Português' },
   { code: 'ja', name: '日本語' },
   { code: 'ko', name: '한국어' },
-  { code: 'zh-Hans', name: '中文(简体)' },
   { code: 'ru', name: 'Русский' },
   { code: 'ar', name: 'العربية' },
   { code: 'hi', name: 'हिन्दी' },

@@ -62,6 +62,14 @@ export const panel = StyleSheet.create({
     fontWeight: '600',
     lineHeight: COMPACT_LINE_HEIGHT,
   },
+  originalLine: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+    marginTop: 6,
+    marginBottom: 2,
+  },
   lineActive: {
     color: '#fff',
     fontSize: 22,
@@ -70,6 +78,12 @@ export const panel = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontSize: 16,
     lineHeight: 24,
+  },
+  originalPlain: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 8,
   },
 });
 
@@ -96,6 +110,13 @@ export const full = StyleSheet.create({
     marginBottom: 16,
     position: 'relative',
   },
+  headerActions: {
+    position: 'absolute',
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   heading: {
     color: '#fff',
     fontSize: 12,
@@ -104,8 +125,6 @@ export const full = StyleSheet.create({
     textAlign: 'center',
   },
   editBtn: {
-    position: 'absolute',
-    right: 0,
     padding: 4,
   },
   center: {
@@ -129,6 +148,13 @@ export const full = StyleSheet.create({
     lineHeight: 38,
     marginBottom: 8,
   },
+  originalLine: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 21,
+    marginBottom: 4,
+  },
   lineActive: {
     color: '#fff',
     fontSize: 24,
@@ -137,6 +163,12 @@ export const full = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     fontSize: 16,
     lineHeight: 26,
+  },
+  originalPlain: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 10,
   },
 });
 
@@ -147,6 +179,9 @@ export const translation = StyleSheet.create({
     gap: 8,
     marginTop: 12,
     marginBottom: 4,
+  },
+  rowBottom: {
+    marginBottom: 14,
   },
   toggleBtn: {
     flexDirection: 'row',

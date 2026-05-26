@@ -70,6 +70,15 @@ export function LyricsPanel({
 
   const displaySynced = translationEnabled && translatedSynced ? translatedSynced : syncedLyrics;
   const displayPlain = translationEnabled && translatedPlain ? translatedPlain : plainLyrics;
+  const originalSyncedLines =
+    syncedLyrics?.map((line) => line.text) ??
+    plainLyrics?.split('\n').map((line) => line.trim()).filter(Boolean) ?? [];
+
+  const originalPlainText = plainLyrics ?? syncedLyrics?.map((line) => line.text).join('\n') ?? '';
+  const showOriginalSyncedAboveTranslation = Boolean(translationEnabled && translatedSynced);
+  const showOriginalPlainAboveTranslation = Boolean(
+    translationEnabled && translatedPlain && originalPlainText
+  );
 
   return (
     <View style={panel.container}>
@@ -122,7 +131,7 @@ export function LyricsPanel({
       )}
 
       {translationEnabled && (
-        <View style={translation.row}>
+        <View style={[translation.row, translation.rowBottom]}>
           <Text style={translation.pickerLabel}>{t('lyrics.translateTo')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -178,8 +187,14 @@ export function LyricsPanel({
         >
           {displaySynced.map((item, index) => {
             const isActive = index === currentLineIndex;
+            const originalText = originalSyncedLines[index] ?? item.text;
             return (
               <TouchableOpacity key={index} onPress={() => onSeek(item.time)} activeOpacity={0.7}>
+                {showOriginalSyncedAboveTranslation && (
+                  <Text style={panel.originalLine} numberOfLines={2}>
+                    {originalText}
+                  </Text>
+                )}
                 <Text style={[panel.line, isActive && panel.lineActive]} numberOfLines={2}>
                   {item.text}
                 </Text>
@@ -195,6 +210,9 @@ export function LyricsPanel({
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
         >
+          {showOriginalPlainAboveTranslation && (
+            <Text style={panel.originalPlain}>{originalPlainText}</Text>
+          )}
           <Text style={panel.plain}>{displayPlain}</Text>
         </ScrollView>
       )}
@@ -235,6 +253,15 @@ export function LyricsView({
 
   const displaySynced = translationEnabled && translatedSynced ? translatedSynced : syncedLyrics;
   const displayPlain = translationEnabled && translatedPlain ? translatedPlain : plainLyrics;
+  const originalSyncedLines =
+    syncedLyrics?.map((line) => line.text) ??
+    plainLyrics?.split('\n').map((line) => line.trim()).filter(Boolean) ?? [];
+
+  const originalPlainText = plainLyrics ?? syncedLyrics?.map((line) => line.text).join('\n') ?? '';
+  const showOriginalSyncedAboveTranslation = Boolean(translationEnabled && translatedSynced);
+  const showOriginalPlainAboveTranslation = Boolean(
+    translationEnabled && translatedPlain && originalPlainText
+  );
 
   useEffect(() => {
     if (loading) setShowEdit(false);
@@ -254,7 +281,7 @@ export function LyricsView({
 
       <View style={full.headingRow}>
         <Text style={full.heading}>{t('lyrics.title')}</Text>
-        <View style={{ position: 'absolute', right: 0, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <View style={full.headerActions}>
           <TouchableOpacity
             onPress={() => setTranslationEnabled(!translationEnabled)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -307,7 +334,7 @@ export function LyricsView({
       )}
 
       {translationEnabled && (
-        <View style={translation.row}>
+        <View style={[translation.row, translation.rowBottom]}>
           <Text style={translation.pickerLabel}>{t('lyrics.translateTo')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -371,8 +398,12 @@ export function LyricsView({
         >
           {displaySynced.map((item, index) => {
             const isActive = index === currentLineIndex;
+            const originalText = originalSyncedLines[index] ?? item.text;
             return (
               <TouchableOpacity key={index} onPress={() => onSeek(item.time)} activeOpacity={0.7}>
+                {showOriginalSyncedAboveTranslation && (
+                  <Text style={full.originalLine}>{originalText}</Text>
+                )}
                 <Text style={[full.line, isActive && full.lineActive]}>
                   {item.text}
                 </Text>
@@ -387,6 +418,9 @@ export function LyricsView({
           contentContainerStyle={full.listContent}
           showsVerticalScrollIndicator={false}
         >
+          {showOriginalPlainAboveTranslation && (
+            <Text style={full.originalPlain}>{originalPlainText}</Text>
+          )}
           <Text style={full.plain}>{displayPlain}</Text>
         </ScrollView>
       )}
