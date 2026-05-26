@@ -17,7 +17,7 @@ export function TopBar() {
   const { isOnline, isNetworkChecked, isApiReachable } = useNetwork();
   const { t } = useLanguage();
   const { user, logout } = useAuth();
-  const { isMaximized } = usePlayerUI();
+  const { isMaximized, setIsMaximized } = usePlayerUI();
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<HistoryItem[]>([]);
@@ -27,6 +27,7 @@ export function TopBar() {
 
   const openSearch = async () => {
     if (isDisabled) return;
+    if (isMaximized) setIsMaximized(false);
     try {
       const saved = await storage.getItem(RECENT_SEARCHES_KEY);
       if (saved) setRecentSearches(JSON.parse(saved));
@@ -130,4 +131,3 @@ export function TopBar() {
     </>
   );
 }
-
