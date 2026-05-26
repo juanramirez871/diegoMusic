@@ -26,7 +26,7 @@ export default function MusicArtist({ artist }: MusicArtistProps) {
       </View>
 
       <View>
-        <CarouselPlayer channelId={artist.id} />
+        <CarouselPlayer channelId={artist.id} query={`${artist.name} songs`} />
       </View>
     </View>
   );

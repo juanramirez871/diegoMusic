@@ -112,12 +112,59 @@ const searchChannelVideos = async (channelId) => {
     console.warn("[searchChannelVideos] Falló Innertube:", error.message);
   }
 
-  const videos = ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy: "popular" });
-  return (videos.items || []).map(v => ({
-    ...v,
-    author: (!v.author || v.author === "N/A") ? channelInfo.name : v.author,
-    authorId: (!v.authorId || v.authorId === "N/A") ? channelInfo.id : v.authorId
-  }));
+  const fallbackSorts = ["popular", "newest", "oldest"];
+  for (const sortBy of fallbackSorts)
+  {
+    try
+    {
+      const videos = await ytch.getChannelVideos({ channelId: resolvedChannelId, sortBy });
+      const items = Array.isArray(videos?.items) ? videos.items : [];
+      if (items.length > 0) {
+        return items.map(v => ({
+          ...v,
+          author: (!v.author || v.author === "N/A") ? channelInfo.name : v.author,
+          authorId: (!v.authorId || v.authorId === "N/A") ? channelInfo.id : v.authorId
+        }));
+      }
+    }
+    catch (error) {
+      console.warn(`[searchChannelVideos] Fallback yt-channel-info (${sortBy}) falló:`, error.message);
+    }
+  }
+
+  try {
+    const yt = await getInnertube();
+    const query = channelInfo.name && channelInfo.name !== "N/A" ? channelInfo.name : resolvedChannelId;
+    const searchResults = await yt.search(query, { type: "video" });
+    const candidates = (searchResults?.videos || []).filter((video) => {
+      const authorId = video?.author?.id || "";
+      const authorName = (video?.author?.name || "").toLowerCase();
+      return authorId === resolvedChannelId || (channelInfo.name && channelInfo.name !== "N/A" && authorName.includes(channelInfo.name.toLowerCase()));
+    });
+
+    const mapped = candidates.slice(0, 40).map((video) => {
+      const item = mapInnertubeVideoToChannelItem(video);
+      if (!item.author || item.author === "N/A") item.author = channelInfo.name;
+      if (!item.authorId || item.authorId === "N/A") item.authorId = channelInfo.id;
+      return item;
+    });
+
+    if (mapped.length > 0) return mapped;
+
+    const broadMapped = (searchResults?.videos || []).slice(0, 40).map((video) => {
+      const item = mapInnertubeVideoToChannelItem(video);
+      if (!item.author || item.author === "N/A") item.author = channelInfo.name;
+      if (!item.authorId || item.authorId === "N/A") item.authorId = channelInfo.id;
+      return item;
+    });
+
+    if (broadMapped.length > 0) return broadMapped;
+  }
+  catch (error) {
+    console.warn("[searchChannelVideos] Fallback por búsqueda falló:", error.message);
+  }
+
+  return [];
 };
 
 

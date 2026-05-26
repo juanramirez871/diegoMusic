@@ -38,9 +38,12 @@ export default function ListPlayer({ channelId, query, data }: CarouselPlayerPro
       setApiError(false);
       try {
         let fetchedData: SongData[] = [];
-        if (channelId) fetchedData = await youtubeService.getChannelVideos(channelId);
+        if (channelId)
+        {
+          fetchedData = await youtubeService.getChannelVideos(channelId);
+          if (fetchedData.length === 0 && query) fetchedData = await youtubeService.searchVideos(query, 10);
+        }
         else if (query) fetchedData = await youtubeService.searchVideos(query, 10);
-
         setSongs(fetchedData);
       }
       catch (error) {
