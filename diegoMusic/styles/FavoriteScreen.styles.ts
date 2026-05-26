@@ -93,6 +93,13 @@ export const styles = StyleSheet.create({
     gap: 20,
     zIndex: 20,
   },
+  containerIconsWeb: {
+    position: 'absolute',
+    top: 148,
+    bottom: 48,
+    right: 20,
+    zIndex: 30,
+  },
   webPlayBtn: {
     width: 56,
     height: 56,

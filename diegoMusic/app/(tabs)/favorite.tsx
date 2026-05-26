@@ -199,6 +199,43 @@ export default function FavoriteScreen() {
             <Text style={styles.title}>{t('favorite.title')}</Text>
             <Text style={styles.count}>{t('favorite.songCount', { count: favorites.length })}</Text>
           </Animated.View>
+
+          {Platform.OS === 'web' && (
+          <Animated.View
+            style={[
+              styles.containerIcons,
+              styles.containerIconsWeb,
+            ]}
+          >
+            {(pendingDownloads > 0 || isDownloadingAll) && (
+              <View>
+                <TouchableOpacity onPress={handleDownloadAll} disabled={isDownloadingAll}>
+                  {isDownloadingAll ? (
+                    <LoadingSpinner size={32} color="#2c5af3" />
+                  ) : (
+                    <IconSymbol name="arrow.down.circle.fill" size={32} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+            <View>
+              <TouchableOpacity onPress={toggleShuffle}>
+                <IconSymbol name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.webPlayBtn}
+              onPress={() => {
+                if (filteredFavorites.length === 0) return;
+                const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
+                const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
+                playSong(startSong, filteredFavorites, 'favorites');
+              }}
+            >
+              <IconSymbol name="play" size={28} color="#000" />
+            </TouchableOpacity>
+          </Animated.View>
+          )}
         </View>
       </Animated.View>
 
@@ -233,35 +270,37 @@ export default function FavoriteScreen() {
         </View>
       </Animated.ScrollView>
 
-      <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
-        {(pendingDownloads > 0 || isDownloadingAll) && (
+      {Platform.OS !== 'web' && (
+        <Animated.View style={[styles.containerIcons, iconsAnimatedStyle]}>
+          {(pendingDownloads > 0 || isDownloadingAll) && (
+            <Animated.View style={shuffleAnimatedStyle}>
+              <TouchableOpacity onPress={handleDownloadAll} disabled={isDownloadingAll}>
+                {isDownloadingAll ? (
+                  <LoadingSpinner size={32} color="#2c5af3" />
+                ) : (
+                  <IconSymbol name="arrow.down.circle.fill" size={32} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          )}
           <Animated.View style={shuffleAnimatedStyle}>
-            <TouchableOpacity onPress={handleDownloadAll} disabled={isDownloadingAll}>
-              {isDownloadingAll ? (
-                <LoadingSpinner size={32} color="#2c5af3" />
-              ) : (
-                <IconSymbol name="arrow.down.circle.fill" size={32} color="#fff" />
-              )}
+            <TouchableOpacity onPress={toggleShuffle}>
+              <IconSymbol name="shuffle" size={30} color={isShuffle ? "#2c5af3ff" : "#fff"} />
             </TouchableOpacity>
           </Animated.View>
-        )}
-        <Animated.View style={shuffleAnimatedStyle}>
-          <TouchableOpacity onPress={toggleShuffle}>
-            <IconSymbol name="shuffle" size={35} color={isShuffle ? "#2c5af3ff" : "#fff"} />
+          <TouchableOpacity
+            onPress={() => {
+              if (filteredFavorites.length === 0) return;
+              const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
+              const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
+              playSong(startSong, filteredFavorites, 'favorites');
+            }}
+          >
+            <IconSymbol name="play-circle" size={45} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
-        <TouchableOpacity
-          style={Platform.OS === 'web' ? styles.webPlayBtn : undefined}
-          onPress={() => {
-            if (filteredFavorites.length === 0) return;
-            const randomIndex = Math.floor(Math.random() * filteredFavorites.length);
-            const startSong = isShuffle ? filteredFavorites[randomIndex] : filteredFavorites[0];
-            playSong(startSong, filteredFavorites, 'favorites');
-          }}
-        >
-          <IconSymbol name={Platform.OS === 'web' ? 'play' : 'play-circle'} size={Platform.OS === 'web' ? 28 : 55} color={Platform.OS === 'web' ? '#000' : '#fff'} />
-        </TouchableOpacity>
-      </Animated.View>
+      )}
+
     </View>
   );
 }
